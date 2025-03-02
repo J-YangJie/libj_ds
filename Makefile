@@ -121,3 +121,14 @@ $(SLIB_NAME) : $(OBJS)
 	@$(AR) $(SCFLAGS) $@ $^
 	@echo "make $@"
 
+
+
+
+
+stress/?.o : stress/?.c
+stress_fast : stress/main.o stress/test_hashmap.o stress/test_map.o stress/test_set.o stress/test_multimap.o stress/test_multiset.o
+	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
+
+stress_slow : stress/main_slow.o stress/test_vector.o stress/test_list.o
+	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
+
