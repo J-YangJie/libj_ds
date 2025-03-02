@@ -1,0 +1,7 @@
+*.o
+*.so*
+*.a
+demo/demo_*_bin
+performance
+stress_fast
+stress_slow
