@@ -26,23 +26,23 @@
 
 #define multimap_entry(ptr) rb_entry((ptr), struct multimap_node, node)
 
-static __always_inline multimap_node_t* multimap_find(const multimap_t* _this, multimap_key_t key);
-static __always_inline multimap_node_t* __multimap_end(const multimap_t* _this);
-static __always_inline multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t* node);
+static /* __always_inline */ inline multimap_node_t* multimap_find(const multimap_t* _this, multimap_key_t key);
+static /* __always_inline */ inline multimap_node_t* __multimap_end(const multimap_t* _this);
+static /* __always_inline */ inline multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t* node);
 
-static __always_inline multimap_size_t __multimap_size(const multimap_t* _this)
+static /* __always_inline */ inline multimap_size_t __multimap_size(const multimap_t* _this)
 {
     return _this->size;
 }
 
-static __always_inline multimap_size_t _multimap_size(const multimap_t* _this)
+static /* __always_inline */ inline multimap_size_t _multimap_size(const multimap_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __multimap_size(_this);
 }
 
-static inline multimap_count_t multimap_count(const multimap_t* _this, multimap_key_t key)
+static multimap_count_t multimap_count(const multimap_t* _this, multimap_key_t key)
 {
     multimap_count_t ret = 0;
     multimap_node_t* t = multimap_find(_this, key);
@@ -73,37 +73,37 @@ static inline multimap_count_t multimap_count(const multimap_t* _this, multimap_
     return ret;
 }
 
-static __always_inline multimap_node_t* __multimap_first(const multimap_t* _this)
+static /* __always_inline */ inline multimap_node_t* __multimap_first(const multimap_t* _this)
 {
     struct rb_node* t = rb_first(&_this->root);
     return is_null(t) ? NULL : multimap_entry(t);
 }
 
-static __always_inline multimap_node_t* __multimap_last(const multimap_t* _this)
+static /* __always_inline */ inline multimap_node_t* __multimap_last(const multimap_t* _this)
 {
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : multimap_entry(t);
 }
 
-static __always_inline multimap_node_t* __multimap_end(const multimap_t* _this)
+static /* __always_inline */ inline multimap_node_t* __multimap_end(const multimap_t* _this)
 {
     return (multimap_node_t*)iterator_end();
 }
 
-static __always_inline multimap_node_t* __multimap_begin(const multimap_t* _this)
+static /* __always_inline */ inline multimap_node_t* __multimap_begin(const multimap_t* _this)
 {
     multimap_node_t* t = __multimap_first(_this);
     return is_null(t) ? __multimap_end(_this) : t;
 }
 
-static __always_inline multimap_node_t* _multimap_begin(const multimap_t* _this)
+static /* __always_inline */ inline multimap_node_t* _multimap_begin(const multimap_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __multimap_begin(_this);
 }
 
-static __always_inline multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t* node)
+static /* __always_inline */ inline multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -122,14 +122,14 @@ static __always_inline multimap_node_t* __multimap_next(const multimap_t* _this,
     return is_null(t) ? __multimap_end(_this) : multimap_entry(t);
 }
 
-static __always_inline multimap_node_t* _multimap_next(const multimap_t* _this, const multimap_node_t* node)
+static /* __always_inline */ inline multimap_node_t* _multimap_next(const multimap_t* _this, const multimap_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multimap_next(_this, node);
 }
 
-static __always_inline multimap_node_t* __multimap_prev(const multimap_t* _this, const multimap_node_t* node)
+static /* __always_inline */ inline multimap_node_t* __multimap_prev(const multimap_t* _this, const multimap_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -149,32 +149,32 @@ static __always_inline multimap_node_t* __multimap_prev(const multimap_t* _this,
     return is_null(t) ? __multimap_end(_this) : multimap_entry(t);
 }
 
-static __always_inline multimap_node_t* _multimap_prev(const multimap_t* _this, const multimap_node_t* node)
+static /* __always_inline */ inline multimap_node_t* _multimap_prev(const multimap_t* _this, const multimap_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multimap_prev(_this, node);
 }
 
-static __always_inline multimap_node_t* __multimap_rend(const multimap_t* _this)
+static /* __always_inline */ inline multimap_node_t* __multimap_rend(const multimap_t* _this)
 {
     return (multimap_node_t*)iterator_rend();
 }
 
-static __always_inline multimap_node_t* __multimap_rbegin(const multimap_t* _this)
+static /* __always_inline */ inline multimap_node_t* __multimap_rbegin(const multimap_t* _this)
 {
     multimap_node_t* t = __multimap_last(_this);
     return is_null(t) ? __multimap_rend(_this) : t;
 }
 
-static __always_inline multimap_node_t* _multimap_rbegin(const multimap_t* _this)
+static /* __always_inline */ inline multimap_node_t* _multimap_rbegin(const multimap_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __multimap_rbegin(_this);
 }
 
-static __always_inline multimap_node_t* __multimap_rnext(const multimap_t* _this, const multimap_node_t* node)
+static /* __always_inline */ inline multimap_node_t* __multimap_rnext(const multimap_t* _this, const multimap_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -193,14 +193,14 @@ static __always_inline multimap_node_t* __multimap_rnext(const multimap_t* _this
     return is_null(t) ? __multimap_rend(_this) : multimap_entry(t);
 }
 
-static __always_inline multimap_node_t* _multimap_rnext(const multimap_t* _this, const multimap_node_t* node)
+static /* __always_inline */ inline multimap_node_t* _multimap_rnext(const multimap_t* _this, const multimap_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multimap_rnext(_this, node);
 }
 
-static __always_inline multimap_node_t* __multimap_rprev(const multimap_t* _this, const multimap_node_t* node)
+static /* __always_inline */ inline multimap_node_t* __multimap_rprev(const multimap_t* _this, const multimap_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -220,14 +220,14 @@ static __always_inline multimap_node_t* __multimap_rprev(const multimap_t* _this
     return is_null(t) ? __multimap_rend(_this) : multimap_entry(t);
 }
 
-static __always_inline multimap_node_t* _multimap_rprev(const multimap_t* _this, const multimap_node_t* node)
+static /* __always_inline */ inline multimap_node_t* _multimap_rprev(const multimap_t* _this, const multimap_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multimap_rprev(_this, node);
 }
 
-static inline multimap_node_t* __multimap_find(const multimap_t* _this, multimap_key_t key)
+static multimap_node_t* __multimap_find(const multimap_t* _this, multimap_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     multimap_node_t* t = NULL;
@@ -264,7 +264,7 @@ static inline multimap_node_t* __multimap_find(const multimap_t* _this, multimap
     return ret;
 }
 
-static __always_inline multimap_node_t* multimap_find(const multimap_t* _this, multimap_key_t key)
+static /* __always_inline */ inline multimap_node_t* multimap_find(const multimap_t* _this, multimap_key_t key)
 {
     multimap_node_t* t = NULL;
 
@@ -278,7 +278,7 @@ static __always_inline multimap_node_t* multimap_find(const multimap_t* _this, m
     return is_null(t) ? __multimap_end(_this) : t;
 }
 
-static inline multimap_node_t* __multimap_lower_bound(const multimap_t* _this, multimap_key_t key)
+static multimap_node_t* __multimap_lower_bound(const multimap_t* _this, multimap_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     multimap_node_t* t = NULL;
@@ -318,7 +318,7 @@ static inline multimap_node_t* __multimap_lower_bound(const multimap_t* _this, m
     return is_null(eq) ? gt : eq;
 }
 
-static __always_inline multimap_node_t* multimap_lower_bound(const multimap_t* _this, multimap_key_t key)
+static /* __always_inline */ inline multimap_node_t* multimap_lower_bound(const multimap_t* _this, multimap_key_t key)
 {
     multimap_node_t* t = NULL;
 
@@ -332,7 +332,7 @@ static __always_inline multimap_node_t* multimap_lower_bound(const multimap_t* _
     return is_null(t) ? __multimap_end(_this) : t;
 }
 
-static inline multimap_node_t* __multimap_upper_bound(const multimap_t* _this, multimap_key_t key)
+static multimap_node_t* __multimap_upper_bound(const multimap_t* _this, multimap_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     multimap_node_t* t = NULL;
@@ -369,7 +369,7 @@ static inline multimap_node_t* __multimap_upper_bound(const multimap_t* _this, m
     return ret;
 }
 
-static __always_inline multimap_node_t* multimap_upper_bound(const multimap_t* _this, multimap_key_t key)
+static /* __always_inline */ inline multimap_node_t* multimap_upper_bound(const multimap_t* _this, multimap_key_t key)
 {
     multimap_node_t* t = NULL;
 
@@ -383,7 +383,7 @@ static __always_inline multimap_node_t* multimap_upper_bound(const multimap_t* _
     return is_null(t) ? __multimap_end(_this) : t;
 }
 
-static inline multimap_node_t* __multimap_insert(multimap_t* _this, multimap_node_t* node)
+static multimap_node_t* __multimap_insert(multimap_t* _this, multimap_node_t* node)
 {
     struct rb_node** n = &_this->root.rb_node;
     struct rb_node* parent = NULL;
@@ -469,7 +469,7 @@ err:
     return NULL;
 }
 
-static __always_inline multimap_node_t* __multimap_erase(multimap_t* _this, multimap_node_t* pos)
+static /* __always_inline */ inline multimap_node_t* __multimap_erase(multimap_t* _this, multimap_node_t* pos)
 {
     rb_erase(&pos->node, &_this->root);
     _this->size--;
@@ -505,7 +505,7 @@ static inline multimap_node_t* multimap_erase(multimap_t* _this, multimap_node_t
     return t;
 }
 
-static inline multimap_size_t multimap_remove(multimap_t* _this, multimap_key_t key)
+static multimap_size_t multimap_remove(multimap_t* _this, multimap_key_t key)
 {
     multimap_size_t ret = 0;
     multimap_node_t* t = NULL;
@@ -541,7 +541,7 @@ static inline multimap_size_t multimap_remove(multimap_t* _this, multimap_key_t 
     return ret;
 }
 
-static inline multimap_size_t multimap_remove_if(multimap_t* _this, remove_if_condition_kv cond)
+static multimap_size_t multimap_remove_if(multimap_t* _this, remove_if_condition_kv cond)
 {
     multimap_size_t ret = 0;
     multimap_node_t* t = NULL;
@@ -562,7 +562,7 @@ static inline multimap_size_t multimap_remove_if(multimap_t* _this, remove_if_co
     return ret;
 }
 
-static inline multimap_size_t multimap_clear(multimap_t* _this)
+static multimap_size_t multimap_clear(multimap_t* _this)
 {
     multimap_size_t ret = 0;
     multimap_node_t* t = NULL;
@@ -578,12 +578,12 @@ static inline multimap_size_t multimap_clear(multimap_t* _this)
     return ret;
 }
 
-__always_inline void __multimap_init(multimap_t* multimap)
+/* __always_inline */ inline void __multimap_init(multimap_t* multimap)
 {
     multimap->root = RB_ROOT;
 }
 
-__always_inline void __multimap_deinit(multimap_t* multimap)
+/* __always_inline */ inline void __multimap_deinit(multimap_t* multimap)
 {
     multimap_clear(multimap);
 

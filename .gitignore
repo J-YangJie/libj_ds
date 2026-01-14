@@ -2,6 +2,8 @@
 *.so*
 *.a
 demo/demo_*_bin
-performance
+performance_*
+!performance_analysis
+!performance_*.sh
 stress_fast
 stress_slow

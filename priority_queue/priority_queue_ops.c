@@ -21,7 +21,7 @@
 
 #include <operations/ds_ops_string.h>
 
-__always_inline const class_priority_queue_ops_t* class_priority_queue_ops_string_ins(void)
+/* __always_inline */ inline const class_priority_queue_ops_t* class_priority_queue_ops_string_ins(void)
 {
     static const class_priority_queue_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_string,

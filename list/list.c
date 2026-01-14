@@ -26,19 +26,19 @@
 
 #define dlist_entry(ptr) list_entry((ptr), struct list_node, node)
 
-static __always_inline list_size_t __dlist_size(const list_t* _this)
+static /* __always_inline */ inline list_size_t __dlist_size(const list_t* _this)
 {
     return _this->size;
 }
 
-static __always_inline list_size_t _dlist_size(const list_t* _this)
+static /* __always_inline */ inline list_size_t _dlist_size(const list_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __dlist_size(_this);
 }
 
-static inline list_count_t __dlist_count(const list_t* _this, list_data_t data)
+static list_count_t __dlist_count(const list_t* _this, list_data_t data)
 {
     list_size_t ret = 0;
     list_node_t* t = NULL;
@@ -61,7 +61,7 @@ static inline list_count_t __dlist_count(const list_t* _this, list_data_t data)
     return ret;
 }
 
-static __always_inline list_count_t dlist_count(const list_t* _this, list_data_t data)
+static /* __always_inline */ inline list_count_t dlist_count(const list_t* _this, list_data_t data)
 {
     if (unlikely(is_null(_this)))
         return -1;
@@ -72,26 +72,26 @@ static __always_inline list_count_t dlist_count(const list_t* _this, list_data_t
     return __dlist_count(_this, data);
 }
 
-static __always_inline list_node_t* __dlist_first(const list_t* _this)
+static /* __always_inline */ inline list_node_t* __dlist_first(const list_t* _this)
 {
     if (is_null(_this->head.next) || list_empty(&_this->head))
         return NULL;
     return dlist_entry(_this->head.next);
 }
 
-static __always_inline list_node_t* __dlist_last(const list_t* _this)
+static /* __always_inline */ inline list_node_t* __dlist_last(const list_t* _this)
 {
     if (is_null(_this->head.prev) || list_empty(&_this->head))
         return NULL;
     return dlist_entry(_this->head.prev);
 }
 
-static __always_inline list_node_t* __dlist_end(const list_t* _this)
+static /* __always_inline */ inline list_node_t* __dlist_end(const list_t* _this)
 {
     return (list_node_t*)iterator_end();
 }
 
-static __always_inline list_node_t* __dlist_begin(const list_t* _this)
+static /* __always_inline */ inline list_node_t* __dlist_begin(const list_t* _this)
 {
     struct list_head* t = _this->head.next;
 
@@ -103,14 +103,14 @@ static __always_inline list_node_t* __dlist_begin(const list_t* _this)
     return dlist_entry(t); /* Be careful about the situation when `t` is `NULL` */
 }
 
-static __always_inline list_node_t* _dlist_begin(const list_t* _this)
+static /* __always_inline */ inline list_node_t* _dlist_begin(const list_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __dlist_begin(_this);
 }
 
-static __always_inline list_node_t* __dlist_next(const list_t* _this, const list_node_t* node)
+static /* __always_inline */ inline list_node_t* __dlist_next(const list_t* _this, const list_node_t* node)
 {
     struct list_head* t = NULL;
 
@@ -131,14 +131,14 @@ static __always_inline list_node_t* __dlist_next(const list_t* _this, const list
     return dlist_entry(t);
 }
 
-static __always_inline list_node_t* _dlist_next(const list_t* _this, const list_node_t* node)
+static /* __always_inline */ inline list_node_t* _dlist_next(const list_t* _this, const list_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __dlist_next(_this, node);
 }
 
-static __always_inline list_node_t* __dlist_prev(const list_t* _this, const list_node_t* node)
+static /* __always_inline */ inline list_node_t* __dlist_prev(const list_t* _this, const list_node_t* node)
 {
     struct list_head* t = NULL;
 
@@ -160,19 +160,19 @@ static __always_inline list_node_t* __dlist_prev(const list_t* _this, const list
     return dlist_entry(t);
 }
 
-static __always_inline list_node_t* _dlist_prev(const list_t* _this, const list_node_t* node)
+static /* __always_inline */ inline list_node_t* _dlist_prev(const list_t* _this, const list_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __dlist_prev(_this, node);
 }
 
-static __always_inline list_node_t* __dlist_rend(const list_t* _this)
+static /* __always_inline */ inline list_node_t* __dlist_rend(const list_t* _this)
 {
     return (list_node_t*)iterator_rend();
 }
 
-static __always_inline list_node_t* __dlist_rbegin(const list_t* _this)
+static /* __always_inline */ inline list_node_t* __dlist_rbegin(const list_t* _this)
 {
     struct list_head* t = _this->head.prev;
 
@@ -184,14 +184,14 @@ static __always_inline list_node_t* __dlist_rbegin(const list_t* _this)
     return dlist_entry(t); /* Be careful about the situation when `t` is `NULL` */
 }
 
-static __always_inline list_node_t* _dlist_rbegin(const list_t* _this)
+static /* __always_inline */ inline list_node_t* _dlist_rbegin(const list_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __dlist_rbegin(_this);
 }
 
-static __always_inline list_node_t* __dlist_rnext(const list_t* _this, const list_node_t* node)
+static /* __always_inline */ inline list_node_t* __dlist_rnext(const list_t* _this, const list_node_t* node)
 {
     struct list_head* t = NULL;
 
@@ -212,14 +212,14 @@ static __always_inline list_node_t* __dlist_rnext(const list_t* _this, const lis
     return dlist_entry(t);
 }
 
-static __always_inline list_node_t* _dlist_rnext(const list_t* _this, const list_node_t* node)
+static /* __always_inline */ inline list_node_t* _dlist_rnext(const list_t* _this, const list_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __dlist_rnext(_this, node);
 }
 
-static __always_inline list_node_t* __dlist_rprev(const list_t* _this, const list_node_t* node)
+static /* __always_inline */ inline list_node_t* __dlist_rprev(const list_t* _this, const list_node_t* node)
 {
     struct list_head* t = NULL;
 
@@ -241,28 +241,28 @@ static __always_inline list_node_t* __dlist_rprev(const list_t* _this, const lis
     return dlist_entry(t);
 }
 
-static __always_inline list_node_t* _dlist_rprev(const list_t* _this, const list_node_t* node)
+static /* __always_inline */ inline list_node_t* _dlist_rprev(const list_t* _this, const list_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __dlist_rprev(_this, node);
 }
 
-static __always_inline list_data_t dlist_first(const list_t* _this, list_data_t default_data)
+static /* __always_inline */ inline list_data_t dlist_first(const list_t* _this, list_data_t default_data)
 {
     if (is_null(_this) || is_null(_this->head.next) || list_empty(&_this->head))
         return default_data;
     return dlist_entry(_this->head.next)->data;
 }
 
-static __always_inline list_data_t dlist_last(const list_t* _this, list_data_t default_data)
+static /* __always_inline */ inline list_data_t dlist_last(const list_t* _this, list_data_t default_data)
 {
     if (is_null(_this) || is_null(_this->head.prev) || list_empty(&_this->head))
         return default_data;
     return dlist_entry(_this->head.prev)->data;
 }
 
-static inline list_node_t* __dlist_find(const list_t* _this, list_data_t data)
+static list_node_t* __dlist_find(const list_t* _this, list_data_t data)
 {
     list_node_t* t = NULL;
 
@@ -280,7 +280,7 @@ static inline list_node_t* __dlist_find(const list_t* _this, list_data_t data)
     return NULL;
 }
 
-static __always_inline list_node_t* dlist_find(const list_t* _this, list_data_t data)
+static /* __always_inline */ inline list_node_t* dlist_find(const list_t* _this, list_data_t data)
 {
     list_node_t* t = NULL;
 
@@ -326,14 +326,14 @@ err:
     return NULL;
 }
 
-static __always_inline list_node_t* __dlist_push_back(list_t* _this, list_node_t* node)
+static /* __always_inline */ inline list_node_t* __dlist_push_back(list_t* _this, list_node_t* node)
 {
     list_add_tail(&node->node, &_this->head);
     _this->size++;
     return node;
 }
 
-static __always_inline list_node_t* dlist_push_back(list_t* _this, list_data_t data)
+static /* __always_inline */ inline list_node_t* dlist_push_back(list_t* _this, list_data_t data)
 {
     list_node_t* t = NULL;
 
@@ -344,14 +344,14 @@ static __always_inline list_node_t* dlist_push_back(list_t* _this, list_data_t d
     return __dlist_push_back(_this, t);
 }
 
-static __always_inline list_node_t* __dlist_push_front(list_t* _this, list_node_t* node)
+static /* __always_inline */ inline list_node_t* __dlist_push_front(list_t* _this, list_node_t* node)
 {
     list_add(&node->node, &_this->head);
     _this->size++;
     return node;
 }
 
-static __always_inline list_node_t* dlist_push_front(list_t* _this, list_data_t data)
+static /* __always_inline */ inline list_node_t* dlist_push_front(list_t* _this, list_data_t data)
 {
     list_node_t* t = NULL;
 
@@ -362,14 +362,14 @@ static __always_inline list_node_t* dlist_push_front(list_t* _this, list_data_t 
     return __dlist_push_front(_this, t);
 }
 
-static __always_inline list_node_t* __dlist_insert(list_t* _this, list_node_t* pos, list_node_t* node)
+static /* __always_inline */ inline list_node_t* __dlist_insert(list_t* _this, list_node_t* pos, list_node_t* node)
 {
     __list_add(&node->node, pos->node.prev, &pos->node);
     _this->size++;
     return node;
 }
 
-static __always_inline list_node_t* dlist_insert(list_t* _this, list_node_t* pos, list_data_t data)
+static /* __always_inline */ inline list_node_t* dlist_insert(list_t* _this, list_node_t* pos, list_data_t data)
 {
     list_node_t* t = NULL;
 
@@ -387,13 +387,13 @@ static __always_inline list_node_t* dlist_insert(list_t* _this, list_node_t* pos
     return __dlist_insert(_this, pos, t);
 }
 
-static __always_inline void __dlist_erase(list_t* _this, list_node_t* pos)
+static /* __always_inline */ inline void __dlist_erase(list_t* _this, list_node_t* pos)
 {
     list_del_init(&pos->node);
     _this->size--;
 }
 
-static __always_inline list_node_t* dlist_erase(list_t* _this, list_node_t* pos)
+static /* __always_inline */ inline list_node_t* dlist_erase(list_t* _this, list_node_t* pos)
 {
     list_node_t* t = NULL;
 
@@ -419,7 +419,7 @@ static __always_inline list_node_t* dlist_erase(list_t* _this, list_node_t* pos)
     return t;
 }
 
-static inline list_node_t* dlist_erase_range(list_t* _this, list_node_t* begin, list_node_t* end)
+static list_node_t* dlist_erase_range(list_t* _this, list_node_t* begin, list_node_t* end)
 {
     list_node_t* pos = begin;
     list_node_t* n = NULL;
@@ -453,7 +453,7 @@ static inline list_node_t* dlist_erase_range(list_t* _this, list_node_t* begin, 
     return end;
 }
 
-static __always_inline void __dlist_pop_back(list_t* _this)
+static /* __always_inline */ inline void __dlist_pop_back(list_t* _this)
 {
     struct list_head* t = _this->head.prev;
 
@@ -466,7 +466,7 @@ static __always_inline void __dlist_pop_back(list_t* _this)
     }
 }
 
-static __always_inline void dlist_pop_back(list_t* _this)
+static /* __always_inline */ inline void dlist_pop_back(list_t* _this)
 {
     list_node_t* t = NULL;
 
@@ -485,7 +485,7 @@ static __always_inline void dlist_pop_back(list_t* _this)
     p_free(t);
 }
 
-static __always_inline void __dlist_pop_front(list_t* _this)
+static /* __always_inline */ inline void __dlist_pop_front(list_t* _this)
 {
     struct list_head* t = _this->head.next;
 
@@ -498,7 +498,7 @@ static __always_inline void __dlist_pop_front(list_t* _this)
     }
 }
 
-static __always_inline void dlist_pop_front(list_t* _this)
+static /* __always_inline */ inline void dlist_pop_front(list_t* _this)
 {
     list_node_t* t = NULL;
 
@@ -517,7 +517,7 @@ static __always_inline void dlist_pop_front(list_t* _this)
     p_free(t);
 }
 
-static inline list_size_t dlist_remove(list_t* _this, list_data_t data)
+static list_size_t dlist_remove(list_t* _this, list_data_t data)
 {
     list_size_t ret = 0;
     list_node_t* t = NULL;
@@ -560,7 +560,7 @@ static inline list_size_t dlist_remove(list_t* _this, list_data_t data)
     return ret;
 }
 
-static inline list_size_t dlist_remove_if(list_t* _this, remove_if_condition cond)
+static list_size_t dlist_remove_if(list_t* _this, remove_if_condition cond)
 {
     list_size_t ret = 0;
     list_node_t* t = NULL;
@@ -585,7 +585,7 @@ static inline list_size_t dlist_remove_if(list_t* _this, remove_if_condition con
     return ret;
 }
 
-static inline list_size_t dlist_clear(list_t* _this)
+static list_size_t dlist_clear(list_t* _this)
 {
     list_size_t ret = 0;
     list_node_t* t = NULL;
@@ -607,12 +607,12 @@ static inline list_size_t dlist_clear(list_t* _this)
     return ret;
 }
 
-__always_inline void __list_init(list_t* list)
+/* __always_inline */ inline void __list_init(list_t* list)
 {
     INIT_LIST_HEAD(&list->head);
 }
 
-__always_inline void __list_deinit(list_t* list)
+/* __always_inline */ inline void __list_deinit(list_t* list)
 {
     dlist_clear(list);
 
@@ -636,7 +636,7 @@ typedef list_iterator_t* (*fp_insert)(list_t* _this, list_iterator_t* iterator, 
 typedef list_iterator_t* (*fp_erase)(list_t* _this, list_iterator_t* iterator);
 typedef list_iterator_t* (*fp_erase_range)(list_t* _this, list_iterator_t* iterator_begin, list_iterator_t* iterator_end);
 
-__always_inline const class_list_t* class_list_ins(void)
+/* __always_inline */ inline const class_list_t* class_list_ins(void)
 {
     static const class_list_t ins = {
         .size        = _dlist_size,
@@ -683,7 +683,7 @@ __always_inline const class_list_t* class_list_ins(void)
 // typedef multimap_value_node_t* (*fp_multimap_values_insert)(multimap_values_t* _this, multimap_value_node_t* pos, multimap_value_t value);
 // typedef multimap_value_node_t* (*fp_multimap_values_erase)(multimap_values_t* _this, multimap_value_node_t* pos);
 // typedef multimap_value_node_t* (*fp_multimap_values_erase_range)(multimap_values_t* _this, multimap_value_node_t* begin, multimap_value_node_t* end);
-// __always_inline const class_multimap_values_t* class_multimap_values_ins(void)
+// /* __always_inline */ inline const class_multimap_values_t* class_multimap_values_ins(void)
 // {
 //     static const class_multimap_values_t ins = {
 //         .size        = _dlist_size,

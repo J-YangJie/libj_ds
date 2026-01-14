@@ -17,6 +17,7 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+#include <../bucket/bucket.c>
 #include <hashmap/hashmap.h>
 
 #include <string.h>
@@ -118,7 +119,7 @@ static hashmap_bnode_t* __hashmap_first(const hashmap_t* _this)
     for (; i <= te; ++i) {
         if (!is_null(_this->head[i].bucket)) {
             tthis->pi_s = i;
-            return cbucket_priv->_first(BUCKET_GET_PTR(_this->head[i].bucket), BUCKET_GET_TYPE(_this->head[i].bucket)); /* Err: by bucket */
+            return _bucket_first(BUCKET_GET_PTR(_this->head[i].bucket), BUCKET_GET_TYPE(_this->head[i].bucket)); /* Err: by bucket */
         }
     }
     return NULL; /* Err: it's impossible to get here when `size` is gt 0 */
@@ -140,7 +141,7 @@ static hashmap_bnode_t* __hashmap_last(const hashmap_t* _this)
     for (; i >= te; --i) {
         if (!is_null(_this->head[i].bucket)) {
             tthis->pi_e = i;
-            return cbucket_priv->_last(BUCKET_GET_PTR(_this->head[i].bucket), BUCKET_GET_TYPE(_this->head[i].bucket)); /* Err: by bucket */
+            return _bucket_last(BUCKET_GET_PTR(_this->head[i].bucket), BUCKET_GET_TYPE(_this->head[i].bucket)); /* Err: by bucket */
         }
     }
     return NULL; /* Err: it's impossible to get here when `size` is gt 0 */
@@ -167,7 +168,7 @@ static hashmap_bnode_t* __hashmap_begin(const hashmap_t* _this)
     for (; i <= te; ++i) {
         if (!is_null(_this->head[i].bucket)) {
             tthis->pi_s = i;
-            return cbucket_priv->_first(BUCKET_GET_PTR(_this->head[i].bucket), BUCKET_GET_TYPE(_this->head[i].bucket)); /* Err: by bucket */
+            return _bucket_first(BUCKET_GET_PTR(_this->head[i].bucket), BUCKET_GET_TYPE(_this->head[i].bucket)); /* Err: by bucket */
         }
     }
     return NULL; /* Err: it's impossible to get here when `size` is gt 0 */
@@ -200,8 +201,8 @@ static hashmap_bnode_t* __hashmap_next(const hashmap_t* _this, const hashmap_bno
     if (is_null(tb))
         return NULL; /* Err: node doesn't belong to current hashmap or memory node->hash has been modified illegally */
 
-    tb_node = cbucket_priv->next(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), node);
-    if (is_null(tb_node) || cbucket_priv->end(BUCKET_GET_PTR(tb)) != tb_node)
+    tb_node = bucket_next(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), node);
+    if (is_null(tb_node) || __bucket_end(BUCKET_GET_PTR(tb)) != tb_node)
         return tb_node; /* Err: by bucket */
 
     ++i;
@@ -209,7 +210,7 @@ static hashmap_bnode_t* __hashmap_next(const hashmap_t* _this, const hashmap_bno
     for (; i <= te; ++i) {
         tb = _this->head[i].bucket;
         if (!is_null(tb))
-            return cbucket_priv->_first(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb)); /* Err: by bucket */
+            return _bucket_first(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb)); /* Err: by bucket */
     }
     return NULL; /* Err: it's impossible to get here when `size` is gt 0 and `node` is ne to `last` */
 }
@@ -242,8 +243,8 @@ static hashmap_bnode_t* __hashmap_prev(const hashmap_t* _this, const hashmap_bno
     if (is_null(tb))
         return NULL; /* Err: node doesn't belong to current hashmap or memory node->hash has been modified illegally */
 
-    tb_node = cbucket_priv->prev(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), node);
-    if (is_null(tb_node) || cbucket_priv->end(BUCKET_GET_PTR(tb)) != tb_node)
+    tb_node = bucket_prev(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), node);
+    if (is_null(tb_node) || __bucket_end(BUCKET_GET_PTR(tb)) != tb_node)
         return tb_node; /* Err: by bucket */
 
     --i;
@@ -251,7 +252,7 @@ static hashmap_bnode_t* __hashmap_prev(const hashmap_t* _this, const hashmap_bno
     for (; i >= te; --i) {
         tb = _this->head[i].bucket;
         if (!is_null(tb))
-            return cbucket_priv->_last(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb)); /* Err: by bucket */
+            return _bucket_last(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb)); /* Err: by bucket */
     }
     return NULL; /* Err: it's impossible to get here when `size` is gt 0 and `node` is ne to `first` */
 }
@@ -284,7 +285,7 @@ static hashmap_bnode_t* __hashmap_rbegin(const hashmap_t* _this)
     for (; i >= te; --i) {
         if (!is_null(_this->head[i].bucket)) {
             tthis->pi_e = i;
-            return cbucket_priv->_last(BUCKET_GET_PTR(_this->head[i].bucket), BUCKET_GET_TYPE(_this->head[i].bucket)); /* Err: by bucket */
+            return _bucket_last(BUCKET_GET_PTR(_this->head[i].bucket), BUCKET_GET_TYPE(_this->head[i].bucket)); /* Err: by bucket */
         }
     }
     return NULL; /* Err: it's impossible to get here when `size` is gt 0 */
@@ -317,8 +318,8 @@ static hashmap_bnode_t* __hashmap_rnext(const hashmap_t* _this, const hashmap_bn
     if (is_null(tb))
         return NULL; /* Err: node doesn't belong to current hashmap or memory node->hash has been modified illegally */
 
-    tb_node = cbucket_priv->rnext(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), node);
-    if (is_null(tb_node) || cbucket_priv->rend(BUCKET_GET_PTR(tb)) != tb_node)
+    tb_node = bucket_rnext(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), node);
+    if (is_null(tb_node) || __bucket_rend(BUCKET_GET_PTR(tb)) != tb_node)
         return tb_node; /* Err: by bucket */
 
     --i;
@@ -326,7 +327,7 @@ static hashmap_bnode_t* __hashmap_rnext(const hashmap_t* _this, const hashmap_bn
     for (; i >= te; --i) {
         tb = _this->head[i].bucket;
         if (!is_null(tb))
-            return cbucket_priv->_last(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb)); /* Err: by bucket */
+            return _bucket_last(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb)); /* Err: by bucket */
     }
     return NULL; /* Err: it's impossible to get here when `size` is gt 0 and `node` is ne to `first` */
 }
@@ -359,8 +360,8 @@ static hashmap_bnode_t* __hashmap_rprev(const hashmap_t* _this, const hashmap_bn
     if (is_null(tb))
         return NULL; /* Err: node doesn't belong to current hashmap or memory node->hash has been modified illegally */
 
-    tb_node = cbucket_priv->rprev(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), node);
-    if (is_null(tb_node) || cbucket_priv->rend(BUCKET_GET_PTR(tb)) != tb_node)
+    tb_node = bucket_rprev(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), node);
+    if (is_null(tb_node) || __bucket_rend(BUCKET_GET_PTR(tb)) != tb_node)
         return tb_node; /* Err: by bucket */
 
     ++i;
@@ -368,7 +369,7 @@ static hashmap_bnode_t* __hashmap_rprev(const hashmap_t* _this, const hashmap_bn
     for (; i <= te; ++i) {
         tb = _this->head[i].bucket;
         if (!is_null(tb))
-            return cbucket_priv->_first(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb)); /* Err: by bucket */
+            return _bucket_first(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb)); /* Err: by bucket */
     }
     return NULL; /* Err: it's impossible to get here when `size` is gt 0 and `node` is ne to `last` */
 }
@@ -407,7 +408,7 @@ static inline hashmap_bnode_t* hashmap_find(const hashmap_t* _this, hashmap_key_
     tb = _this->head[ti].bucket;
     if (is_null(tb))
         return __hashmap_end(_this);
-    return cbucket_priv->find_has_checked_valid(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb), key); /* Err: by bucket */
+    return bucket_find_has_checked_valid(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb), key); /* Err: by bucket */
 }
 
 static /* __always_inline */ inline bucket_t* hashmap_alloc_new_bucket(const hashmap_t* _this)
@@ -441,7 +442,7 @@ static /* __always_inline */ inline bucket_t* __hashmap_bucket_switch(hashmap_t*
     bucket_ds_t t_type = BUCKET_DS_RBTREE == BUCKET_GET_TYPE(bucket) ? BUCKET_DS_HLIST : BUCKET_DS_RBTREE;
 #endif /* BUCKET_USE_DL */
 
-    cbucket_priv->__switch(t_ptr, BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(bucket), t_type);
+    __bucket_switch(t_ptr, BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(bucket), t_type);
     BUCKET_SET_TYPE(t_ptr, t_type);
     return t_ptr;
 }
@@ -477,9 +478,9 @@ static bool __hashmap_rehash(hashmap_t* _this, hashmap_node_t* n, hashmap_size_t
 
         tb_o_ptr  = BUCKET_GET_PTR(tb_o);
         tb_o_type = BUCKET_GET_TYPE(tb_o);
-        for (tb_it = cbucket_priv->begin(tb_o_ptr, tb_o_type); cbucket_priv->end(tb_o_ptr) != tb_it; ) {
+        for (tb_it = bucket_begin(tb_o_ptr, tb_o_type); __bucket_end(tb_o_ptr) != tb_it; ) {
             if (0 == (tb_it->hash & __hashmap_capacity(_this))) {
-                tb_it = cbucket_priv->next(tb_o_ptr, tb_o_type, tb_it);
+                tb_it = bucket_next(tb_o_ptr, tb_o_type, tb_it);
                 continue;
             }
 
@@ -495,11 +496,11 @@ static bool __hashmap_rehash(hashmap_t* _this, hashmap_node_t* n, hashmap_size_t
             }
 
             tb_node = tb_it;
-            tb_it = cbucket_priv->pop(tb_o_ptr, tb_o_type, tb_node); /* No need to check */
+            tb_it = bucket_pop(tb_o_ptr, tb_o_type, tb_node); /* No need to check */
 
             tb_n_ptr  = BUCKET_GET_PTR(tb_n);
             tb_n_type = BUCKET_GET_TYPE(tb_n);
-            if (cbucket->size(tb_n_ptr) + 1 > TREEIFY_THRESHOLD 
+            if (_bucket_size(tb_n_ptr) + 1 > TREEIFY_THRESHOLD 
                 && n_capacity >= MIN_TREEIFY_CAPACITY 
                 && (BUCKET_DS_HLIST == tb_n_type || BUCKET_DS_DLIST == tb_n_type)) {
                 n[i_n].bucket = __hashmap_bucket_switch(_this, tb_n);
@@ -510,19 +511,19 @@ static bool __hashmap_rehash(hashmap_t* _this, hashmap_node_t* n, hashmap_size_t
 
             tpi_s = tpi_s < 0 ? i_n : i_n < tpi_s ? i_n : tpi_s;
             tpi_e = tpi_e < 0 ? i_n : i_n > tpi_e ? i_n : tpi_e;
-            cbucket_priv->insert_has_checked_same(tb_n_ptr, BUCKET_GET_OPS(_this), tb_n_type, tb_node); /* No need to check */
+            bucket_insert_has_checked_same(tb_n_ptr, BUCKET_GET_OPS(_this), tb_n_type, tb_node); /* No need to check */
 
             times_rehash++;
         }
 
-        if (cbucket->size(tb_o_ptr) <= 0) {
+        if (_bucket_size(tb_o_ptr) <= 0) {
             p_free(tb_o_ptr);
             _this->head[i_o].bucket = NULL;
             _this->bucket_count--;
             continue;
         }
 
-        if (cbucket->size(tb_o_ptr) < UNTREEIFY_THRESHOLD && BUCKET_DS_RBTREE == tb_o_type)
+        if (_bucket_size(tb_o_ptr) < UNTREEIFY_THRESHOLD && BUCKET_DS_RBTREE == tb_o_type)
             _this->head[i_o].bucket = __hashmap_bucket_switch(_this, tb_o);
 
         n[i_o].bucket = _this->head[i_o].bucket;
@@ -577,15 +578,15 @@ err:
 
         tb_o_ptr  = BUCKET_GET_PTR(tb_o);
         tb_o_type = BUCKET_GET_TYPE(tb_o);
-        while (cbucket->size(tb_o_ptr) > 0) {
-            tb_node = cbucket_priv->begin(tb_o_ptr, tb_o_type);
-            cbucket_priv->pop(tb_o_ptr, tb_o_type, tb_node); /* No need to check */
+        while (_bucket_size(tb_o_ptr) > 0) {
+            tb_node = bucket_begin(tb_o_ptr, tb_o_type);
+            bucket_pop(tb_o_ptr, tb_o_type, tb_node); /* No need to check */
 
             i_n = i_o - __hashmap_capacity(_this);
             tb_n = _this->head[i_n].bucket;
             tb_n_ptr  = BUCKET_GET_PTR(tb_n);
             tb_n_type = BUCKET_GET_TYPE(tb_n);
-            if (cbucket->size(tb_n_ptr) + 1 > TREEIFY_THRESHOLD 
+            if (_bucket_size(tb_n_ptr) + 1 > TREEIFY_THRESHOLD 
                 && __hashmap_capacity(_this) >= MIN_TREEIFY_CAPACITY 
                 && (BUCKET_DS_HLIST == tb_n_type || BUCKET_DS_DLIST == tb_n_type)) {
                 _this->head[i_n].bucket = __hashmap_bucket_switch(_this, tb_n);
@@ -594,7 +595,7 @@ err:
                 tb_n_type = BUCKET_GET_TYPE(tb_n);
             }
 
-            cbucket_priv->insert_has_checked_same(tb_n_ptr, BUCKET_GET_OPS(_this), tb_n_type, tb_node); /* No need to check */
+            bucket_insert_has_checked_same(tb_n_ptr, BUCKET_GET_OPS(_this), tb_n_type, tb_node); /* No need to check */
         }
 
         p_free(tb_o_ptr);
@@ -696,12 +697,12 @@ static hashmap_bnode_t* hashmap_insert(hashmap_t* _this, hashmap_key_t key, hash
         flag_alloc_bucket = true;
     }
 
-    tb_node = cbucket_priv->insert_has_checked_valid(BUCKET_GET_PTR(_this->head[ti].bucket), BUCKET_GET_OPS(_this), 
+    tb_node = bucket_insert_has_checked_valid(BUCKET_GET_PTR(_this->head[ti].bucket), BUCKET_GET_OPS(_this), 
                                                         BUCKET_GET_TYPE(_this->head[ti].bucket), thash, key, value);
     if (is_null(tb_node))
         goto err;
 
-    if (cbucket->size(BUCKET_GET_PTR(_this->head[ti].bucket)) > TREEIFY_THRESHOLD 
+    if (_bucket_size(BUCKET_GET_PTR(_this->head[ti].bucket)) > TREEIFY_THRESHOLD 
         && __hashmap_capacity(_this) >= MIN_TREEIFY_CAPACITY 
         && (BUCKET_DS_HLIST == BUCKET_GET_TYPE(_this->head[ti].bucket) 
             || BUCKET_DS_DLIST == BUCKET_GET_TYPE(_this->head[ti].bucket))) {
@@ -770,16 +771,16 @@ static hashmap_bnode_t* hashmap_insert_replace(hashmap_t* _this, hashmap_key_t k
         flag_alloc_bucket = true;
     }
 
-    tb_size = cbucket->size(BUCKET_GET_PTR(_this->head[ti].bucket));
-    tb_node = cbucket_priv->insert_replace_has_checked_valid(BUCKET_GET_PTR(_this->head[ti].bucket), BUCKET_GET_OPS(_this), 
+    tb_size = _bucket_size(BUCKET_GET_PTR(_this->head[ti].bucket));
+    tb_node = bucket_insert_replace_has_checked_valid(BUCKET_GET_PTR(_this->head[ti].bucket), BUCKET_GET_OPS(_this), 
                                                                 BUCKET_GET_TYPE(_this->head[ti].bucket), thash, key, value);
     if (is_null(tb_node))
         goto err;
 
-    if (tb_size == cbucket->size(BUCKET_GET_PTR(_this->head[ti].bucket)))
+    if (tb_size == _bucket_size(BUCKET_GET_PTR(_this->head[ti].bucket)))
         return tb_node;
 
-    if (cbucket->size(BUCKET_GET_PTR(_this->head[ti].bucket)) > TREEIFY_THRESHOLD 
+    if (_bucket_size(BUCKET_GET_PTR(_this->head[ti].bucket)) > TREEIFY_THRESHOLD 
         && __hashmap_capacity(_this) >= MIN_TREEIFY_CAPACITY 
         && (BUCKET_DS_HLIST == BUCKET_GET_TYPE(_this->head[ti].bucket) 
             || BUCKET_DS_DLIST == BUCKET_GET_TYPE(_this->head[ti].bucket))) {
@@ -830,11 +831,11 @@ static hashmap_bnode_t* hashmap_erase(hashmap_t* _this, hashmap_bnode_t* pos)
     if (is_null(tb))
         return NULL; /* Err: `pos` doesn't belong to current hashmap or memory `pos->hash` has been modified illegally */
 
-    ret = cbucket_priv->next(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), pos);
+    ret = bucket_next(BUCKET_GET_PTR(tb), BUCKET_GET_TYPE(tb), pos);
     if (is_null(ret))
         return NULL; /* Err: by bucket */
 
-    if (cbucket_priv->end(BUCKET_GET_PTR(tb)) == ret) {
+    if (__bucket_end(BUCKET_GET_PTR(tb)) == ret) {
         i  = ti + 1;
         te = _this->pi_e < 0 ? __hashmap_capacity(_this) - 1 : _this->pi_e;
         for (; i <= te; ++i) {
@@ -842,8 +843,8 @@ static hashmap_bnode_t* hashmap_erase(hashmap_t* _this, hashmap_bnode_t* pos)
             if (is_null(tb_for))
                 continue;
 
-            ret = cbucket_priv->begin(BUCKET_GET_PTR(tb_for), BUCKET_GET_TYPE(tb_for));
-            if (is_null(ret) || cbucket_priv->end(BUCKET_GET_PTR(tb_for)) == ret)
+            ret = bucket_begin(BUCKET_GET_PTR(tb_for), BUCKET_GET_TYPE(tb_for));
+            if (is_null(ret) || __bucket_end(BUCKET_GET_PTR(tb_for)) == ret)
                 return NULL; /* Err: by bucket */
 
             break;
@@ -854,20 +855,20 @@ static hashmap_bnode_t* hashmap_erase(hashmap_t* _this, hashmap_bnode_t* pos)
        2. The `pos` belongs to this bucket, memory issues are detected.
        3. The `pos` doesn't belong to this bucket, erase normally.
        4. The `pos` doesn't belong to this bucket, memory issues are detected. */
-    tb_node = cbucket_priv->erase(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb), pos);
+    tb_node = bucket_erase(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb), pos);
     if (is_null(tb_node))
         return NULL; /* Err: by bucket, but the erasing operation was not carried out */
 
     _this->size--;
 
-    if (cbucket->size(BUCKET_GET_PTR(tb)) < UNTREEIFY_THRESHOLD && BUCKET_DS_RBTREE == BUCKET_GET_TYPE(tb))
+    if (_bucket_size(BUCKET_GET_PTR(tb)) < UNTREEIFY_THRESHOLD && BUCKET_DS_RBTREE == BUCKET_GET_TYPE(tb))
         _this->head[ti].bucket = __hashmap_bucket_switch(_this, _this->head[ti].bucket);
 
-    if (cbucket->size(BUCKET_GET_PTR(tb)) <= 0) {
+    if (_bucket_size(BUCKET_GET_PTR(tb)) <= 0) {
         /* For performance considerations, the `bucket->erase` is unable to check whether the `pos` belongs to itself.
            In such a situation, the `bucket->size` and `hashmap->size` have already been affected, we can only accept
            the mistake and continue, `bucket->clear` and release bucket. */
-        cbucket->clear(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb));
+        bucket_clear(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb));
         BUCKET_CLEAR_TYPE(_this->head[ti].bucket);
         p_free(_this->head[ti].bucket);
         _this->bucket_count--;
@@ -903,16 +904,16 @@ static inline hashmap_size_t hashmap_remove(hashmap_t* _this, hashmap_key_t key)
     if (is_null(tb))
         return 0;
 
-    ret = cbucket_priv->remove_has_checked_valid(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb), key);
+    ret = bucket_remove_has_checked_valid(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb), key);
     if (ret > 0)
         _this->size--; /* ret is at most `1` */
 
-    if (cbucket->size(BUCKET_GET_PTR(tb)) < UNTREEIFY_THRESHOLD && BUCKET_DS_RBTREE == BUCKET_GET_TYPE(tb))
+    if (_bucket_size(BUCKET_GET_PTR(tb)) < UNTREEIFY_THRESHOLD && BUCKET_DS_RBTREE == BUCKET_GET_TYPE(tb))
         _this->head[ti].bucket = __hashmap_bucket_switch(_this, _this->head[ti].bucket);
 
-    if (cbucket->size(BUCKET_GET_PTR(tb)) <= 0) {
+    if (_bucket_size(BUCKET_GET_PTR(tb)) <= 0) {
         /* Here, `bucket->clear` is used to prevent the problems caused by `erase`(`pos` doesn't belong to bucket) */
-        cbucket->clear(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb));
+        bucket_clear(BUCKET_GET_PTR(tb), BUCKET_GET_OPS(_this), BUCKET_GET_TYPE(tb));
         BUCKET_CLEAR_TYPE(_this->head[ti].bucket);
         p_free(_this->head[ti].bucket);
         _this->bucket_count--;
@@ -943,7 +944,7 @@ static hashmap_size_t hashmap_clear(hashmap_t* _this)
 
         tb_ptr  = BUCKET_GET_PTR(_this->head[i].bucket);
         tb_type = BUCKET_GET_TYPE(_this->head[i].bucket);
-        _this->size -= cbucket->clear(tb_ptr, BUCKET_GET_OPS(_this), tb_type);
+        _this->size -= bucket_clear(tb_ptr, BUCKET_GET_OPS(_this), tb_type);
 
         p_free(tb_ptr);
         _this->head[i].bucket = NULL;
@@ -1075,18 +1076,18 @@ end:
     hashmap->pi_e = -1;
 }
 
-typedef hashmap_iterator_t* (*fp_end)(const hashmap_t* _this);
-typedef hashmap_iterator_t* (*fp_begin)(const hashmap_t* _this);
-typedef hashmap_iterator_t* (*fp_next)(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-typedef hashmap_iterator_t* (*fp_prev)(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-typedef hashmap_r_iterator_t* (*fp_rend)(const hashmap_t* _this);
-typedef hashmap_r_iterator_t* (*fp_rbegin)(const hashmap_t* _this);
-typedef hashmap_r_iterator_t* (*fp_rnext)(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-typedef hashmap_r_iterator_t* (*fp_rprev)(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-typedef hashmap_iterator_t* (*fp_find)(const hashmap_t* _this, hashmap_key_t key);
-typedef hashmap_iterator_t* (*fp_insert)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
-typedef hashmap_iterator_t* (*fp_insert_replace)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
-typedef hashmap_iterator_t* (*fp_erase)(hashmap_t* _this, hashmap_iterator_t* iterator);
+typedef hashmap_iterator_t* (*hm_fp_end)(const hashmap_t* _this);
+typedef hashmap_iterator_t* (*hm_fp_begin)(const hashmap_t* _this);
+typedef hashmap_iterator_t* (*hm_fp_next)(const hashmap_t* _this, const hashmap_iterator_t* iterator);
+typedef hashmap_iterator_t* (*hm_fp_prev)(const hashmap_t* _this, const hashmap_iterator_t* iterator);
+typedef hashmap_r_iterator_t* (*hm_fp_rend)(const hashmap_t* _this);
+typedef hashmap_r_iterator_t* (*hm_fp_rbegin)(const hashmap_t* _this);
+typedef hashmap_r_iterator_t* (*hm_fp_rnext)(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
+typedef hashmap_r_iterator_t* (*hm_fp_rprev)(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
+typedef hashmap_iterator_t* (*hm_fp_find)(const hashmap_t* _this, hashmap_key_t key);
+typedef hashmap_iterator_t* (*hm_fp_insert)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
+typedef hashmap_iterator_t* (*hm_fp_insert_replace)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
+typedef hashmap_iterator_t* (*hm_fp_erase)(hashmap_t* _this, hashmap_iterator_t* iterator);
 
 /* __always_inline */ inline const class_hashmap_t* class_hashmap_ins(void)
 {
@@ -1095,18 +1096,18 @@ typedef hashmap_iterator_t* (*fp_erase)(hashmap_t* _this, hashmap_iterator_t* it
         .capacity       = _hashmap_capacity,
         .bucket_count   = _hashmap_bucket_count,
         .count          = hashmap_count,
-        .end            = (fp_end)__hashmap_end,
-        .begin          = (fp_begin)_hashmap_begin,
-        .next           = (fp_next)_hashmap_next,
-        .prev           = (fp_prev)_hashmap_prev,
-        .rend           = (fp_rend)__hashmap_rend,
-        .rbegin         = (fp_rbegin)_hashmap_rbegin,
-        .rnext          = (fp_rnext)_hashmap_rnext,
-        .rprev          = (fp_rprev)_hashmap_rprev,
-        .find           = (fp_find)hashmap_find,
-        .insert         = (fp_insert)hashmap_insert,
-        .insert_replace = (fp_insert_replace)hashmap_insert_replace,
-        .erase          = (fp_erase)hashmap_erase,
+        .end            = (hm_fp_end)__hashmap_end,
+        .begin          = (hm_fp_begin)_hashmap_begin,
+        .next           = (hm_fp_next)_hashmap_next,
+        .prev           = (hm_fp_prev)_hashmap_prev,
+        .rend           = (hm_fp_rend)__hashmap_rend,
+        .rbegin         = (hm_fp_rbegin)_hashmap_rbegin,
+        .rnext          = (hm_fp_rnext)_hashmap_rnext,
+        .rprev          = (hm_fp_rprev)_hashmap_rprev,
+        .find           = (hm_fp_find)hashmap_find,
+        .insert         = (hm_fp_insert)hashmap_insert,
+        .insert_replace = (hm_fp_insert_replace)hashmap_insert_replace,
+        .erase          = (hm_fp_erase)hashmap_erase,
         .remove         = hashmap_remove,
         .clear          = hashmap_clear,
     };

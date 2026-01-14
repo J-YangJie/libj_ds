@@ -26,58 +26,58 @@
 
 #define set_entry(ptr) rb_entry((ptr), struct set_node, node)
 
-static __always_inline set_node_t* set_find(const set_t* _this, set_value_t value);
-static __always_inline set_node_t* __set_end(const set_t* _this);
+static /* __always_inline */ inline set_node_t* set_find(const set_t* _this, set_value_t value);
+static /* __always_inline */ inline set_node_t* __set_end(const set_t* _this);
 
-static __always_inline set_size_t __set_size(const set_t* _this)
+static /* __always_inline */ inline set_size_t __set_size(const set_t* _this)
 {
     return _this->size;
 }
 
-static __always_inline set_size_t _set_size(const set_t* _this)
+static /* __always_inline */ inline set_size_t _set_size(const set_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __set_size(_this);
 }
 
-static __always_inline set_count_t set_count(const set_t* _this, set_value_t value)
+static /* __always_inline */ inline set_count_t set_count(const set_t* _this, set_value_t value)
 {
     set_node_t* t = set_find(_this, value);
     return is_null(t) ? -1 : (__set_end(_this) == t ? 0 : 1);
 }
 
-static __always_inline set_node_t* __set_first(const set_t* _this)
+static /* __always_inline */ inline set_node_t* __set_first(const set_t* _this)
 {
     struct rb_node* t = rb_first(&_this->root);
     return is_null(t) ? NULL : set_entry(t);
 }
 
-static __always_inline set_node_t* __set_last(const set_t* _this)
+static /* __always_inline */ inline set_node_t* __set_last(const set_t* _this)
 {
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : set_entry(t);
 }
 
-static __always_inline set_node_t* __set_end(const set_t* _this)
+static /* __always_inline */ inline set_node_t* __set_end(const set_t* _this)
 {
     return (set_node_t*)iterator_end();
 }
 
-static __always_inline set_node_t* __set_begin(const set_t* _this)
+static /* __always_inline */ inline set_node_t* __set_begin(const set_t* _this)
 {
     set_node_t* t = __set_first(_this);
     return is_null(t) ? __set_end(_this) : t;
 }
 
-static __always_inline set_node_t* _set_begin(const set_t* _this)
+static /* __always_inline */ inline set_node_t* _set_begin(const set_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __set_begin(_this);
 }
 
-static __always_inline set_node_t* __set_next(const set_t* _this, const set_node_t* node)
+static /* __always_inline */ inline set_node_t* __set_next(const set_t* _this, const set_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -96,14 +96,14 @@ static __always_inline set_node_t* __set_next(const set_t* _this, const set_node
     return is_null(t) ? __set_end(_this) : set_entry(t);
 }
 
-static __always_inline set_node_t* _set_next(const set_t* _this, const set_node_t* node)
+static /* __always_inline */ inline set_node_t* _set_next(const set_t* _this, const set_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __set_next(_this, node);
 }
 
-static __always_inline set_node_t* __set_prev(const set_t* _this, const set_node_t* node)
+static /* __always_inline */ inline set_node_t* __set_prev(const set_t* _this, const set_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -123,32 +123,32 @@ static __always_inline set_node_t* __set_prev(const set_t* _this, const set_node
     return is_null(t) ? __set_end(_this) : set_entry(t);
 }
 
-static __always_inline set_node_t* _set_prev(const set_t* _this, const set_node_t* node)
+static /* __always_inline */ inline set_node_t* _set_prev(const set_t* _this, const set_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __set_prev(_this, node);
 }
 
-static __always_inline set_node_t* __set_rend(const set_t* _this)
+static /* __always_inline */ inline set_node_t* __set_rend(const set_t* _this)
 {
     return (set_node_t*)iterator_rend();
 }
 
-static __always_inline set_node_t* __set_rbegin(const set_t* _this)
+static /* __always_inline */ inline set_node_t* __set_rbegin(const set_t* _this)
 {
     set_node_t* t = __set_last(_this);
     return is_null(t) ? __set_rend(_this) : t;
 }
 
-static __always_inline set_node_t* _set_rbegin(const set_t* _this)
+static /* __always_inline */ inline set_node_t* _set_rbegin(const set_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __set_rbegin(_this);
 }
 
-static __always_inline set_node_t* __set_rnext(const set_t* _this, const set_node_t* node)
+static /* __always_inline */ inline set_node_t* __set_rnext(const set_t* _this, const set_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -167,14 +167,14 @@ static __always_inline set_node_t* __set_rnext(const set_t* _this, const set_nod
     return is_null(t) ? __set_rend(_this) : set_entry(t);
 }
 
-static __always_inline set_node_t* _set_rnext(const set_t* _this, const set_node_t* node)
+static /* __always_inline */ inline set_node_t* _set_rnext(const set_t* _this, const set_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __set_rnext(_this, node);
 }
 
-static __always_inline set_node_t* __set_rprev(const set_t* _this, const set_node_t* node)
+static /* __always_inline */ inline set_node_t* __set_rprev(const set_t* _this, const set_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -194,14 +194,14 @@ static __always_inline set_node_t* __set_rprev(const set_t* _this, const set_nod
     return is_null(t) ? __set_rend(_this) : set_entry(t);
 }
 
-static __always_inline set_node_t* _set_rprev(const set_t* _this, const set_node_t* node)
+static /* __always_inline */ inline set_node_t* _set_rprev(const set_t* _this, const set_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __set_rprev(_this, node);
 }
 
-static inline set_node_t* __set_find(const set_t* _this, set_value_t value)
+static set_node_t* __set_find(const set_t* _this, set_value_t value)
 {
     struct rb_node* n = _this->root.rb_node;
     set_node_t* t = NULL;
@@ -233,7 +233,7 @@ static inline set_node_t* __set_find(const set_t* _this, set_value_t value)
     return NULL;
 }
 
-static __always_inline set_node_t* set_find(const set_t* _this, set_value_t value)
+static /* __always_inline */ inline set_node_t* set_find(const set_t* _this, set_value_t value)
 {
     set_node_t* t = NULL;
 
@@ -247,7 +247,7 @@ static __always_inline set_node_t* set_find(const set_t* _this, set_value_t valu
     return is_null(t) ? __set_end(_this) : t;
 }
 
-static inline set_node_t* __set_lower_bound(const set_t* _this, set_value_t value)
+static set_node_t* __set_lower_bound(const set_t* _this, set_value_t value)
 {
     struct rb_node* n = _this->root.rb_node;
     set_node_t* t = NULL;
@@ -284,7 +284,7 @@ static inline set_node_t* __set_lower_bound(const set_t* _this, set_value_t valu
     return ret;
 }
 
-static __always_inline set_node_t* set_lower_bound(const set_t* _this, set_value_t value)
+static /* __always_inline */ inline set_node_t* set_lower_bound(const set_t* _this, set_value_t value)
 {
     set_node_t* t = NULL;
 
@@ -298,7 +298,7 @@ static __always_inline set_node_t* set_lower_bound(const set_t* _this, set_value
     return is_null(t) ? __set_end(_this) : t;
 }
 
-static inline set_node_t* __set_upper_bound(const set_t* _this, set_value_t value)
+static set_node_t* __set_upper_bound(const set_t* _this, set_value_t value)
 {
     struct rb_node* n = _this->root.rb_node;
     set_node_t* t = NULL;
@@ -337,7 +337,7 @@ static inline set_node_t* __set_upper_bound(const set_t* _this, set_value_t valu
     return ret;
 }
 
-static __always_inline set_node_t* set_upper_bound(const set_t* _this, set_value_t value)
+static /* __always_inline */ inline set_node_t* set_upper_bound(const set_t* _this, set_value_t value)
 {
     set_node_t* t = NULL;
 
@@ -351,7 +351,7 @@ static __always_inline set_node_t* set_upper_bound(const set_t* _this, set_value
     return is_null(t) ? __set_end(_this) : t;
 }
 
-static inline set_node_t* __set_insert(set_t* _this, set_node_t* node)
+static set_node_t* __set_insert(set_t* _this, set_node_t* node)
 {
     struct rb_node** n = &_this->root.rb_node;
     struct rb_node* parent = NULL;
@@ -424,7 +424,7 @@ err:
     return NULL;
 }
 
-static __always_inline set_node_t* __set_erase(set_t* _this, set_node_t* pos)
+static /* __always_inline */ inline set_node_t* __set_erase(set_t* _this, set_node_t* pos)
 {
     rb_erase(&pos->node, &_this->root);
     _this->size--;
@@ -481,7 +481,7 @@ static inline set_size_t set_remove(set_t* _this, set_value_t value)
     return 1;
 }
 
-static inline set_size_t set_remove_if(set_t* _this, remove_if_condition_v cond)
+static set_size_t set_remove_if(set_t* _this, remove_if_condition_v cond)
 {
     set_size_t ret = 0;
     set_node_t* t = NULL;
@@ -502,7 +502,7 @@ static inline set_size_t set_remove_if(set_t* _this, remove_if_condition_v cond)
     return ret;
 }
 
-static inline set_size_t set_clear(set_t* _this)
+static set_size_t set_clear(set_t* _this)
 {
     set_size_t ret = 0;
     set_node_t* t = NULL;
@@ -518,12 +518,12 @@ static inline set_size_t set_clear(set_t* _this)
     return ret;
 }
 
-__always_inline void __set_init(set_t* set)
+/* __always_inline */ inline void __set_init(set_t* set)
 {
     set->root = RB_ROOT;
 }
 
-__always_inline void __set_deinit(set_t* set)
+/* __always_inline */ inline void __set_deinit(set_t* set)
 {
     set_clear(set);
 

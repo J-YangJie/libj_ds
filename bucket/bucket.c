@@ -33,12 +33,12 @@
 #define bucket_hl_entry(ptr) hlist_entry((ptr), struct bucket_node, ds_node.hl_node)
 
 /* Size */
-static __always_inline bucket_size_t __bucket_size(const bucket_t* _this)
+static /* __always_inline */ inline bucket_size_t __bucket_size(const bucket_t* _this)
 {
     return _this->size;
 }
 
-static __always_inline bucket_size_t _bucket_size(const bucket_t* _this)
+static /* __always_inline */ inline bucket_size_t _bucket_size(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
@@ -48,12 +48,12 @@ static __always_inline bucket_size_t _bucket_size(const bucket_t* _this)
 
 
 /* End */
-static __always_inline bucket_node_t* __bucket_end(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_end(const bucket_t* _this)
 {
     return (bucket_node_t*)iterator_end();
 }
 
-static __always_inline bucket_node_t* __bucket_rend(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_rend(const bucket_t* _this)
 {
     return (bucket_node_t*)iterator_rend();
 }
@@ -61,32 +61,32 @@ static __always_inline bucket_node_t* __bucket_rend(const bucket_t* _this)
 
 
 /* iterator */
-static __always_inline bucket_node_t* __bucket_rb_first(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_first(const bucket_t* _this)
 {
     struct rb_node* t = rb_first(&_this->ds.rb);
     return is_null(t) ? NULL : bucket_rb_entry(t);
 }
 
-static __always_inline bucket_node_t* __bucket_rb_last(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_last(const bucket_t* _this)
 {
     struct rb_node* t = rb_last(&_this->ds.rb);
     return is_null(t) ? NULL : bucket_rb_entry(t);
 }
 
-static __always_inline bucket_node_t* __bucket_rb_begin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_begin(const bucket_t* _this)
 {
     bucket_node_t* t = __bucket_rb_first(_this);
     return is_null(t) ? __bucket_end(_this) : t;
 }
 
-static __always_inline bucket_node_t* _bucket_rb_begin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* _bucket_rb_begin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_rb_begin(_this);
 }
 
-static __always_inline bucket_node_t* __bucket_rb_next(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_next(const bucket_t* _this, const bucket_node_t* node)
 {
     struct rb_node* t;
 
@@ -105,14 +105,14 @@ static __always_inline bucket_node_t* __bucket_rb_next(const bucket_t* _this, co
     return is_null(t) ? __bucket_end(_this) : bucket_rb_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_rb_next(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_rb_next(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_rb_next(_this, node);
 }
 
-static __always_inline bucket_node_t* __bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct rb_node* t;
 
@@ -132,27 +132,27 @@ static __always_inline bucket_node_t* __bucket_rb_prev(const bucket_t* _this, co
     return is_null(t) ? __bucket_end(_this) : bucket_rb_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_rb_prev(_this, node);
 }
 
-static __always_inline bucket_node_t* __bucket_rb_rbegin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_rbegin(const bucket_t* _this)
 {
     bucket_node_t* t = __bucket_rb_last(_this);
     return is_null(t) ? __bucket_rend(_this) : t;
 }
 
-static __always_inline bucket_node_t* _bucket_rb_rbegin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* _bucket_rb_rbegin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_rb_rbegin(_this);
 }
 
-static __always_inline bucket_node_t* __bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     struct rb_node* t;
 
@@ -171,14 +171,14 @@ static __always_inline bucket_node_t* __bucket_rb_rnext(const bucket_t* _this, c
     return is_null(t) ? __bucket_rend(_this) : bucket_rb_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_rb_rnext(_this, node);
 }
 
-static __always_inline bucket_node_t* __bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct rb_node* t;
 
@@ -198,7 +198,7 @@ static __always_inline bucket_node_t* __bucket_rb_rprev(const bucket_t* _this, c
     return is_null(t) ? __bucket_rend(_this) : bucket_rb_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
@@ -207,21 +207,21 @@ static __always_inline bucket_node_t* _bucket_rb_rprev(const bucket_t* _this, co
 
 
 #ifdef BUCKET_USE_DL
-static __always_inline bucket_node_t* __bucket_dl_first(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_first(const bucket_t* _this)
 {
     if (is_null(_this->ds.dl.next) || list_empty(&_this->ds.dl))
         return NULL; /* Err: the return value includes the error case where `next` is equal to `NULL` */
     return bucket_dl_entry(_this->ds.dl.next);
 }
 
-static __always_inline bucket_node_t* __bucket_dl_last(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_last(const bucket_t* _this)
 {
     if (is_null(_this->ds.dl.prev) || list_empty(&_this->ds.dl))
         return NULL; /* Err: the return value includes the error case where `prev` is equal to `NULL` */
     return bucket_dl_entry(_this->ds.dl.prev);
 }
 
-static __always_inline bucket_node_t* __bucket_dl_begin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_begin(const bucket_t* _this)
 {
     struct list_head* t = _this->ds.dl.next;
 
@@ -233,14 +233,14 @@ static __always_inline bucket_node_t* __bucket_dl_begin(const bucket_t* _this)
     return bucket_dl_entry(t); /* Be careful about the situation when `t` is `NULL` */
 }
 
-static __always_inline bucket_node_t* _bucket_dl_begin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* _bucket_dl_begin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_dl_begin(_this);
 }
 
-static __always_inline bucket_node_t* __bucket_dl_next(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_next(const bucket_t* _this, const bucket_node_t* node)
 {
     struct list_head* t;
 
@@ -259,14 +259,14 @@ static __always_inline bucket_node_t* __bucket_dl_next(const bucket_t* _this, co
     return bucket_dl_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_dl_next(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_dl_next(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_dl_next(_this, node);
 }
 
-static __always_inline bucket_node_t* __bucket_dl_prev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct list_head* t;
 
@@ -286,14 +286,14 @@ static __always_inline bucket_node_t* __bucket_dl_prev(const bucket_t* _this, co
     return bucket_dl_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_dl_prev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_dl_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_dl_prev(_this, node);
 }
 
-static __always_inline bucket_node_t* __bucket_dl_rbegin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_rbegin(const bucket_t* _this)
 {
     struct list_head* t = _this->ds.dl.prev;
 
@@ -305,14 +305,14 @@ static __always_inline bucket_node_t* __bucket_dl_rbegin(const bucket_t* _this)
     return bucket_dl_entry(t); /* Be careful about the situation when `t` is `NULL` */
 }
 
-static __always_inline bucket_node_t* _bucket_dl_rbegin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* _bucket_dl_rbegin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_dl_rbegin(_this);
 }
 
-static __always_inline bucket_node_t* __bucket_dl_rnext(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     struct list_head* t;
 
@@ -331,14 +331,14 @@ static __always_inline bucket_node_t* __bucket_dl_rnext(const bucket_t* _this, c
     return bucket_dl_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_dl_rnext(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_dl_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_dl_rnext(_this, node);
 }
 
-static __always_inline bucket_node_t* __bucket_dl_rprev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct list_head* t;
 
@@ -358,7 +358,7 @@ static __always_inline bucket_node_t* __bucket_dl_rprev(const bucket_t* _this, c
     return bucket_dl_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_dl_rprev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_dl_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
@@ -367,7 +367,7 @@ static __always_inline bucket_node_t* _bucket_dl_rprev(const bucket_t* _this, co
 #endif /* BUCKET_USE_DL */
 
 
-static __always_inline bucket_node_t* __bucket_hl_first(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_hl_first(const bucket_t* _this)
 {
     struct hlist_node* t = _this->ds.hl.first;
 
@@ -376,7 +376,7 @@ static __always_inline bucket_node_t* __bucket_hl_first(const bucket_t* _this)
     return bucket_hl_entry(t);
 }
 
-static inline bucket_node_t* __bucket_hl_last(const bucket_t* _this)
+static bucket_node_t* __bucket_hl_last(const bucket_t* _this)
 {
     struct hlist_node* t = _this->ds.hl.first;
 
@@ -388,7 +388,7 @@ static inline bucket_node_t* __bucket_hl_last(const bucket_t* _this)
     return bucket_hl_entry(t);
 }
 
-static __always_inline bucket_node_t* __bucket_hl_begin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* __bucket_hl_begin(const bucket_t* _this)
 {
     struct hlist_node* t = _this->ds.hl.first;
 
@@ -397,14 +397,14 @@ static __always_inline bucket_node_t* __bucket_hl_begin(const bucket_t* _this)
     return bucket_hl_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_hl_begin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* _bucket_hl_begin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_hl_begin(_this);
 }
 
-static __always_inline bucket_node_t* __bucket_hl_next(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_hl_next(const bucket_t* _this, const bucket_node_t* node)
 {
     struct hlist_node* t;
 
@@ -418,14 +418,14 @@ static __always_inline bucket_node_t* __bucket_hl_next(const bucket_t* _this, co
     return is_null(t) ? __bucket_end(_this) : bucket_hl_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_hl_next(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_hl_next(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_hl_next(_this, node);
 }
 
-static __always_inline bucket_node_t* __bucket_hl_prev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_hl_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct hlist_node** t;
 
@@ -445,14 +445,14 @@ static __always_inline bucket_node_t* __bucket_hl_prev(const bucket_t* _this, co
     return bucket_hl_entry(((struct hlist_node*)t));
 }
 
-static __always_inline bucket_node_t* _bucket_hl_prev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_hl_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_hl_prev(_this, node);
 }
 
-static inline bucket_node_t* __bucket_hl_rbegin(const bucket_t* _this)
+static bucket_node_t* __bucket_hl_rbegin(const bucket_t* _this)
 {
     struct hlist_node* t = _this->ds.hl.first;
 
@@ -464,14 +464,14 @@ static inline bucket_node_t* __bucket_hl_rbegin(const bucket_t* _this)
     return bucket_hl_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_hl_rbegin(const bucket_t* _this)
+static /* __always_inline */ inline bucket_node_t* _bucket_hl_rbegin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_hl_rbegin(_this);
 }
 
-static __always_inline bucket_node_t* __bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     struct hlist_node** t;
 
@@ -490,14 +490,14 @@ static __always_inline bucket_node_t* __bucket_hl_rnext(const bucket_t* _this, c
     return bucket_hl_entry(((struct hlist_node*)t));
 }
 
-static __always_inline bucket_node_t* _bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_hl_rnext(_this, node);
 }
 
-static __always_inline bucket_node_t* __bucket_hl_rprev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_hl_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct hlist_node* t;
 
@@ -512,7 +512,7 @@ static __always_inline bucket_node_t* __bucket_hl_rprev(const bucket_t* _this, c
     return is_null(t) ? __bucket_rend(_this) : bucket_hl_entry(t);
 }
 
-static __always_inline bucket_node_t* _bucket_hl_rprev(const bucket_t* _this, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* _bucket_hl_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
@@ -520,7 +520,7 @@ static __always_inline bucket_node_t* _bucket_hl_rprev(const bucket_t* _this, co
 }
 
 
-static __always_inline bucket_node_t* _bucket_first(const bucket_t* _this, bucket_ds_t type)
+static /* __always_inline */ inline bucket_node_t* _bucket_first(const bucket_t* _this, bucket_ds_t type)
 {
     if (unlikely(is_null(_this)))
         return NULL;
@@ -540,7 +540,7 @@ static __always_inline bucket_node_t* _bucket_first(const bucket_t* _this, bucke
     }
 }
 
-static __always_inline bucket_node_t* _bucket_last(const bucket_t* _this, bucket_ds_t type)
+static /* __always_inline */ inline bucket_node_t* _bucket_last(const bucket_t* _this, bucket_ds_t type)
 {
     if (unlikely(is_null(_this)))
         return NULL;
@@ -560,7 +560,7 @@ static __always_inline bucket_node_t* _bucket_last(const bucket_t* _this, bucket
     }
 }
 
-static __always_inline bucket_node_t* bucket_begin(const bucket_t* _this, bucket_ds_t type)
+static /* __always_inline */ inline bucket_node_t* bucket_begin(const bucket_t* _this, bucket_ds_t type)
 {
     switch (type)
     {
@@ -577,7 +577,7 @@ static __always_inline bucket_node_t* bucket_begin(const bucket_t* _this, bucket
     }
 }
 
-static __always_inline bucket_node_t* bucket_next(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* bucket_next(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
     switch (type)
     {
@@ -594,7 +594,7 @@ static __always_inline bucket_node_t* bucket_next(const bucket_t* _this, bucket_
     }
 }
 
-static __always_inline bucket_node_t* bucket_prev(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* bucket_prev(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
     switch (type)
     {
@@ -611,7 +611,7 @@ static __always_inline bucket_node_t* bucket_prev(const bucket_t* _this, bucket_
     }
 }
 
-static __always_inline bucket_node_t* bucket_rbegin(const bucket_t* _this, bucket_ds_t type)
+static /* __always_inline */ inline bucket_node_t* bucket_rbegin(const bucket_t* _this, bucket_ds_t type)
 {
     switch (type)
     {
@@ -628,7 +628,7 @@ static __always_inline bucket_node_t* bucket_rbegin(const bucket_t* _this, bucke
     }
 }
 
-static __always_inline bucket_node_t* bucket_rnext(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* bucket_rnext(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
     switch (type)
     {
@@ -645,7 +645,7 @@ static __always_inline bucket_node_t* bucket_rnext(const bucket_t* _this, bucket
     }
 }
 
-static __always_inline bucket_node_t* bucket_rprev(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* bucket_rprev(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
     switch (type)
     {
@@ -665,7 +665,7 @@ static __always_inline bucket_node_t* bucket_rprev(const bucket_t* _this, bucket
 
 
 /* Find */
-static inline bucket_node_t* __bucket_rb_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
+static bucket_node_t* __bucket_rb_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     struct rb_node* n = _this->ds.rb.rb_node;
     bucket_node_t* t = NULL;
@@ -698,7 +698,7 @@ static inline bucket_node_t* __bucket_rb_find(const bucket_t* _this, const class
 }
 
 #ifdef BUCKET_USE_DL
-static inline bucket_node_t* __bucket_dl_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
+static bucket_node_t* __bucket_dl_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     bucket_node_t* t = NULL;
 
@@ -717,7 +717,7 @@ static inline bucket_node_t* __bucket_dl_find(const bucket_t* _this, const class
 }
 #endif /* BUCKET_USE_DL */
 
-static inline bucket_node_t* __bucket_hl_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
+static bucket_node_t* __bucket_hl_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     bucket_node_t* t = NULL;
     struct hlist_node* thl = NULL;
@@ -736,7 +736,7 @@ static inline bucket_node_t* __bucket_hl_find(const bucket_t* _this, const class
     return NULL;
 }
 
-static __always_inline bucket_node_t* bucket_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
+static /* __always_inline */ inline bucket_node_t* bucket_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
 {
     bucket_node_t* t = NULL;
 
@@ -765,7 +765,7 @@ static __always_inline bucket_node_t* bucket_find(const bucket_t* _this, const c
     return is_null(t) ? __bucket_end(_this) : t;
 }
 
-static __always_inline bucket_node_t* bucket_find_has_checked_valid(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
+static /* __always_inline */ inline bucket_node_t* bucket_find_has_checked_valid(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
 {
     bucket_node_t* t = NULL;
 
@@ -794,7 +794,7 @@ static __always_inline bucket_node_t* bucket_find_has_checked_valid(const bucket
 
 
 /* Add */
-static inline bucket_node_t* __bucket_rb_insert(bucket_t* _this, const class_bucket_ops_t* ops, bucket_node_t* node)
+static bucket_node_t* __bucket_rb_insert(bucket_t* _this, const class_bucket_ops_t* ops, bucket_node_t* node)
 {
     struct rb_node** n = &_this->ds.rb.rb_node;
     struct rb_node* parent = NULL;
@@ -833,7 +833,7 @@ static inline bucket_node_t* __bucket_rb_insert(bucket_t* _this, const class_buc
 }
 
 #ifdef BUCKET_USE_DL
-static __always_inline bucket_node_t* __bucket_dl_push_front(bucket_t* _this, bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_dl_push_front(bucket_t* _this, bucket_node_t* node)
 {
     list_add(&node->ds_node.dl_node, &_this->ds.dl);
     _this->size++;
@@ -841,14 +841,14 @@ static __always_inline bucket_node_t* __bucket_dl_push_front(bucket_t* _this, bu
 }
 #endif /* BUCKET_USE_DL */
 
-static __always_inline bucket_node_t* __bucket_hl_push_front(bucket_t* _this, bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* __bucket_hl_push_front(bucket_t* _this, bucket_node_t* node)
 {
     hlist_add_head(&node->ds_node.hl_node, &_this->ds.hl);
     _this->size++;
     return node;
 }
 
-static __always_inline bucket_node_t* bucket_insert_has_checked_same(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* node)
+static /* __always_inline */ inline bucket_node_t* bucket_insert_has_checked_same(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
@@ -1176,7 +1176,7 @@ err:
 
 
 /* Remove */
-static __always_inline bucket_node_t* __bucket_rb_erase(bucket_t* _this, bucket_node_t* pos)
+static /* __always_inline */ inline bucket_node_t* __bucket_rb_erase(bucket_t* _this, bucket_node_t* pos)
 {
     rb_erase(&pos->ds_node.rb_node, &_this->ds.rb);
     rb_init_node(&pos->ds_node.rb_node);
@@ -1214,7 +1214,7 @@ static inline bucket_node_t* bucket_rb_erase(bucket_t* _this, const class_bucket
 }
 
 #ifdef BUCKET_USE_DL
-static __always_inline void __bucket_dl_erase(bucket_t* _this, bucket_node_t* pos)
+static /* __always_inline */ inline void __bucket_dl_erase(bucket_t* _this, bucket_node_t* pos)
 {
     list_del_init(&pos->ds_node.dl_node);
     _this->size--;
@@ -1250,7 +1250,7 @@ static inline bucket_node_t* bucket_dl_erase(bucket_t* _this, const class_bucket
 }
 #endif /* BUCKET_USE_DL */
 
-static __always_inline void __bucket_hl_erase(bucket_t* _this, bucket_node_t* pos)
+static /* __always_inline */ inline void __bucket_hl_erase(bucket_t* _this, bucket_node_t* pos)
 {
     hlist_del_init(&pos->ds_node.hl_node);
     _this->size--;
@@ -1283,7 +1283,7 @@ static inline bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket
     return t;
 }
 
-static __always_inline bucket_node_t* bucket_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* pos)
+static /* __always_inline */ inline bucket_node_t* bucket_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* pos)
 {
     switch (type)
     {
@@ -1387,7 +1387,7 @@ static inline bucket_size_t bucket_remove_has_checked_valid(bucket_t* _this, con
 
 
 /* Pop */
-static __always_inline bucket_node_t* bucket_rb_pop(bucket_t* _this, bucket_node_t* pos)
+static /* __always_inline */ inline bucket_node_t* bucket_rb_pop(bucket_t* _this, bucket_node_t* pos)
 {
     bucket_node_t* t;
 
@@ -1409,7 +1409,7 @@ static __always_inline bucket_node_t* bucket_rb_pop(bucket_t* _this, bucket_node
 }
 
 #ifdef BUCKET_USE_DL
-static __always_inline bucket_node_t* bucket_dl_pop(bucket_t* _this, bucket_node_t* pos)
+static /* __always_inline */ inline bucket_node_t* bucket_dl_pop(bucket_t* _this, bucket_node_t* pos)
 {
     bucket_node_t* t;
 
@@ -1431,7 +1431,7 @@ static __always_inline bucket_node_t* bucket_dl_pop(bucket_t* _this, bucket_node
 }
 #endif /* BUCKET_USE_DL */
 
-static __always_inline bucket_node_t* bucket_hl_pop(bucket_t* _this, bucket_node_t* pos)
+static /* __always_inline */ inline bucket_node_t* bucket_hl_pop(bucket_t* _this, bucket_node_t* pos)
 {
     bucket_node_t* t;
 
@@ -1450,7 +1450,7 @@ static __always_inline bucket_node_t* bucket_hl_pop(bucket_t* _this, bucket_node
     return t;
 }
 
-static __always_inline bucket_node_t* bucket_pop(bucket_t* _this, bucket_ds_t type, bucket_node_t* pos)
+static /* __always_inline */ inline bucket_node_t* bucket_pop(bucket_t* _this, bucket_ds_t type, bucket_node_t* pos)
 {
     switch (type)
     {
@@ -1470,7 +1470,7 @@ static __always_inline bucket_node_t* bucket_pop(bucket_t* _this, bucket_ds_t ty
 
 
 /* Clear */
-static inline bucket_size_t bucket_rb_clear(bucket_t* _this, const class_bucket_ops_t* ops)
+static bucket_size_t bucket_rb_clear(bucket_t* _this, const class_bucket_ops_t* ops)
 {
     bucket_size_t ret = 0;
     bucket_node_t* t = NULL;
@@ -1487,7 +1487,7 @@ static inline bucket_size_t bucket_rb_clear(bucket_t* _this, const class_bucket_
 }
 
 #ifdef BUCKET_USE_DL
-static inline bucket_size_t bucket_dl_clear(bucket_t* _this, const class_bucket_ops_t* ops)
+static bucket_size_t bucket_dl_clear(bucket_t* _this, const class_bucket_ops_t* ops)
 {
     bucket_size_t ret = 0;
     bucket_node_t* t = NULL;
@@ -1513,7 +1513,7 @@ static inline bucket_size_t bucket_dl_clear(bucket_t* _this, const class_bucket_
 }
 #endif /* BUCKET_USE_DL */
 
-static inline bucket_size_t bucket_hl_clear(bucket_t* _this, const class_bucket_ops_t* ops)
+static bucket_size_t bucket_hl_clear(bucket_t* _this, const class_bucket_ops_t* ops)
 {
     bucket_size_t ret = 0;
     bucket_node_t* t = NULL;
@@ -1539,7 +1539,7 @@ static inline bucket_size_t bucket_hl_clear(bucket_t* _this, const class_bucket_
     return ret;
 }
 
-static __always_inline bucket_size_t bucket_clear(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type)
+static /* __always_inline */ inline bucket_size_t bucket_clear(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type)
 {
     switch (type)
     {
@@ -1556,7 +1556,7 @@ static __always_inline bucket_size_t bucket_clear(bucket_t* _this, const class_b
     }
 }
 
-static inline void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type_from, bucket_ds_t type_to)
+static void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type_from, bucket_ds_t type_to)
 {
     bucket_t tmp = BUCKET_INIT(&tmp, type_to);
     bucket_node_t* tb_node = NULL;
@@ -1590,7 +1590,7 @@ static inline void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* op
     _this->size = tmp.size;
 }
 
-__always_inline void __bucket_init(bucket_t* bucket, bucket_ds_t type)
+/* __always_inline */ inline void __bucket_init(bucket_t* bucket, bucket_ds_t type)
 {
     switch (type)
     {
@@ -1610,7 +1610,7 @@ __always_inline void __bucket_init(bucket_t* bucket, bucket_ds_t type)
     }
 }
 
-__always_inline void __bucket_deinit(bucket_t* bucket, const class_bucket_ops_t* ops, bucket_ds_t type)
+/* __always_inline */ inline void __bucket_deinit(bucket_t* bucket, const class_bucket_ops_t* ops, bucket_ds_t type)
 {
     bucket_clear(bucket, ops, type);
 
@@ -1647,7 +1647,7 @@ typedef bucket_iterator_t* (*fp_insert)(bucket_t* _this, const class_bucket_ops_
 typedef bucket_iterator_t* (*fp_insert_replace)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value);
 typedef bucket_iterator_t* (*fp_erase)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_iterator_t* iterator);
 
-__always_inline const class_bucket_t* class_bucket_ins(void)
+/* __always_inline */ inline const class_bucket_t* class_bucket_ins(void)
 {
     static const class_bucket_t ins = {
         .size           = _bucket_size,
@@ -1669,7 +1669,7 @@ __always_inline const class_bucket_t* class_bucket_ins(void)
     return &ins;
 }
 
-__always_inline const class_bucket_priv_t* class_bucket_priv_ins(void)
+/* __always_inline */ inline const class_bucket_priv_t* class_bucket_priv_ins(void)
 {
     static const class_bucket_priv_t ins = {
         /* iterator */

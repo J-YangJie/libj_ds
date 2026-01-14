@@ -25,31 +25,31 @@
 
 #define TAG "[priority_queue]"
 
-static __always_inline priority_queue_size_t __priority_queue_size(const priority_queue_t* _this)
+static /* __always_inline */ inline priority_queue_size_t __priority_queue_size(const priority_queue_t* _this)
 {
     return _this->size;
 }
 
-static __always_inline priority_queue_size_t _priority_queue_size(const priority_queue_t* _this)
+static /* __always_inline */ inline priority_queue_size_t _priority_queue_size(const priority_queue_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __priority_queue_size(_this);
 }
 
-static __always_inline priority_queue_size_t __priority_queue_capacity(const priority_queue_t* _this)
+static /* __always_inline */ inline priority_queue_size_t __priority_queue_capacity(const priority_queue_t* _this)
 {
     return _this->capacity;
 }
 
-static __always_inline void __priority_queue_exchange_data(priority_queue_data_t* a, priority_queue_data_t* b)
+static /* __always_inline */ inline void __priority_queue_exchange_data(priority_queue_data_t* a, priority_queue_data_t* b)
 {
     priority_queue_data_t tdata = *a;
     *a = *b;
     *b = tdata;
 }
 
-static inline void __priority_queue_rise(priority_queue_t* _this, priority_queue_size_t index)
+static void __priority_queue_rise(priority_queue_t* _this, priority_queue_size_t index)
 {
     priority_queue_size_t i = index;
     priority_queue_size_t p;
@@ -73,7 +73,7 @@ static inline void __priority_queue_rise(priority_queue_t* _this, priority_queue
     }
 }
 
-static inline void __priority_queue_heapify(priority_queue_t* _this, priority_queue_size_t index)
+static void __priority_queue_heapify(priority_queue_t* _this, priority_queue_size_t index)
 {
     priority_queue_size_t i = index;
     priority_queue_size_t len = __priority_queue_size(_this) - 1;
@@ -149,7 +149,7 @@ err:
     return false;
 }
 
-static __always_inline bool priority_queue_push(priority_queue_t* _this, priority_queue_data_t data)
+static /* __always_inline */ inline bool priority_queue_push(priority_queue_t* _this, priority_queue_data_t data)
 {
     if (unlikely(is_null(_this)))
         return false;
@@ -160,21 +160,21 @@ static __always_inline bool priority_queue_push(priority_queue_t* _this, priorit
     return __priority_queue_push(_this, data);
 }
 
-static __always_inline priority_queue_data_t __priority_queue_top(priority_queue_t* _this, priority_queue_data_t default_data)
+static /* __always_inline */ inline priority_queue_data_t __priority_queue_top(priority_queue_t* _this, priority_queue_data_t default_data)
 {
     if (__priority_queue_size(_this) <= 0)
         return default_data;
     return _this->head[0].data;
 }
 
-static __always_inline priority_queue_data_t priority_queue_top(priority_queue_t* _this, priority_queue_data_t default_data)
+static /* __always_inline */ inline priority_queue_data_t priority_queue_top(priority_queue_t* _this, priority_queue_data_t default_data)
 {
     if (unlikely(is_null(_this)))
         return default_data;
     return __priority_queue_top(_this, default_data);
 }
 
-static __always_inline priority_queue_data_t __priority_queue_pop(priority_queue_t* _this, priority_queue_data_t default_data)
+static /* __always_inline */ inline priority_queue_data_t __priority_queue_pop(priority_queue_t* _this, priority_queue_data_t default_data)
 {
     if (__priority_queue_size(_this) <= 0)
         return default_data;
@@ -191,14 +191,14 @@ static __always_inline priority_queue_data_t __priority_queue_pop(priority_queue
     return _this->head[__priority_queue_size(_this)].data;
 }
 
-static __always_inline priority_queue_data_t priority_queue_pop(priority_queue_t* _this, priority_queue_data_t default_data)
+static /* __always_inline */ inline priority_queue_data_t priority_queue_pop(priority_queue_t* _this, priority_queue_data_t default_data)
 {
     if (unlikely(is_null(_this)))
         return default_data;
     return __priority_queue_pop(_this, default_data);
 }
 
-static inline priority_queue_size_t priority_queue_clear(priority_queue_t* _this)
+static priority_queue_size_t priority_queue_clear(priority_queue_t* _this)
 {
     priority_queue_size_t ret = 0;
 
@@ -222,13 +222,13 @@ static inline priority_queue_size_t priority_queue_clear(priority_queue_t* _this
     return ret - __priority_queue_size(_this);
 }
 
-__always_inline void __priority_queue_init(priority_queue_t* priority_queue)
+/* __always_inline */ inline void __priority_queue_init(priority_queue_t* priority_queue)
 {
     priority_queue->head = NULL;
     priority_queue->capacity = 0;
 }
 
-__always_inline void __priority_queue_deinit(priority_queue_t* priority_queue)
+/* __always_inline */ inline void __priority_queue_deinit(priority_queue_t* priority_queue)
 {
     priority_queue_clear(priority_queue);
     p_free(priority_queue->head);
@@ -239,7 +239,7 @@ __always_inline void __priority_queue_deinit(priority_queue_t* priority_queue)
     priority_queue->capacity = 0;
 }
 
-__always_inline const class_priority_queue_t* class_priority_queue_ins(void)
+/* __always_inline */ inline const class_priority_queue_t* class_priority_queue_ins(void)
 {
     static const class_priority_queue_t ins = {
         .size        = _priority_queue_size,
