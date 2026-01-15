@@ -26,58 +26,58 @@
 
 #define map_entry(ptr) rb_entry((ptr), struct map_node, node)
 
-static __always_inline map_node_t* map_find(const map_t* _this, map_key_t key);
-static __always_inline map_node_t* __map_end(const map_t* _this);
+static /* __always_inline */ inline map_node_t* map_find(const map_t* _this, map_key_t key);
+static /* __always_inline */ inline map_node_t* __map_end(const map_t* _this);
 
-static __always_inline map_size_t __map_size(const map_t* _this)
+static /* __always_inline */ inline map_size_t __map_size(const map_t* _this)
 {
     return _this->size;
 }
 
-static __always_inline map_size_t _map_size(const map_t* _this)
+static /* __always_inline */ inline map_size_t _map_size(const map_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __map_size(_this);
 }
 
-static __always_inline map_count_t map_count(const map_t* _this, map_key_t key)
+static /* __always_inline */ inline map_count_t map_count(const map_t* _this, map_key_t key)
 {
     map_node_t* t = map_find(_this, key);
     return is_null(t) ? -1 : (__map_end(_this) == t ? 0 : 1);
 }
 
-static __always_inline map_node_t* __map_first(const map_t* _this)
+static /* __always_inline */ inline map_node_t* __map_first(const map_t* _this)
 {
     struct rb_node* t = rb_first(&_this->root);
     return is_null(t) ? NULL : map_entry(t);
 }
 
-static __always_inline map_node_t* __map_last(const map_t* _this)
+static /* __always_inline */ inline map_node_t* __map_last(const map_t* _this)
 {
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : map_entry(t);
 }
 
-static __always_inline map_node_t* __map_end(const map_t* _this)
+static /* __always_inline */ inline map_node_t* __map_end(const map_t* _this)
 {
     return (map_node_t*)iterator_end();
 }
 
-static __always_inline map_node_t* __map_begin(const map_t* _this)
+static /* __always_inline */ inline map_node_t* __map_begin(const map_t* _this)
 {
     map_node_t* t = __map_first(_this);
     return is_null(t) ? __map_end(_this) : t;
 }
 
-static __always_inline map_node_t* _map_begin(const map_t* _this)
+static /* __always_inline */ inline map_node_t* _map_begin(const map_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __map_begin(_this);
 }
 
-static __always_inline map_node_t* __map_next(const map_t* _this, const map_node_t* node)
+static /* __always_inline */ inline map_node_t* __map_next(const map_t* _this, const map_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -96,14 +96,14 @@ static __always_inline map_node_t* __map_next(const map_t* _this, const map_node
     return is_null(t) ? __map_end(_this) : map_entry(t);
 }
 
-static __always_inline map_node_t* _map_next(const map_t* _this, const map_node_t* node)
+static /* __always_inline */ inline map_node_t* _map_next(const map_t* _this, const map_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __map_next(_this, node);
 }
 
-static __always_inline map_node_t* __map_prev(const map_t* _this, const map_node_t* node)
+static /* __always_inline */ inline map_node_t* __map_prev(const map_t* _this, const map_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -123,32 +123,32 @@ static __always_inline map_node_t* __map_prev(const map_t* _this, const map_node
     return is_null(t) ? __map_end(_this) : map_entry(t);
 }
 
-static __always_inline map_node_t* _map_prev(const map_t* _this, const map_node_t* node)
+static /* __always_inline */ inline map_node_t* _map_prev(const map_t* _this, const map_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __map_prev(_this, node);
 }
 
-static __always_inline map_node_t* __map_rend(const map_t* _this)
+static /* __always_inline */ inline map_node_t* __map_rend(const map_t* _this)
 {
     return (map_node_t*)iterator_rend();
 }
 
-static __always_inline map_node_t* __map_rbegin(const map_t* _this)
+static /* __always_inline */ inline map_node_t* __map_rbegin(const map_t* _this)
 {
     map_node_t* t = __map_last(_this);
     return is_null(t) ? __map_rend(_this) : t;
 }
 
-static __always_inline map_node_t* _map_rbegin(const map_t* _this)
+static /* __always_inline */ inline map_node_t* _map_rbegin(const map_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __map_rbegin(_this);
 }
 
-static __always_inline map_node_t* __map_rnext(const map_t* _this, const map_node_t* node)
+static /* __always_inline */ inline map_node_t* __map_rnext(const map_t* _this, const map_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -167,14 +167,14 @@ static __always_inline map_node_t* __map_rnext(const map_t* _this, const map_nod
     return is_null(t) ? __map_rend(_this) : map_entry(t);
 }
 
-static __always_inline map_node_t* _map_rnext(const map_t* _this, const map_node_t* node)
+static /* __always_inline */ inline map_node_t* _map_rnext(const map_t* _this, const map_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __map_rnext(_this, node);
 }
 
-static __always_inline map_node_t* __map_rprev(const map_t* _this, const map_node_t* node)
+static /* __always_inline */ inline map_node_t* __map_rprev(const map_t* _this, const map_node_t* node)
 {
     struct rb_node* t = NULL;
 
@@ -194,14 +194,14 @@ static __always_inline map_node_t* __map_rprev(const map_t* _this, const map_nod
     return is_null(t) ? __map_rend(_this) : map_entry(t);
 }
 
-static __always_inline map_node_t* _map_rprev(const map_t* _this, const map_node_t* node)
+static /* __always_inline */ inline map_node_t* _map_rprev(const map_t* _this, const map_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __map_rprev(_this, node);
 }
 
-static inline map_node_t* __map_find(const map_t* _this, map_key_t key)
+static map_node_t* __map_find(const map_t* _this, map_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     map_node_t* t = NULL;
@@ -233,7 +233,7 @@ static inline map_node_t* __map_find(const map_t* _this, map_key_t key)
     return NULL;
 }
 
-static __always_inline map_node_t* map_find(const map_t* _this, map_key_t key)
+static /* __always_inline */ inline map_node_t* map_find(const map_t* _this, map_key_t key)
 {
     map_node_t* t = NULL;
 
@@ -247,7 +247,7 @@ static __always_inline map_node_t* map_find(const map_t* _this, map_key_t key)
     return is_null(t) ? __map_end(_this) : t;
 }
 
-static inline map_node_t* __map_lower_bound(const map_t* _this, map_key_t key)
+static map_node_t* __map_lower_bound(const map_t* _this, map_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     map_node_t* t = NULL;
@@ -284,7 +284,7 @@ static inline map_node_t* __map_lower_bound(const map_t* _this, map_key_t key)
     return ret;
 }
 
-static __always_inline map_node_t* map_lower_bound(const map_t* _this, map_key_t key)
+static /* __always_inline */ inline map_node_t* map_lower_bound(const map_t* _this, map_key_t key)
 {
     map_node_t* t = NULL;
 
@@ -298,7 +298,7 @@ static __always_inline map_node_t* map_lower_bound(const map_t* _this, map_key_t
     return is_null(t) ? __map_end(_this) : t;
 }
 
-static inline map_node_t* __map_upper_bound(const map_t* _this, map_key_t key)
+static map_node_t* __map_upper_bound(const map_t* _this, map_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     map_node_t* t = NULL;
@@ -337,7 +337,7 @@ static inline map_node_t* __map_upper_bound(const map_t* _this, map_key_t key)
     return ret;
 }
 
-static __always_inline map_node_t* map_upper_bound(const map_t* _this, map_key_t key)
+static /* __always_inline */ inline map_node_t* map_upper_bound(const map_t* _this, map_key_t key)
 {
     map_node_t* t = NULL;
 
@@ -351,7 +351,7 @@ static __always_inline map_node_t* map_upper_bound(const map_t* _this, map_key_t
     return is_null(t) ? __map_end(_this) : t;
 }
 
-static inline map_node_t* __map_insert(map_t* _this, map_node_t* node)
+static map_node_t* __map_insert(map_t* _this, map_node_t* node)
 {
     struct rb_node** n = &_this->root.rb_node;
     struct rb_node* parent = NULL;
@@ -504,7 +504,7 @@ err:
     return NULL;
 }
 
-static __always_inline map_node_t* __map_erase(map_t* _this, map_node_t* pos)
+static /* __always_inline */ inline map_node_t* __map_erase(map_t* _this, map_node_t* pos)
 {
     rb_erase(&pos->node, &_this->root);
     _this->size--;
@@ -567,7 +567,7 @@ static inline map_size_t map_remove(map_t* _this, map_key_t key)
     return 1;
 }
 
-static inline map_size_t map_remove_if(map_t* _this, remove_if_condition_kv cond)
+static map_size_t map_remove_if(map_t* _this, remove_if_condition_kv cond)
 {
     map_size_t ret = 0;
     map_node_t* t = NULL;
@@ -588,7 +588,7 @@ static inline map_size_t map_remove_if(map_t* _this, remove_if_condition_kv cond
     return ret;
 }
 
-static inline map_size_t map_clear(map_t* _this)
+static map_size_t map_clear(map_t* _this)
 {
     map_size_t ret = 0;
     map_node_t* t = NULL;
@@ -604,12 +604,12 @@ static inline map_size_t map_clear(map_t* _this)
     return ret;
 }
 
-__always_inline void __map_init(map_t* map)
+/* __always_inline */ inline void __map_init(map_t* map)
 {
     map->root = RB_ROOT;
 }
 
-__always_inline void __map_deinit(map_t* map)
+/* __always_inline */ inline void __map_deinit(map_t* map)
 {
     map_clear(map);
 

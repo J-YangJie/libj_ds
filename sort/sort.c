@@ -30,7 +30,7 @@ static inline void __sort_swap(ds_data_t* a, ds_data_t* b)
     *b = t;
 }
 
-static inline ds_size_t __sort_lg(ds_size_t n)
+static ds_size_t __sort_lg(ds_size_t n)
 {
     ds_size_t k;
 
@@ -42,7 +42,7 @@ static inline ds_size_t __sort_lg(ds_size_t n)
 
 
 /* sort_bubble */
-inline void __sort_bubble(ds_data_t* a, ds_size_t size, __comp __comp)
+void __sort_bubble(ds_data_t* a, ds_size_t size, __comp __comp)
 {
     for (ds_size_t i = 0; i < size - 1; ++i) {
         bool flag = false;
@@ -57,7 +57,7 @@ inline void __sort_bubble(ds_data_t* a, ds_size_t size, __comp __comp)
     }
 }
 
-static inline void __sort_bubble_once_and_check(ds_data_t* a, ds_size_t size, __comp __comp, bool* ordered)
+static void __sort_bubble_once_and_check(ds_data_t* a, ds_size_t size, __comp __comp, bool* ordered)
 {
     bool flag = true;
     for (ds_data_t j = 0; j < size - 1; ++j) {
@@ -79,7 +79,7 @@ inline void sort_bubble(ds_data_t* a, ds_size_t size, __comp __comp)
 
 
 /* sort_insert */
-inline void __sort_insert(ds_data_t* a, ds_size_t size, __comp __comp)
+void __sort_insert(ds_data_t* a, ds_size_t size, __comp __comp)
 {
     for (ds_size_t i = 0; i < size - 1; ++i) {
         ds_data_t t = a[i + 1];
@@ -108,7 +108,7 @@ inline void sort_insert(ds_data_t* a, ds_size_t size, __comp __comp)
 
 
 /* sort_heap */
-static inline void __sort_heap_heapify(ds_data_t* a, ds_size_t i, ds_size_t len, __comp __comp)
+static void __sort_heap_heapify(ds_data_t* a, ds_size_t i, ds_size_t len, __comp __comp)
 {
     ds_size_t m;
 
@@ -127,13 +127,13 @@ static inline void __sort_heap_heapify(ds_data_t* a, ds_size_t i, ds_size_t len,
     }
 }
 
-static inline void __sort_heap_build(ds_data_t* a, ds_size_t len, __comp __comp)
+static void __sort_heap_build(ds_data_t* a, ds_size_t len, __comp __comp)
 {
     for (ds_size_t i = (len - 1) / 2; i >= 0; --i)
         __sort_heap_heapify(a, i, len, __comp);
 }
 
-inline void __sort_heap(ds_data_t* a, ds_size_t size, __comp __comp)
+void __sort_heap(ds_data_t* a, ds_size_t size, __comp __comp)
 {
     ds_size_t len = size - 1;
 
@@ -154,7 +154,7 @@ inline void sort_heap(ds_data_t* a, ds_size_t size, __comp __comp)
 
 
 /* sort_quick_s */
-static inline void __sort_quick_s_move_median_to_first(ds_data_t* a, ds_size_t r, ds_size_t x, ds_size_t y, ds_size_t z, __comp __comp)
+static void __sort_quick_s_move_median_to_first(ds_data_t* a, ds_size_t r, ds_size_t x, ds_size_t y, ds_size_t z, __comp __comp)
 {
     /* [ x < y < z ] -> move [ y to r(first) ] */
     if (__comp(a[x], a[y])) {
@@ -173,7 +173,7 @@ static inline void __sort_quick_s_move_median_to_first(ds_data_t* a, ds_size_t r
         __sort_swap(&a[r], &a[y]);
 }
 
-static inline ds_size_t __sort_quick_s_unguarded_partition(ds_data_t* a, ds_size_t l, ds_size_t r, ds_size_t p, __comp __comp)
+static ds_size_t __sort_quick_s_unguarded_partition(ds_data_t* a, ds_size_t l, ds_size_t r, ds_size_t p, __comp __comp)
 {
     /* limit by [ __sort_quick_s_move_median_to_first ] */
     for (;;) {
@@ -189,7 +189,7 @@ static inline ds_size_t __sort_quick_s_unguarded_partition(ds_data_t* a, ds_size
     }
 }
 
-static inline ds_size_t __sort_quick_s_unguarded_partition_pivot(ds_data_t* a, ds_size_t l, ds_size_t r, __comp __comp)
+static ds_size_t __sort_quick_s_unguarded_partition_pivot(ds_data_t* a, ds_size_t l, ds_size_t r, __comp __comp)
 {
     /* m = l + 2(min), otherwise 
         -> such as [ l=97, r=100, m=98 ( 97=3, 98=5, 99=2 ) ] 
@@ -201,7 +201,7 @@ static inline ds_size_t __sort_quick_s_unguarded_partition_pivot(ds_data_t* a, d
     return __sort_quick_s_unguarded_partition(a, l + 1, r, l, __comp); /* in unguarded_partition, [ --r ] before while */
 }
 
-static inline void __sort_quick_s_loop(ds_data_t* a, ds_size_t l, ds_size_t r, ds_size_t d, __comp __comp)
+static void __sort_quick_s_loop(ds_data_t* a, ds_size_t l, ds_size_t r, ds_size_t d, __comp __comp)
 {
     /* r - l >= 4(min), otherwise segment fault */
     while (r - l > 16) {
@@ -217,7 +217,7 @@ static inline void __sort_quick_s_loop(ds_data_t* a, ds_size_t l, ds_size_t r, d
     }
 }
 
-static inline void __sort_quick_s(ds_data_t* a, ds_size_t l, ds_size_t r, __comp __comp) /* exclude r -> [l, r) */
+static void __sort_quick_s(ds_data_t* a, ds_size_t l, ds_size_t r, __comp __comp) /* exclude r -> [l, r) */
 {
     if (l < r) {
         __sort_quick_s_loop(a, l, r, __sort_lg(r - l) * 2, __comp);

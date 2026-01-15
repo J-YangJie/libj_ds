@@ -23,34 +23,35 @@
 #include <_memory.h>
 #include <linux/_compiler.h>
 #include <iterator/iterator.h>
+#include <string.h>
 
 #define TAG "[vector]"
 
-static __always_inline vector_size_t __vector_size(const vector_t* _this)
+static /* __always_inline */ inline vector_size_t __vector_size(const vector_t* _this)
 {
     return _this->size;
 }
 
-static __always_inline vector_size_t _vector_size(const vector_t* _this)
+static /* __always_inline */ inline vector_size_t _vector_size(const vector_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __vector_size(_this);
 }
 
-static __always_inline vector_size_t __vector_capacity(const vector_t* _this)
+static /* __always_inline */ inline vector_size_t __vector_capacity(const vector_t* _this)
 {
     return _this->capacity;
 }
 
-static __always_inline vector_size_t _vector_capacity(const vector_t* _this)
+static /* __always_inline */ inline vector_size_t _vector_capacity(const vector_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __vector_capacity(_this);
 }
 
-static __always_inline vector_size_t __vector_capacity_expansion(vector_t* _this)
+static /* __always_inline */ inline vector_size_t __vector_capacity_expansion(vector_t* _this)
 {
     if (_this->size <= 0)
         _this->capacity = 1;
@@ -59,12 +60,12 @@ static __always_inline vector_size_t __vector_capacity_expansion(vector_t* _this
     return _this->capacity;
 }
 
-static __always_inline vector_size_t __vector_capacity_try_expansion(vector_t* _this)
+static /* __always_inline */ inline vector_size_t __vector_capacity_try_expansion(vector_t* _this)
 {
     return _this->size <= 0 ? 1 : (_this->size << 1);
 }
 
-static inline vector_count_t __vector_count(const vector_t* _this, vector_data_t data)
+static vector_count_t __vector_count(const vector_t* _this, vector_data_t data)
 {
     vector_size_t ret = 0;
     vector_size_t i = 0;
@@ -84,14 +85,14 @@ static inline vector_count_t __vector_count(const vector_t* _this, vector_data_t
     return ret;
 }
 
-static __always_inline vector_count_t _vector_count(const vector_t* _this, vector_data_t data)
+static /* __always_inline */ inline vector_count_t _vector_count(const vector_t* _this, vector_data_t data)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __vector_count(_this, data);
 }
 
-static __always_inline vector_count_t vector_count(const vector_t* _this, vector_data_t data)
+static /* __always_inline */ inline vector_count_t vector_count(const vector_t* _this, vector_data_t data)
 {
     if (unlikely(is_null(_this)))
         return -1;
@@ -102,40 +103,40 @@ static __always_inline vector_count_t vector_count(const vector_t* _this, vector
     return __vector_count(_this, data);
 }
 
-static __always_inline vector_node_t* __vector_first(const vector_t* _this)
+static /* __always_inline */ inline vector_node_t* __vector_first(const vector_t* _this)
 {
     if (__vector_size(_this) <= 0)
         return NULL;
     return _this->head;
 }
 
-static __always_inline vector_node_t* __vector_last(const vector_t* _this)
+static /* __always_inline */ inline vector_node_t* __vector_last(const vector_t* _this)
 {
     if (__vector_size(_this) <= 0)
         return NULL;
     return &_this->head[__vector_size(_this) - 1];
 }
 
-static __always_inline vector_node_t* __vector_end(const vector_t* _this)
+static /* __always_inline */ inline vector_node_t* __vector_end(const vector_t* _this)
 {
     return (vector_node_t*)iterator_end();
 }
 
-static __always_inline vector_node_t* __vector_begin(const vector_t* _this)
+static /* __always_inline */ inline vector_node_t* __vector_begin(const vector_t* _this)
 {
     if (__vector_size(_this) <= 0)
         return __vector_end(_this);
     return _this->head;
 }
 
-static __always_inline vector_node_t* _vector_begin(const vector_t* _this)
+static /* __always_inline */ inline vector_node_t* _vector_begin(const vector_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __vector_begin(_this);
 }
 
-static __always_inline vector_node_t* __vector_next(const vector_t* _this, const vector_node_t* node)
+static /* __always_inline */ inline vector_node_t* __vector_next(const vector_t* _this, const vector_node_t* node)
 {
     vector_node_t* t = (vector_node_t*)node;
 
@@ -151,14 +152,14 @@ static __always_inline vector_node_t* __vector_next(const vector_t* _this, const
     return t + 1;
 }
 
-static __always_inline vector_node_t* _vector_next(const vector_t* _this, const vector_node_t* node)
+static /* __always_inline */ inline vector_node_t* _vector_next(const vector_t* _this, const vector_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __vector_next(_this, node);
 }
 
-static __always_inline vector_node_t* __vector_prev(const vector_t* _this, const vector_node_t* node)
+static /* __always_inline */ inline vector_node_t* __vector_prev(const vector_t* _this, const vector_node_t* node)
 {
     vector_node_t* t = (vector_node_t*)node;
 
@@ -174,33 +175,33 @@ static __always_inline vector_node_t* __vector_prev(const vector_t* _this, const
     return t - 1;
 }
 
-static __always_inline vector_node_t* _vector_prev(const vector_t* _this, const vector_node_t* node)
+static /* __always_inline */ inline vector_node_t* _vector_prev(const vector_t* _this, const vector_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __vector_prev(_this, node);
 }
 
-static __always_inline vector_node_t* __vector_rend(const vector_t* _this)
+static /* __always_inline */ inline vector_node_t* __vector_rend(const vector_t* _this)
 {
     return (vector_node_t*)iterator_rend();
 }
 
-static __always_inline vector_node_t* __vector_rbegin(const vector_t* _this)
+static /* __always_inline */ inline vector_node_t* __vector_rbegin(const vector_t* _this)
 {
     if (__vector_size(_this) <= 0)
         return __vector_rend(_this);
     return &_this->head[__vector_size(_this) - 1];
 }
 
-static __always_inline vector_node_t* _vector_rbegin(const vector_t* _this)
+static /* __always_inline */ inline vector_node_t* _vector_rbegin(const vector_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __vector_rbegin(_this);
 }
 
-static __always_inline vector_node_t* __vector_rnext(const vector_t* _this, const vector_node_t* node)
+static /* __always_inline */ inline vector_node_t* __vector_rnext(const vector_t* _this, const vector_node_t* node)
 {
     vector_node_t* t = (vector_node_t*)node;
 
@@ -216,14 +217,14 @@ static __always_inline vector_node_t* __vector_rnext(const vector_t* _this, cons
     return t - 1;
 }
 
-static __always_inline vector_node_t* _vector_rnext(const vector_t* _this, const vector_node_t* node)
+static /* __always_inline */ inline vector_node_t* _vector_rnext(const vector_t* _this, const vector_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __vector_rnext(_this, node);
 }
 
-static __always_inline vector_node_t* __vector_rprev(const vector_t* _this, const vector_node_t* node)
+static /* __always_inline */ inline vector_node_t* __vector_rprev(const vector_t* _this, const vector_node_t* node)
 {
     vector_node_t* t = (vector_node_t*)node;
 
@@ -239,35 +240,35 @@ static __always_inline vector_node_t* __vector_rprev(const vector_t* _this, cons
     return t + 1;
 }
 
-static __always_inline vector_node_t* _vector_rprev(const vector_t* _this, const vector_node_t* node)
+static /* __always_inline */ inline vector_node_t* _vector_rprev(const vector_t* _this, const vector_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __vector_rprev(_this, node);
 }
 
-static __always_inline vector_node_t* _vector_at(const vector_t* _this, vector_size_t n)
+static /* __always_inline */ inline vector_node_t* _vector_at(const vector_t* _this, vector_size_t n)
 {
     if (is_null(_this) || __vector_size(_this) <= 0)
         return NULL;
     return &_this->head[n];
 }
 
-static __always_inline vector_data_t vector_first(const vector_t* _this, vector_data_t default_data)
+static /* __always_inline */ inline vector_data_t vector_first(const vector_t* _this, vector_data_t default_data)
 {
     if (is_null(_this) || __vector_size(_this) <= 0)
         return default_data;
     return __vector_first(_this)->data;
 }
 
-static __always_inline vector_data_t vector_last(const vector_t* _this, vector_data_t default_data)
+static /* __always_inline */ inline vector_data_t vector_last(const vector_t* _this, vector_data_t default_data)
 {
     if (is_null(_this) || __vector_size(_this) <= 0)
         return default_data;
     return __vector_last(_this)->data;
 }
 
-static inline vector_node_t* __vector_find(const vector_t* _this, vector_data_t data)
+static vector_node_t* __vector_find(const vector_t* _this, vector_data_t data)
 {
     vector_size_t i = 0;
     vector_node_t* t = NULL;
@@ -288,14 +289,14 @@ static inline vector_node_t* __vector_find(const vector_t* _this, vector_data_t 
     return NULL;
 }
 
-static __always_inline vector_node_t* _vector_find(const vector_t* _this, vector_data_t data)
+static /* __always_inline */ inline vector_node_t* _vector_find(const vector_t* _this, vector_data_t data)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __vector_find(_this, data);
 }
 
-static __always_inline vector_node_t* vector_find(const vector_t* _this, vector_data_t data)
+static /* __always_inline */ inline vector_node_t* vector_find(const vector_t* _this, vector_data_t data)
 {
     vector_node_t* t = NULL;
 
@@ -309,9 +310,8 @@ static __always_inline vector_node_t* vector_find(const vector_t* _this, vector_
     return is_null(t) ? __vector_end(_this) : t;
 }
 
-static inline vector_node_t* __vector_insert_core(vector_t* _this, vector_size_t index, vector_data_t data)
+static vector_node_t* __vector_insert_core(vector_t* _this, vector_size_t index, vector_data_t data)
 {
-    vector_size_t i = 0;
     vector_size_t d = index;
     vector_node_t* n = NULL;
     vector_data_t tdata = data;
@@ -339,13 +339,12 @@ static inline vector_node_t* __vector_insert_core(vector_t* _this, vector_size_t
         __vector_capacity_expansion(_this);
     }
 
-    for (i = __vector_size(_this); i > d; --i) {
-        _this->head[i].data = _this->head[i - 1].data;
-    }
-    _this->head[i].data = tdata;
+    if (d < __vector_size(_this))
+        memmove(&_this->head[d + 1], &_this->head[d], (__vector_size(_this) - d) * sizeof(vector_node_t));
+    _this->head[d].data = tdata;
     _this->size++;
 
-    return &_this->head[i];
+    return &_this->head[d];
 
 err:
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data) && !is_null(_this->ops->copy_data))
@@ -353,21 +352,21 @@ err:
     return NULL;
 }
 
-static __always_inline vector_node_t* vector_push_back(vector_t* _this, vector_data_t data)
+static /* __always_inline */ inline vector_node_t* vector_push_back(vector_t* _this, vector_data_t data)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __vector_insert_core(_this, __vector_size(_this), data);
 }
 
-static __always_inline vector_node_t* vector_push_front(vector_t* _this, vector_data_t data)
+static /* __always_inline */ inline vector_node_t* vector_push_front(vector_t* _this, vector_data_t data)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __vector_insert_core(_this, 0, data);
 }
 
-static __always_inline vector_node_t* vector_insert(vector_t* _this, vector_node_t* pos, vector_data_t data)
+static /* __always_inline */ inline vector_node_t* vector_insert(vector_t* _this, vector_node_t* pos, vector_data_t data)
 {
     vector_size_t d = 0;
 
@@ -391,20 +390,18 @@ static __always_inline vector_node_t* vector_insert(vector_t* _this, vector_node
 
 static inline void __vector_erase_core(vector_t* _this, vector_size_t index)
 {
-    vector_size_t i = 0;
     vector_size_t d = index;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
         _this->ops->free_data(&_this->head[d].data);
 
-    for (i = d; i < __vector_size(_this) - 1; ++i) {
-        _this->head[i].data = _this->head[i + 1].data;
-    }
+    if (d < __vector_size(_this) - 1)
+        memmove(&_this->head[d], &_this->head[d + 1], (__vector_size(_this) - d - 1) * sizeof(vector_node_t));
 
     _this->size--;
 }
 
-static __always_inline vector_node_t* vector_erase(vector_t* _this, vector_node_t* pos)
+static /* __always_inline */ inline vector_node_t* vector_erase(vector_t* _this, vector_node_t* pos)
 {
     vector_size_t d = 0;
 
@@ -425,7 +422,7 @@ static __always_inline vector_node_t* vector_erase(vector_t* _this, vector_node_
     return d >= __vector_size(_this) ? __vector_end(_this) : &_this->head[d];
 }
 
-static inline vector_node_t* vector_erase_range(vector_t* _this, vector_node_t* begin, vector_node_t* end)
+static vector_node_t* vector_erase_range(vector_t* _this, vector_node_t* begin, vector_node_t* end)
 {
     vector_size_t i, d1, d2, dd = 0;
 
@@ -447,18 +444,13 @@ static inline vector_node_t* vector_erase_range(vector_t* _this, vector_node_t* 
     if (0 == dd)
         goto end;
 
-    if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
-        for (i = d1; i + dd < __vector_size(_this); ++i) {
-            _this->head[i].data = _this->head[i + dd].data;
-        }
-    } else {
-        for (i = d1; i < d2 || i + dd < __vector_size(_this); ++i) {
-            if (i < d2)
-                _this->ops->free_data(&_this->head[i].data);
-            if (i + dd < __vector_size(_this))
-                _this->head[i].data = _this->head[i + dd].data;
-        }
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
+        for (i = d1; i < d2; ++i)
+            _this->ops->free_data(&_this->head[i].data);
     }
+
+    if (d2 < __vector_size(_this))
+        memmove(&_this->head[d1], &_this->head[d2], (__vector_size(_this) - d2) * sizeof(vector_node_t));
 
     _this->size -= dd;
     if (_this->size < 0)
@@ -468,7 +460,7 @@ end:
     return d1 >= __vector_size(_this) ? __vector_end(_this) : &_this->head[d1];
 }
 
-static __always_inline void vector_pop_back(vector_t* _this)
+static /* __always_inline */ inline void vector_pop_back(vector_t* _this)
 {
     if (unlikely(is_null(_this)))
         return ;
@@ -479,7 +471,7 @@ static __always_inline void vector_pop_back(vector_t* _this)
     __vector_erase_core(_this, __vector_size(_this) - 1);
 }
 
-static __always_inline void vector_pop_front(vector_t* _this)
+static /* __always_inline */ inline void vector_pop_front(vector_t* _this)
 {
     if (unlikely(is_null(_this)))
         return ;
@@ -490,7 +482,7 @@ static __always_inline void vector_pop_front(vector_t* _this)
     __vector_erase_core(_this, 0);
 }
 
-static inline vector_size_t vector_remove(vector_t* _this, vector_data_t data)
+static vector_size_t vector_remove(vector_t* _this, vector_data_t data)
 {
     vector_size_t ret = 0;
     vector_size_t l = 0, r = 0;
@@ -531,7 +523,7 @@ static inline vector_size_t vector_remove(vector_t* _this, vector_data_t data)
     return ret;
 }
 
-static inline vector_size_t vector_remove_if(vector_t* _this, remove_if_condition cond)
+static vector_size_t vector_remove_if(vector_t* _this, remove_if_condition cond)
 {
     vector_size_t ret = 0;
     vector_size_t l = 0, r = 0;
@@ -594,7 +586,7 @@ static inline bool vector_reserve(vector_t* _this, vector_size_t n)
     return true;    
 }
 
-static inline bool vector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data)
+static bool vector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data)
 {
     vector_size_t i;
     vector_node_t* head_n = NULL;
@@ -638,26 +630,26 @@ static inline bool vector_resize(vector_t* _this, vector_size_t n, vector_data_t
 }
 
 #include <sort/sort.h>
-static __always_inline bool __vector_sort_comp(vector_data_t l, vector_data_t r)
+static /* __always_inline */ inline bool __vector_sort_comp(vector_data_t l, vector_data_t r)
 {
     return l < r;
 }
 
-static __always_inline void __vector_sort(vector_t* _this, __comp __comp)
+static /* __always_inline */ inline void __vector_sort(vector_t* _this, __comp __comp)
 {
     if (is_null(__comp))
         __comp = is_null(_this->ops) || is_null(_this->ops->__lt) ? __vector_sort_comp : _this->ops->__lt;
     __sort_quick(&_this->head[0].data, __vector_size(_this), __comp);
 }
 
-static __always_inline void vector_sort(vector_t* _this, __comp __comp)
+static /* __always_inline */ inline void vector_sort(vector_t* _this, __comp __comp)
 {
     if (is_null(_this) || __vector_size(_this) < 2)
         return ;
     __vector_sort(_this, __comp);
 }
 
-static __always_inline vector_size_t vector_clear(vector_t* _this)
+static /* __always_inline */ inline vector_size_t vector_clear(vector_t* _this)
 {
     vector_size_t ret = 0;
     vector_node_t* t = NULL;
@@ -676,13 +668,13 @@ static __always_inline vector_size_t vector_clear(vector_t* _this)
     return ret - __vector_size(_this);
 }
 
-__always_inline void __vector_init(vector_t* vector)
+/* __always_inline */ inline void __vector_init(vector_t* vector)
 {
     vector->head = NULL;
     vector->capacity = 0;
 }
 
-__always_inline void __vector_deinit(vector_t* vector)
+/* __always_inline */ inline void __vector_deinit(vector_t* vector)
 {
     vector_clear(vector);
     p_free(vector->head);
@@ -709,7 +701,7 @@ typedef vector_iterator_t* (*fp_insert)(vector_t* _this, vector_iterator_t* iter
 typedef vector_iterator_t* (*fp_erase)(vector_t* _this, vector_iterator_t* iterator);
 typedef vector_iterator_t* (*fp_erase_range)(vector_t* _this, vector_iterator_t* iterator_begin, vector_iterator_t* iterator_end);
 
-__always_inline const class_vector_t* class_vector_ins(void)
+/* __always_inline */ inline const class_vector_t* class_vector_ins(void)
 {
     static const class_vector_t ins = {
         .size        = _vector_size,

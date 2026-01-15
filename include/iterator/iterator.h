@@ -20,7 +20,12 @@
 #ifndef __J_ITERATOR_H
 #define __J_ITERATOR_H
 
+#if 0
 void* const iterator_end(void);
 void* const iterator_rend(void);
+#else
+static __always_inline void* const iterator_end(void)  { return (void*)1; }
+static __always_inline void* const iterator_rend(void) { return (void*)2; }
+#endif
 
 #endif /* __J_ITERATOR_H */

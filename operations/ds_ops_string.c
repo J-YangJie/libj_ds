@@ -28,7 +28,7 @@
 #define NUM_KEY_LEN_MAX 512
 
 /* BKDR Hash */
-__always_inline ds_hash_t _hash_bkdr(const char* str, int len)
+static /* __always_inline */ inline ds_hash_t _hash_bkdr(const char* str, int len)
 {
     ds_hash_t seed = 131;
     ds_hash_t ret = 0;
@@ -40,7 +40,7 @@ __always_inline ds_hash_t _hash_bkdr(const char* str, int len)
 }
 
 /* AP Hash */
-__always_inline ds_hash_t _hash_ap(const char* str, int len)
+static /* __always_inline */ inline ds_hash_t _hash_ap(const char* str, int len)
 {
     ds_hash_t ret = 0;
 
@@ -54,68 +54,70 @@ __always_inline ds_hash_t _hash_ap(const char* str, int len)
     return (ret & 0x7FFFFFFF);
 }
 
-__always_inline ds_hash_t __ds_ops_hash_default_string(ds_key_t key)
+/* __always_inline */ inline ds_hash_t __ds_ops_hash_default_string(ds_key_t key)
 {
     char* k = (char*)key;
-    int len = strlen(k) > NUM_KEY_LEN_MAX ? NUM_KEY_LEN_MAX : strlen(k);
+    size_t tlen = strlen(k);
+    int len = tlen > NUM_KEY_LEN_MAX ? NUM_KEY_LEN_MAX : tlen;
     return _hash_bkdr(k, len);
 }
 
-static __always_inline bool ds_ops_valid_key_default_string_max_n(ds_key_t key, size_t max) /* the return value type of strlen is size_t */
+static /* __always_inline */ inline bool ds_ops_valid_key_default_string_max_n(ds_key_t key, size_t max) /* the return value type of strlen is size_t */
 {
     char* k = (char*)key;
-    if (!is_null(k) && strlen(k) > 0 && strlen(k) <= max)
+    size_t tlen;
+    if (!is_null(k) && (tlen = strlen(k)) > 0 && tlen <= max)
         return true;
     pr_notice("Invalid key [ %s ], max [ %zu ]!", is_null(k) ? "null" : k, max);
     return false;
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_2(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_2(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 2);
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_4(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_4(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 4);
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_8(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_8(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 8);
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_16(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_16(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 16);
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_32(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_32(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 32);
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_64(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_64(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 64);
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_128(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_128(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 128);
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_256(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_256(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 256);
 }
 
-__always_inline bool ds_ops_valid_key_default_string_max_512(ds_key_t key)
+/* __always_inline */ inline bool ds_ops_valid_key_default_string_max_512(ds_key_t key)
 {
     return ds_ops_valid_key_default_string_max_n(key, 512);
 }
 
-__always_inline bool ds_ops_valid_data_default_string(ds_data_t data)
+/* __always_inline */ inline bool ds_ops_valid_data_default_string(ds_data_t data)
 {
     char* s = (char*)data;
     if (!is_null(s) && strlen(s) > 0)
@@ -124,14 +126,14 @@ __always_inline bool ds_ops_valid_data_default_string(ds_data_t data)
     return false;
 }
 
-__always_inline bool __ds_ops_lt_default_string(ds_data_t left, ds_data_t right)
+/* __always_inline */ inline bool __ds_ops_lt_default_string(ds_data_t left, ds_data_t right)
 {
     char* l = (char*)left;
     char* r = (char*)right;
     return strcmp(l, r) < 0; /* TODO: security */
 }
 
-__always_inline bool __ds_ops_gt_default_string(ds_data_t left, ds_data_t right)
+/* __always_inline */ inline bool __ds_ops_gt_default_string(ds_data_t left, ds_data_t right)
 {
     char* l = (char*)left;
     char* r = (char*)right;
@@ -162,13 +164,13 @@ err:
     return false;
 }
 
-__always_inline void ds_ops_free_data_default_string(ds_data_t* data)
+/* __always_inline */ inline void ds_ops_free_data_default_string(ds_data_t* data)
 {
     char** s = (char**)data;
     p_free(*s);
 }
 
-__always_inline bool __ds_ops_gt_default(ds_data_t left, ds_data_t right)
+/* __always_inline */ inline bool __ds_ops_gt_default(ds_data_t left, ds_data_t right)
 {
     return left > right;
 }
