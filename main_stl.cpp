@@ -152,7 +152,7 @@ static void test_i_for(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -232,7 +232,7 @@ static void test_i_for(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -444,7 +444,7 @@ static void test_i_rand(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -524,7 +524,7 @@ static void test_i_rand(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -766,7 +766,7 @@ static void test_s_rand(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -863,7 +863,7 @@ static void test_s_rand(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;

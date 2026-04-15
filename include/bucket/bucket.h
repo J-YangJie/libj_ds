@@ -29,9 +29,6 @@ typedef struct bucket_node {
     bucket_hash_t hash;
     union {
         struct rb_node rb_node;
-#ifdef BUCKET_USE_DL
-        struct list_head dl_node;
-#endif /* BUCKET_USE_DL */
         struct hlist_node hl_node;
     } ds_node;
 } bucket_node_t;
@@ -53,75 +50,45 @@ typedef struct bucket {
     bucket_size_t size;
     union {
         struct rb_root rb;
-#ifdef BUCKET_USE_DL
-        struct list_head dl;
-#endif /* BUCKET_USE_DL */
         struct hlist_head hl;
+        void* p;
+        unsigned long l;
     } ds;
 } bucket_t;
+typedef bucket_t bucket_shell_t;
 
 typedef enum bucket_ds {
-    BUCKET_DS_MIN   = 0,
-    BUCKET_DS_HLIST,
-    BUCKET_DS_DLIST,
-    BUCKET_DS_RBTREE,
-    // BUCKET_DS_SLIST,
-    BUCKET_DS_MAX,
+    BKT_DS_MIN     = 0x0,
+    BKT_DS_INVALID = BKT_DS_MIN,
+    BKT_DS_HLIST   = 0x1,
+    BKT_DS_RBTREE  = 0x2,
+    BKT_DS_VALID   = BKT_DS_HLIST | BKT_DS_RBTREE,
+    BKT_DS_MAX,
 } bucket_ds_t;
 
 typedef struct class_bucket {
-    bucket_size_t  (*size)(const bucket_t* _this);
-    bucket_iterator_t* (*end)(const bucket_t* _this);
-    bucket_iterator_t* (*begin)(const bucket_t* _this, bucket_ds_t type);
-    bucket_iterator_t* (*next)(const bucket_t* _this, bucket_ds_t type, const bucket_iterator_t* iterator);
-    bucket_iterator_t* (*prev)(const bucket_t* _this, bucket_ds_t type, const bucket_iterator_t* iterator);
-    bucket_r_iterator_t* (*rend)(const bucket_t* _this);
-    bucket_r_iterator_t* (*rbegin)(const bucket_t* _this, bucket_ds_t type);
-    bucket_r_iterator_t* (*rnext)(const bucket_t* _this, bucket_ds_t type, const bucket_r_iterator_t* r_iterator);
-    bucket_r_iterator_t* (*rprev)(const bucket_t* _this, bucket_ds_t type, const bucket_r_iterator_t* r_iterator);
-    bucket_iterator_t* (*find)(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key);
-    bucket_iterator_t* (*insert)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value);         /* if input key doesn't match -> insert | if input key match -> return NULL */
-    bucket_iterator_t* (*insert_replace)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value); /* if input key doesn't match -> insert | if input key match -> replace value (Refer to C++11 a[key] = value) */
-    bucket_iterator_t* (*erase)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_iterator_t* iterator);
-    bucket_size_t  (*remove)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key);
-    bucket_size_t  (*clear)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type);
+    bucket_size_t (*size)(const bucket_shell_t* bucket_sh);
+    bucket_iterator_t* (*end)(const bucket_shell_t* bucket_sh);
+    bucket_iterator_t* (*begin)(const bucket_shell_t* bucket_sh);
+    bucket_iterator_t* (*next)(const bucket_shell_t* bucket_sh, const bucket_iterator_t* iterator);
+    bucket_iterator_t* (*prev)(const bucket_shell_t* bucket_sh, const bucket_iterator_t* iterator);
+    bucket_r_iterator_t* (*rend)(const bucket_shell_t* bucket_sh);
+    bucket_r_iterator_t* (*rbegin)(const bucket_shell_t* bucket_sh);
+    bucket_r_iterator_t* (*rnext)(const bucket_shell_t* bucket_sh, const bucket_r_iterator_t* r_iterator);
+    bucket_r_iterator_t* (*rprev)(const bucket_shell_t* bucket_sh, const bucket_r_iterator_t* r_iterator);
+    bucket_iterator_t* (*find)(const bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key);
+    bucket_iterator_t* (*insert)(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value);         /* if input key doesn't match -> insert | if input key match -> return NULL */
+    bucket_iterator_t* (*insert_replace)(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value); /* if input key doesn't match -> insert | if input key match -> replace value (Refer to C++11 a[key] = value) */
+    bucket_iterator_t* (*erase)(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_iterator_t* iterator);
+    bucket_size_t (*remove)(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key);
+    bucket_size_t (*clear)(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops);
 } class_bucket_t;
-
-/* Private functions */
-typedef struct class_bucket_priv {
-    /* iterator */
-    bucket_node_t* (*end)(const bucket_t* _this);
-    bucket_node_t* (*begin)(const bucket_t* _this, bucket_ds_t type);
-    bucket_node_t* (*next)(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node);
-    bucket_node_t* (*prev)(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node);
-    bucket_node_t* (*rend)(const bucket_t* _this);
-    bucket_node_t* (*rbegin)(const bucket_t* _this, bucket_ds_t type);
-    bucket_node_t* (*rnext)(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node);
-    bucket_node_t* (*rprev)(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node);
-    bucket_node_t* (*find)(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key);
-    bucket_node_t* (*insert)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value);         /* if input key doesn't match -> insert | if input key match -> return NULL */
-    bucket_node_t* (*insert_replace)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value); /* if input key doesn't match -> insert | if input key match -> replace value (Refer to C++11 a[key] = value) */
-    bucket_node_t* (*erase)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* pos);
-    /* hashmap */
-    bucket_node_t* (*_first)(const bucket_t* _this, bucket_ds_t type);
-    bucket_node_t* (*_last)(const bucket_t* _this, bucket_ds_t type);
-    bucket_node_t* (*find_has_checked_valid)(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key);
-    bucket_node_t* (*insert_has_checked_same)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* node);
-    bucket_node_t* (*insert_has_checked_valid)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value);         /* if input key doesn't match -> insert | if input key match -> return NULL */
-    bucket_node_t* (*insert_replace_has_checked_valid)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value); /* if input key doesn't match -> insert | if input key match -> replace value (Refer to C++11 a[key] = value) */
-    bucket_size_t  (*remove_has_checked_valid)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key);
-    bucket_node_t* (*pop)(bucket_t* _this, bucket_ds_t type, bucket_node_t* pos);
-    void           (*__switch)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type_from, bucket_ds_t type_to);
-} class_bucket_priv_t;
 
 void __bucket_init(bucket_t* bucket, bucket_ds_t type);
 void __bucket_deinit(bucket_t* bucket, const class_bucket_ops_t* ops, bucket_ds_t type);
-const class_bucket_t*      class_bucket_ins(void);
-const class_bucket_priv_t* class_bucket_priv_ins(void);
+const class_bucket_t* class_bucket_ins(void);
 #define g_class_bucket()                 class_bucket_ins()
-#define g_class_bucket_priv()            class_bucket_priv_ins()
 #define cbucket                          g_class_bucket()
-#define cbucket_priv                     g_class_bucket_priv()
 #define BUCKET_INIT(_ptr, _type)         (bucket_t) { .size = 0, }; __bucket_init((_ptr), (_type))
 #define BUCKET_DEINIT(_ptr, _ops, _type) do { __bucket_deinit((_ptr), (_ops), (_type)); } while(0)
 

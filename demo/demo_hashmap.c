@@ -62,8 +62,8 @@ static void demo_base_and_iterator(void)
     cds->insert(&demo, 19, 19);        // [ (1, 1), (2, 2), (19, 19), (35, 35), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8) ]
 
     ret    = cds->size(&demo);         // size = 10
-    ret    = cds->capacity(&demo);     // capacity = 16
-    bcount = cds->bucket_count(&demo); // bucket count = 8
+    ret    = cds->bucket_count(&demo); // bucket count = 16
+    bcount = cds->bucket_valid_count(&demo); // bucket valid count = 8
     count  = cds->count(&demo, 8);     // count = 1
 
     foreach();                         // [ (1, 1), (2, 2), (19, 19), (35, 35), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8) ]
