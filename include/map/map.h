@@ -30,13 +30,25 @@ typedef struct map_node {
 } map_node_t;
 
 typedef struct map_iterator {
-    map_key_t key;
-    map_value_t value;
+    union {
+        map_key_t key;
+        char* skey;
+    };
+    union {
+        map_value_t value;
+        char* svalue;
+    };
 } map_iterator_t;
 
 typedef struct map_reverse_iterator {
-    map_key_t key;
-    map_value_t value;
+    union {
+        map_key_t key;
+        char* skey;
+    };
+    union {
+        map_value_t value;
+        char* svalue;
+    };
 } map_reverse_iterator_t;
 typedef map_reverse_iterator_t map_r_iterator_t;
 

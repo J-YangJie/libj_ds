@@ -26,11 +26,11 @@
 #define TAG "[demo_map]"
 
 #define _tok(x)  ((map_key_t)(x))
-#define _from(x) ((x) ? (char*)(x) : "null string")
+#define _from(x) ((x) ? (x) : "null string")
 
 #define foreach()           { for (map_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("(%zd, %zd)", it->key, it->value); }
-#define foreach_kstring()   { for (map_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("(%s, %zd)", _from(it->key), it->value); }
-#define foreach_r_kstring() { for (map_r_iterator_t* it = cds->rbegin(&demo); cds->rend(&demo) != it; it = cds->rnext(&demo, it)) pr_test("(%s, %zd)", _from(it->key), it->value); }
+#define foreach_kstring()   { for (map_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("(%s, %zd)", _from(it->skey), it->value); }
+#define foreach_r_kstring() { for (map_r_iterator_t* it = cds->rbegin(&demo); cds->rend(&demo) != it; it = cds->rnext(&demo, it)) pr_test("(%s, %zd)", _from(it->skey), it->value); }
 
 static class_map_ops_t demo_ops = {
     .valid_key   = ds_ops_valid_key_default_string_max_128,
@@ -96,7 +96,7 @@ static void demo_about_insert(void)
 
 static bool demo_remove_if_condition_kv(ds_key_t key, ds_value_t value)
 {
-    return NULL != strstr(_from(key), "3");
+    return NULL != strstr(_from((char*)key), "3");
 }
 
 static void demo_about_erase(void)
@@ -114,7 +114,7 @@ static void demo_about_erase(void)
     // after for [ ('123', 2), ('?混搭33*&', 3), ('jy', 1), ('test', 5), ('yj', 0), ('中文', 4) ]
 
     for (it = cds->begin(&demo); cds->end(&demo) != it; ) {
-        if (NULL != strstr(id[1], _from(it->key)))
+        if (NULL != strstr(id[1], _from(it->skey)))
             it = cds->erase(&demo, it);
         else
             it = cds->next(&demo, it);

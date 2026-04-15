@@ -28,11 +28,17 @@ typedef struct vector_node {
 } vector_node_t;
 
 typedef struct vector_iterator {
-    vector_data_t data;
+    union {
+        vector_data_t data;
+        char* sdata;
+    };
 } vector_iterator_t;
 
 typedef struct vector_reverse_iterator {
-    vector_data_t data;
+    union {
+        vector_data_t data;
+        char* sdata;
+    };
 } vector_reverse_iterator_t;
 typedef vector_reverse_iterator_t vector_r_iterator_t;
 

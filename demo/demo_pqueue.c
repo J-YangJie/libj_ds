@@ -27,9 +27,6 @@
 #define _to(x)   ((priority_queue_data_t)(x))
 #define _from(x) ((x) ? (char*)(x) : "null string")
 
-#define foreach()        { for (priority_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("%zd", it->data); }
-#define foreach_string() { for (priority_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("%s", _from(it->data)); }
-
 static void demo_values(void)
 {
     priority_queue_t demo = PRIORITY_QUEUE_INIT(&demo);

@@ -26,11 +26,11 @@
 #define TAG "[demo_hashmap]"
 
 #define _tok(x)  ((hashmap_key_t)(x))
-#define _from(x) ((x) ? (char*)(x) : "null string")
+#define _from(x) ((x) ? (x) : "null string")
 
 #define foreach()           { for (hashmap_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("(%zd, %zd)", it->key, it->value); }
-#define foreach_kstring()   { for (hashmap_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("(%s(0x%zx), %zd)", _from(it->key), it->hash, it->value); }
-#define foreach_r_kstring() { for (hashmap_r_iterator_t* it = cds->rbegin(&demo); cds->rend(&demo) != it; it = cds->rnext(&demo, it)) pr_test("(%s(0x%zx), %zd)", _from(it->key), it->hash, it->value); }
+#define foreach_kstring()   { for (hashmap_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("(%s(0x%zx), %zd)", _from(it->skey), it->hash, it->value); }
+#define foreach_r_kstring() { for (hashmap_r_iterator_t* it = cds->rbegin(&demo); cds->rend(&demo) != it; it = cds->rnext(&demo, it)) pr_test("(%s(0x%zx), %zd)", _from(it->skey), it->hash, it->value); }
 
 static class_hashmap_ops_t demo_ops = {
     .__hash      = __ds_ops_hash_default_string,
@@ -62,8 +62,8 @@ static void demo_base_and_iterator(void)
     cds->insert(&demo, 19, 19);        // [ (1, 1), (2, 2), (19, 19), (35, 35), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8) ]
 
     ret    = cds->size(&demo);         // size = 10
-    ret    = cds->capacity(&demo);     // capacity = 16
-    bcount = cds->bucket_count(&demo); // bucket count = 8
+    ret    = cds->bucket_count(&demo); // bucket count = 16
+    bcount = cds->bucket_valid_count(&demo); // bucket valid count = 8
     count  = cds->count(&demo, 8);     // count = 1
 
     foreach();                         // [ (1, 1), (2, 2), (19, 19), (35, 35), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8) ]
@@ -115,7 +115,7 @@ static void demo_about_erase(void)
     // after for [ ('?混搭33*&', 3), ('中文', 4), ('123', 2), ('yj', 0), ('test', 5), ('jy', 1) ]
 
     for (it = cds->begin(&demo); cds->end(&demo) != it; ) {
-        if (NULL != strstr(id[1], _from(it->key)))
+        if (NULL != strstr(id[1], _from(it->skey)))
             it = cds->erase(&demo, it);
         else
             it = cds->next(&demo, it);
