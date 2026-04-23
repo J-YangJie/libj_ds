@@ -30,13 +30,25 @@ typedef struct multimap_node {
 } multimap_node_t;
 
 typedef struct multimap_iterator {
-    multimap_key_t key;
-    multimap_value_t value;
+    union {
+        multimap_key_t key;
+        char* skey;
+    };
+    union {
+        multimap_value_t value;
+        char* svalue;
+    };
 } multimap_iterator_t;
 
 typedef struct multimap_reverse_iterator {
-    multimap_key_t key;
-    multimap_value_t value;
+    union {
+        multimap_key_t key;
+        char* skey;
+    };
+    union {
+        multimap_value_t value;
+        char* svalue;
+    };
 } multimap_reverse_iterator_t;
 typedef multimap_reverse_iterator_t multimap_r_iterator_t;
 

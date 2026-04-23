@@ -29,11 +29,17 @@ typedef struct multiset_node {
 } multiset_node_t;
 
 typedef struct multiset_iterator {
-    multiset_value_t value;
+    union {
+        multiset_value_t value;
+        char* svalue;
+    };
 } multiset_iterator_t;
 
 typedef struct multiset_reverse_iterator {
-    multiset_value_t value;
+    union {
+        multiset_value_t value;
+        char* svalue;
+    };
 } multiset_reverse_iterator_t;
 typedef multiset_reverse_iterator_t multiset_r_iterator_t;
 

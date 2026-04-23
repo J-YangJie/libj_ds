@@ -25,11 +25,11 @@
 #define TAG "[demo_vector]"
 
 #define _to(x)   ((vector_data_t)(x))
-#define _from(x) ((x) ? (char*)(x) : "null string")
+#define _from(x) ((x) ? (x) : "null string")
 
 #define foreach()          { for (vector_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("%zd", it->data); }
-#define foreach_string()   { for (vector_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("%s", _from(it->data)); }
-#define foreach_r_string() { for (vector_r_iterator_t* it = cds->rbegin(&demo); cds->rend(&demo) != it; it = cds->rnext(&demo, it)) pr_test("%s", _from(it->data)); }
+#define foreach_string()   { for (vector_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("%s", _from(it->sdata)); }
+#define foreach_r_string() { for (vector_r_iterator_t* it = cds->rbegin(&demo); cds->rend(&demo) != it; it = cds->rnext(&demo, it)) pr_test("%s", _from(it->sdata)); }
 
 static void demo_base_and_iterator(void)
 {

@@ -82,7 +82,7 @@ static void test_i_for(void)
 
 #ifdef TEST_HASHMAP
     hashmap_t        ds_hashmap_i  = HASHMAP_INIT_3(&ds_hashmap_i, HASHMAP_CAPACITY_INIT, 0, 0.0);
-    printf("Hashmap capacity init: %d\n", HASHMAP_CAPACITY_INIT);
+    printf("Hashmap reserve: %d\n", HASHMAP_CAPACITY_INIT);
 #elif TEST_MAP
     map_t            ds_map_i      = MAP_INIT(&ds_map_i);
 #elif TEST_SET
@@ -144,7 +144,7 @@ static void test_i_for(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -226,7 +226,7 @@ static void test_i_for(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -358,7 +358,7 @@ static void test_i_rand(void)
 
 #ifdef TEST_HASHMAP
     hashmap_t        ds_hashmap_i  = HASHMAP_INIT_3(&ds_hashmap_i, HASHMAP_CAPACITY_INIT, 0, 0.0);
-    printf("Hashmap capacity init: %d\n", HASHMAP_CAPACITY_INIT);
+    printf("Hashmap reserve: %d\n", HASHMAP_CAPACITY_INIT);
 #elif TEST_MAP
     map_t            ds_map_i      = MAP_INIT(&ds_map_i);
 #elif TEST_SET
@@ -437,7 +437,7 @@ static void test_i_rand(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -519,7 +519,7 @@ static void test_i_rand(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -702,7 +702,7 @@ static void test_s_rand(void)
 
 #ifdef TEST_HASHMAP
     hashmap_t  ds_hashmap_s      = HASHMAP_INIT_OPS_3(&ds_hashmap_s, &tops_hashmap, HASHMAP_CAPACITY_INIT, 0, 0.0);
-    printf("Hashmap capacity init: %d\n", HASHMAP_CAPACITY_INIT);
+    printf("Hashmap reserve: %d\n", HASHMAP_CAPACITY_INIT);
 #elif TEST_MAP
     map_t      ds_map_s          = MAP_INIT_OPS(&ds_map_s, &tops_map);
 #elif TEST_SET
@@ -797,7 +797,7 @@ static void test_s_rand(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -896,7 +896,7 @@ static void test_s_rand(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;

@@ -29,11 +29,17 @@ typedef struct list_node {
 } list_node_t;
 
 typedef struct list_iterator {
-    list_data_t data;
+    union {
+        list_data_t data;
+        char* sdata;
+    };
 } list_iterator_t;
 
 typedef struct list_reverse_iterator {
-    list_data_t data;
+    union {
+        list_data_t data;
+        char* sdata;
+    };
 } list_reverse_iterator_t;
 typedef list_reverse_iterator_t list_r_iterator_t;
 
