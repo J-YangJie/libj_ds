@@ -26,19 +26,31 @@
 #include <hashmap/hashmap_ops.h>
 
 typedef struct hashmap_node {
-    bucket_t* bucket;
+    bucket_shell_t sh;
 } hashmap_node_t;
 typedef bucket_node_t hashmap_bnode_t;
 
 typedef struct hashmap_iterator {
-    hashmap_key_t key;
-    hashmap_value_t value;
+    union {
+        hashmap_key_t key;
+        char* skey;
+    };
+    union {
+        hashmap_value_t value;
+        char* svalue;
+    };
     hashmap_hash_t hash;
 } hashmap_iterator_t;
 
 typedef struct hashmap_reverse_iterator {
-    hashmap_key_t key;
-    hashmap_value_t value;
+    union {
+        hashmap_key_t key;
+        char* skey;
+    };
+    union {
+        hashmap_value_t value;
+        char* svalue;
+    };
     hashmap_hash_t hash;
 } hashmap_reverse_iterator_t;
 typedef hashmap_reverse_iterator_t hashmap_r_iterator_t;
@@ -55,22 +67,21 @@ typedef union hashmap_config {
 typedef struct hashmap {
     const class_hashmap_ops_t* ops;
     hashmap_node_t*  head;
-    hashmap_node_t*  head_e;
     hashmap_size_t   size;
-    hashmap_size_t   capacity;
-    hashmap_size_t   capacity_init;
-    hashmap_size_t   capacity_max;
-    float            capacity_load_factor;
-    hashmap_config_t config;
     hashmap_bcount_t bucket_count;
-    hashmap_size_t   pi_s;
-    hashmap_size_t   pi_e;
+    hashmap_bcount_t bucket_count_init;
+    hashmap_bcount_t bucket_count_max;
+    float            load_factor;
+    hashmap_config_t config;
+    hashmap_bcount_t bucket_valid_count;
+    hashmap_bcount_t pi_s;
+    hashmap_bcount_t pi_e;
 } hashmap_t;
 
 typedef struct class_hashmap {
     hashmap_size_t (*size)(const hashmap_t* _this);
-    hashmap_size_t (*capacity)(const hashmap_t* _this);
     hashmap_bcount_t (*bucket_count)(const hashmap_t* _this);
+    hashmap_bcount_t (*bucket_valid_count)(const hashmap_t* _this);
     hashmap_count_t (*count)(const hashmap_t* _this, hashmap_key_t key);
     hashmap_iterator_t* (*end)(const hashmap_t* _this);
     hashmap_iterator_t* (*begin)(const hashmap_t* _this);
@@ -98,22 +109,22 @@ const class_hashmap_t* class_hashmap_ins(void);
 #define HASHMAP_INIT_OPS(_ptr, _ops) (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init((_ptr))
 #define HASHMAP_DEINIT(_ptr)         do { __hashmap_deinit((_ptr)); } while(0)
 
-#define HASHMAP_INIT_1(_ptr, _capacity_init) \
-        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 1, (_capacity_init))
-#define HASHMAP_INIT_2(_ptr, _capacity_init, _capacity_max) \
-        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 2, (_capacity_init), (_capacity_max))
-#define HASHMAP_INIT_3(_ptr, _capacity_init, _capacity_max, _load_factor) \
-        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 3, (_capacity_init), (_capacity_max), (_load_factor))
-#define HASHMAP_INIT_4(_ptr, _capacity_init, _capacity_max, _load_factor, _config) \
-        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 4, (_capacity_init), (_capacity_max), (_load_factor), (_config))
+#define HASHMAP_INIT_1(_ptr, _bucket_count_init) \
+        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 1, (_bucket_count_init))
+#define HASHMAP_INIT_2(_ptr, _bucket_count_init, _bucket_count_max) \
+        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 2, (_bucket_count_init), (_bucket_count_max))
+#define HASHMAP_INIT_3(_ptr, _bucket_count_init, _bucket_count_max, _load_factor) \
+        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 3, (_bucket_count_init), (_bucket_count_max), (_load_factor))
+#define HASHMAP_INIT_4(_ptr, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
+        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 4, (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
 
-#define HASHMAP_INIT_OPS_1(_ptr, _ops, _capacity_init) \
-        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 1, (_capacity_init))
-#define HASHMAP_INIT_OPS_2(_ptr, _ops, _capacity_init, _capacity_max) \
-        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 2, (_capacity_init), (_capacity_max))
-#define HASHMAP_INIT_OPS_3(_ptr, _ops, _capacity_init, _capacity_max, _load_factor) \
-        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 3, (_capacity_init), (_capacity_max), (_load_factor))
-#define HASHMAP_INIT_OPS_4(_ptr, _ops, _capacity_init, _capacity_max, _load_factor, _config) \
-        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 4, (_capacity_init), (_capacity_max), (_load_factor), (_config))
+#define HASHMAP_INIT_OPS_1(_ptr, _ops, _bucket_count_init) \
+        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 1, (_bucket_count_init))
+#define HASHMAP_INIT_OPS_2(_ptr, _ops, _bucket_count_init, _bucket_count_max) \
+        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 2, (_bucket_count_init), (_bucket_count_max))
+#define HASHMAP_INIT_OPS_3(_ptr, _ops, _bucket_count_init, _bucket_count_max, _load_factor) \
+        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 3, (_bucket_count_init), (_bucket_count_max), (_load_factor))
+#define HASHMAP_INIT_OPS_4(_ptr, _ops, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
+        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 4, (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
 
 #endif /* __J_HASH_MAP_H */

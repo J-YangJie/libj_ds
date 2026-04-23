@@ -26,11 +26,11 @@
 #define TAG "[demo_set]"
 
 #define _tov(x)  ((set_value_t)(x))
-#define _from(x) ((x) ? (char*)(x) : "null string")
+#define _from(x) ((x) ? (x) : "null string")
 
 #define foreach()           { for (set_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("%zd", it->value); }
-#define foreach_vstring()   { for (set_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("%s", _from(it->value)); }
-#define foreach_r_vstring() { for (set_r_iterator_t* it = cds->rbegin(&demo); cds->rend(&demo) != it; it = cds->rnext(&demo, it)) pr_test("%s", _from(it->value)); }
+#define foreach_vstring()   { for (set_iterator_t* it = cds->begin(&demo); cds->end(&demo) != it; it = cds->next(&demo, it)) pr_test("%s", _from(it->svalue)); }
+#define foreach_r_vstring() { for (set_r_iterator_t* it = cds->rbegin(&demo); cds->rend(&demo) != it; it = cds->rnext(&demo, it)) pr_test("%s", _from(it->svalue)); }
 
 static class_set_ops_t demo_ops = {
     .valid_value = ds_ops_valid_data_default_string,
@@ -92,7 +92,7 @@ static void demo_about_insert(void)
 
 static bool demo_remove_if_condition_v(ds_value_t value)
 {
-    return NULL != strstr(_from(value), "3");
+    return NULL != strstr(_from((char*)value), "3");
 }
 
 static void demo_about_erase(void)
@@ -110,7 +110,7 @@ static void demo_about_erase(void)
     // after for [ '123', '?混搭33*&', 'jy', 'test', 'yj', '中文' ]
 
     for (it = cds->begin(&demo); cds->end(&demo) != it; ) {
-        if (NULL != strstr(id[1], _from(it->value)))
+        if (NULL != strstr(id[1], _from(it->svalue)))
             it = cds->erase(&demo, it);
         else
             it = cds->next(&demo, it);

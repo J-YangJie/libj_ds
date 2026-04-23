@@ -29,11 +29,17 @@ typedef struct set_node {
 } set_node_t;
 
 typedef struct set_iterator {
-    set_value_t value;
+    union {
+        set_value_t value;
+        char* svalue;
+    };
 } set_iterator_t;
 
 typedef struct set_reverse_iterator {
-    set_value_t value;
+    union {
+        set_value_t value;
+        char* svalue;
+    };
 } set_reverse_iterator_t;
 typedef set_reverse_iterator_t set_r_iterator_t;
 

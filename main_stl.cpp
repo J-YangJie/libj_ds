@@ -122,9 +122,9 @@ static void test_i_for(void)
         time_pqueue   = 0;
 
 #ifdef TEST_HASHMAP
-        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_hashmap_i[i] = i;          }, time_hashmap);
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_hashmap_i.insert({i, i});  }, time_hashmap);
 #elif TEST_MAP
-        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_map_i[i] = i;              }, time_map);
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_map_i.insert({i, i});      }, time_map);
 #elif TEST_SET
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_set_i.insert(i);           }, time_set);
 #elif TEST_MULTIMAP
@@ -152,7 +152,7 @@ static void test_i_for(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -232,7 +232,7 @@ static void test_i_for(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -399,11 +399,11 @@ static void test_i_rand(void)
 
 #ifdef TEST_HASHMAP
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { 
-            ds_hashmap_i[rand() % TIMES_FIND] = i; 
+            ds_hashmap_i.insert({rand() % TIMES_FIND, i}); 
         }, time_hashmap);
 #elif TEST_MAP
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { 
-            ds_map_i[rand() % TIMES_FIND] = i; 
+            ds_map_i.insert({rand() % TIMES_FIND, i}); 
         }, time_map);
 #elif TEST_SET
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { 
@@ -444,7 +444,7 @@ static void test_i_rand(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -524,7 +524,7 @@ static void test_i_rand(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -720,11 +720,11 @@ static void test_s_rand(void)
 
 #ifdef TEST_HASHMAP
             GET_DURATION(for (int i = 0; i < NUM_BUF; ++i) { 
-                ds_hashmap_s[buffer[i]] = i; 
+                ds_hashmap_s.insert({buffer[i], i}); 
             }, time_hashmap);
 #elif TEST_MAP
             GET_DURATION(for (int i = 0; i < NUM_BUF; ++i) { 
-                ds_map_s[buffer[i]] = i; 
+                ds_map_s.insert({buffer[i], i}); 
             }, time_map);
 #elif TEST_SET
             GET_DURATION(for (int i = 0; i < NUM_BUF; ++i) { 
@@ -766,7 +766,7 @@ static void test_s_rand(void)
                 time_pqueue   / 1000);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
@@ -863,7 +863,7 @@ static void test_s_rand(void)
                 times_succ, ds_size);
     }
 
-    if (1)
+    if (1) // if (0)
     {
         time_hashmap  = 0;
         time_map      = 0;
