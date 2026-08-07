@@ -21,7 +21,19 @@
 
 #include <_log.h>
 #include <_memory.h>
+#include <linux/_types.h>
 #include <linux/_compiler.h>
+
+typedef struct priority_queue_node {
+    priority_queue_data_t data;
+} priority_queue_node_t;
+
+struct priority_queue {
+    const class_priority_queue_ops_t* ops;
+    priority_queue_node_t* head;
+    priority_queue_size_t size;
+    priority_queue_size_t capacity;
+};
 
 #define TAG "[priority_queue]"
 
@@ -222,21 +234,25 @@ static priority_queue_size_t priority_queue_clear(priority_queue_t* _this)
     return ret - __priority_queue_size(_this);
 }
 
-/* __always_inline */ inline void __priority_queue_init(priority_queue_t* priority_queue)
+priority_queue_t* __priority_queue_new(const class_priority_queue_ops_t* ops)
 {
+    priority_queue_t* priority_queue = (priority_queue_t*)p_calloc(1, sizeof(priority_queue_t));
+    if (is_null(priority_queue))
+        return NULL;
+
+    priority_queue->ops  = ops;
     priority_queue->head = NULL;
-    priority_queue->capacity = 0;
+    return priority_queue;
 }
 
-/* __always_inline */ inline void __priority_queue_deinit(priority_queue_t* priority_queue)
+void __priority_queue_delete(priority_queue_t** _this)
 {
-    priority_queue_clear(priority_queue);
-    p_free(priority_queue->head);
+    if (is_null(_this) || is_null(*_this))
+        return;
 
-    priority_queue->ops = NULL;
-    priority_queue->head = NULL;
-    priority_queue->size = 0;
-    priority_queue->capacity = 0;
+    priority_queue_clear(*_this);
+    p_free((*_this)->head);
+    p_free(*_this);
 }
 
 /* __always_inline */ inline const class_priority_queue_t* class_priority_queue_ins(void)
@@ -249,4 +265,33 @@ static priority_queue_size_t priority_queue_clear(priority_queue_t* _this)
         .clear       = priority_queue_clear,
     };
     return &ins;
+}
+
+
+
+
+
+priority_queue_size_t cpqueue_size(const priority_queue_t* _this)
+{
+    return _priority_queue_size(_this);
+}
+
+bool cpqueue_push(priority_queue_t* _this, priority_queue_data_t data)
+{
+    return priority_queue_push(_this, data);
+}
+
+priority_queue_data_t cpqueue_top(priority_queue_t* _this, priority_queue_data_t default_data)
+{
+    return priority_queue_top(_this, default_data);
+}
+
+priority_queue_data_t cpqueue_pop(priority_queue_t* _this, priority_queue_data_t default_data)
+{
+    return priority_queue_pop(_this, default_data);
+}
+
+priority_queue_size_t cpqueue_clear(priority_queue_t* _this)
+{
+    return priority_queue_clear(_this);
 }

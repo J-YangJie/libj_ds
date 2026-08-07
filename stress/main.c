@@ -39,6 +39,9 @@
 
 #define TAG "[stress_test]"
 
+#define STRESS_NEW(_ptr, _expr) \
+    do { while (NULL == ((_ptr) = (_expr))) ; } while (0)
+
 void* _p_malloc(size_t size)                { int num = rand(); if (123 == num % 654321) { pr_test("Memory [ malloc  ] [ %d ] failed!", num); return NULL; } return malloc(size); }
 void* _p_calloc(size_t nmemb, size_t size)  { int num = rand(); if (123 == num % 654321) { pr_test("Memory [ calloc  ] [ %d ] failed!", num); return NULL; } return calloc(nmemb, size); }
 void* _p_realloc(void* ptr, size_t size)    { int num = rand(); if (0 == num % 5)        { pr_test("Memory [ realloc ] [ %d ] failed!", num); return NULL; } return realloc(ptr, size); }
@@ -146,11 +149,12 @@ static bool test_is_same(stress_t* stress)
     stress_iterator_d_t* its[NUM_DS];
     class_priority_queue_ops_t ds_ops = {
         .valid_data = demo_valid_key,
-        .__lt       = __demo_cmp,
+        .__lt       = __demo_cmp_gt,
         .copy_data  = demo_copy_key,
         .free_data  = demo_free_key,
     };
-    priority_queue_t ds = PRIORITY_QUEUE_INIT_OPS(&ds, &ds_ops);
+    priority_queue_t* ds = NULL;
+    STRESS_NEW(ds, PRIORITY_QUEUE_NEW_OPS(&ds_ops));
 
     /* TODO: 首个数据结构不能是multi类型 */
     {
@@ -158,11 +162,11 @@ static bool test_is_same(stress_t* stress)
         const class_stress_interface_t* interface = stress[0].interface;
 
         for (its[0] = interface->begin(this); interface->end(this) != its[0]; its[0] = interface->next(this, its[0]))
-            cpriority_queue->push(&ds, its[0]->data);
+            cpriority_queue->push(ds, its[0]->data);
     }
 
-    while (cpriority_queue->size(&ds) > 0) {
-        ds_data_t tdata = cpriority_queue->pop(&ds, 0);
+    while (cpriority_queue->size(ds) > 0) {
+        ds_data_t tdata = cpriority_queue->pop(ds, 0);
         for (int i = 0; stress[i].this; ++i) {
             void* this = stress[i].this;
             const class_stress_interface_t* interface = stress[i].interface;
@@ -176,7 +180,7 @@ static bool test_is_same(stress_t* stress)
     }
 
     pr_test("Is same [ true ]!");
-    PRIORITY_QUEUE_DEINIT(&ds);
+    PRIORITY_QUEUE_DELETE(&ds);
     return true;
 }
 
@@ -214,7 +218,7 @@ static bool test_find_and_erase(stress_t* stress, ds_data_t data)
         if (!interface)
             continue;
 
-        if (__demo_cmp(cache, its[i]->data) || __demo_cmp(its[i]->data, cache))
+        if (!__demo_cmp_eq(cache, its[i]->data))
             while(true); /* 排查问题 */
 
         {
@@ -245,12 +249,12 @@ static bool test_lower_and_upper(stress_t* stress, ds_data_t data)
                 first = false;
                 continue;
             }
-            
+
             if (0 == data_first) {
                 if (0 != tdata)
                     while(true); /* 排查问题 */
             } else {
-                if (__demo_cmp(data_first, tdata) || __demo_cmp(tdata, data_first))
+                if (!__demo_cmp_eq(data_first, tdata))
                     while(true); /* 排查问题 */
             }
         }
@@ -272,12 +276,12 @@ static bool test_lower_and_upper(stress_t* stress, ds_data_t data)
                 first = false;
                 continue;
             }
-            
+
             if (0 == data_first) {
                 if (0 != tdata)
                     while(true); /* 排查问题 */
             } else {
-                if (__demo_cmp(data_first, tdata) || __demo_cmp(tdata, data_first))
+                if (!__demo_cmp_eq(data_first, tdata))
                     while(true); /* 排查问题 */
             }
         }
@@ -363,58 +367,64 @@ int main(int argc, char** argv)
     class_hashmap_ops_t hashmap_ops = {
         .__hash      = __demo_hash,
         .valid_key   = demo_valid_key,
-        .__lt        = __demo_cmp,
+        .__lt        = __demo_cmp_gt,
+        .__eq        = __demo_cmp_eq,
         .copy_key    = demo_copy_key,
         .free_key    = demo_free_key,
         .valid_value = NULL,
         .copy_value  = NULL,
         .free_value  = NULL,
     };
-    hashmap_t hashmap = HASHMAP_INIT_OPS_3(&hashmap, &hashmap_ops, 0, 0, 0.0);
+    hashmap_t* hashmap = NULL;
+    STRESS_NEW(hashmap, HASHMAP_NEW_OPS_3(&hashmap_ops, 0, 0, 0.0));
 
     class_map_ops_t map_ops = {
         .valid_key   = demo_valid_key,
-        .__lt        = __demo_cmp,
+        .__lt        = __demo_cmp_gt,
         .copy_key    = demo_copy_key,
         .free_key    = demo_free_key,
         .valid_value = NULL,
         .copy_value  = NULL,
         .free_value  = NULL,
     };
-    map_t map = MAP_INIT_OPS(&map, &map_ops);
+    map_t* map = NULL;
+    STRESS_NEW(map, MAP_NEW_OPS(&map_ops));
 
     class_set_ops_t set_ops = {
-        .valid_value = demo_valid_key,
-        .__lt_value  = __demo_cmp,
-        .copy_value  = demo_copy_key,
-        .free_value  = demo_free_key,
+        .valid_key = demo_valid_key,
+        .__lt      = __demo_cmp_gt,
+        .copy_key  = demo_copy_key,
+        .free_key  = demo_free_key,
     };
-    set_t set = SET_INIT_OPS(&set, &set_ops);
+    set_t* set = NULL;
+    STRESS_NEW(set, SET_NEW_OPS(&set_ops));
 
     class_multimap_ops_t multimap_ops = {
         .valid_key   = demo_valid_key,
-        .__lt        = __demo_cmp,
+        .__lt        = __demo_cmp_gt,
         .copy_key    = demo_copy_key,
         .free_key    = demo_free_key,
         .valid_value = NULL,
         .copy_value  = NULL,
         .free_value  = NULL,
     };
-    multimap_t multimap = MULTIMAP_INIT_OPS(&multimap, &multimap_ops);
+    multimap_t* multimap = NULL;
+    STRESS_NEW(multimap, MULTIMAP_NEW_OPS(&multimap_ops));
 
     class_multiset_ops_t multiset_ops = {
-        .valid_value = demo_valid_key,
-        .__lt_value  = __demo_cmp,
-        .copy_value  = demo_copy_key,
-        .free_value  = demo_free_key,
+        .valid_key = demo_valid_key,
+        .__lt      = __demo_cmp_gt,
+        .copy_key  = demo_copy_key,
+        .free_key  = demo_free_key,
     };
-    multiset_t multiset = MULTISET_INIT_OPS(&multiset, &multiset_ops);
+    multiset_t* multiset = NULL;
+    STRESS_NEW(multiset, MULTISET_NEW_OPS(&multiset_ops));
 
-    stress_t stress[NUM_DS] = { (stress_t){ .this = &hashmap,  .interface = cs_hashmap },
-                                (stress_t){ .this = &map,      .interface = cs_map },
-                                (stress_t){ .this = &set,      .interface = cs_set },
-                                (stress_t){ .this = &multimap, .interface = cs_multimap },
-                                (stress_t){ .this = &multiset, .interface = cs_multiset },
+    stress_t stress[NUM_DS] = { (stress_t){ .this = hashmap,  .interface = cs_hashmap },
+                                (stress_t){ .this = map,      .interface = cs_map },
+                                (stress_t){ .this = set,      .interface = cs_set },
+                                (stress_t){ .this = multimap, .interface = cs_multimap },
+                                (stress_t){ .this = multiset, .interface = cs_multiset },
                                 (stress_t){ .this = NULL,      .interface = NULL },
                                 };
 
@@ -478,11 +488,11 @@ int main(int argc, char** argv)
         }
     }
 
-    HASHMAP_DEINIT(&hashmap);
-    MAP_DEINIT(&map);
-    SET_DEINIT(&set);
-    MULTIMAP_DEINIT(&multimap);
-    MULTISET_DEINIT(&multiset);
+    HASHMAP_DELETE(&hashmap);
+    MAP_DELETE(&map);
+    SET_DELETE(&set);
+    MULTIMAP_DELETE(&multimap);
+    MULTISET_DELETE(&multiset);
 
     return 0;
 }

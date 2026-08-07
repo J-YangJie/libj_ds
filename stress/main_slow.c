@@ -33,6 +33,9 @@
 
 #define TAG "[stress_slow]"
 
+#define STRESS_NEW(_ptr, _expr) \
+    do { while (NULL == ((_ptr) = (_expr))) ; } while (0)
+
 void* _p_malloc(size_t size)                { int num = rand(); if (123 == num % 4321) { pr_test("Memory [ malloc  ] [ %d ] failed!", num); return NULL; } return malloc(size); }
 void* _p_calloc(size_t nmemb, size_t size)  { int num = rand(); if (123 == num % 4321) { pr_test("Memory [ calloc  ] [ %d ] failed!", num); return NULL; } return calloc(nmemb, size); }
 void* _p_realloc(void* ptr, size_t size)    { int num = rand(); if (0 == num % 5)      { pr_test("Memory [ realloc ] [ %d ] failed!", num); return NULL; } return realloc(ptr, size); }
@@ -193,8 +196,7 @@ static bool test_is_same(stress_t* stress)
             if (0 == data_first) {
                 data_first = interface->first(this, 0);
             } else {
-                if (__demo_cmp(data_first, interface->first(this, 0)) 
-                    || __demo_cmp(interface->first(this, 0), data_first))
+                if (!__demo_cmp_eq(data_first, interface->first(this, 0)))
                     while(true); /* 排查问题 */
             }
         }
@@ -203,8 +205,7 @@ static bool test_is_same(stress_t* stress)
             if (0 == data_last) {
                 data_last = interface->last(this, 0);
             } else {
-                if (__demo_cmp(data_last, interface->last(this, 0)) 
-                    || __demo_cmp(interface->last(this, 0), data_last))
+                if (!__demo_cmp_eq(data_last, interface->last(this, 0)))
                     while(true); /* 排查问题 */
             }
         }
@@ -230,7 +231,7 @@ static bool test_is_same(stress_t* stress)
                 continue;
             }
 
-            if (__demo_cmp(tdata, its[i]->data) || __demo_cmp(its[i]->data, tdata))
+            if (!__demo_cmp_eq(tdata, its[i]->data))
                 while(true); /* 排查问题 */
 
             its[i] = interface->next(this, its[i]);
@@ -275,7 +276,7 @@ static bool test_find_and_erase(stress_t* stress, ds_data_t data)
         if (!interface)
             continue;
 
-        if (__demo_cmp(cache, its[i]->data) || __demo_cmp(its[i]->data, cache))
+        if (!__demo_cmp_eq(cache, its[i]->data))
             while(true); /* 排查问题 */
 
         {
@@ -386,7 +387,7 @@ static inline bool test_sort_ascending(ds_data_t left, ds_data_t right)
 
 static inline bool test_sort_descending(ds_data_t left, ds_data_t right)
 {
-    return __demo_cmp(left, right);
+    return __demo_cmp_gt(left, right);
 }
 
 static bool test_sort(stress_t* stress, bool ascending)
@@ -398,7 +399,7 @@ static bool test_sort(stress_t* stress, bool ascending)
             continue;
 
         if (interface->sort) {
-            __comp rule = ascending ? test_sort_ascending : test_sort_descending;
+            __cmp rule = ascending ? test_sort_ascending : test_sort_descending;
             interface->sort(this, rule);
 
             stress_iterator_d_t* it = interface->begin(this);
@@ -459,22 +460,24 @@ int main(int argc, char** argv)
 {
     class_vector_ops_t vector_ops = {
         .valid_data = demo_valid_key,
-        .__lt       = __demo_cmp,
+        .__eq       = __demo_cmp_eq,
         .copy_data  = demo_copy_key,
         .free_data  = demo_free_key,
     };
-    vector_t vector = VECTOR_INIT_OPS(&vector, &vector_ops);
+    vector_t* vector = NULL;
+    STRESS_NEW(vector, VECTOR_NEW_OPS(&vector_ops));
 
     class_list_ops_t list_ops = {
         .valid_data = demo_valid_key,
-        .__lt       = __demo_cmp,
+        .__eq       = __demo_cmp_eq,
         .copy_data  = demo_copy_key,
         .free_data  = demo_free_key,
     };
-    list_t list = LIST_INIT_OPS(&list, &list_ops);
+    list_t* list = NULL;
+    STRESS_NEW(list, LIST_NEW_OPS(&list_ops));
 
-    stress_t stress[NUM_DS] = { (stress_t){ .this = &vector,  .interface = cs_vector },
-                                (stress_t){ .this = &list,    .interface = cs_list },
+    stress_t stress[NUM_DS] = { (stress_t){ .this = vector,  .interface = cs_vector },
+                                (stress_t){ .this = list,    .interface = cs_list },
                                 (stress_t){ .this = NULL,     .interface = NULL },
                                 };
 
@@ -549,8 +552,8 @@ int main(int argc, char** argv)
         }
     }
 
-    VECTOR_DEINIT(&vector);
-    LIST_DEINIT(&list);
+    VECTOR_DELETE(&vector);
+    LIST_DELETE(&list);
 
     return 0;
 }

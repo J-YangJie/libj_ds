@@ -155,10 +155,10 @@ static ds_size_t remove_if(void* _this, remove_if_condition cond)
     return cds->remove_if(this, cond);
 }
 
-static void sort(void* _this, __comp __comp)
+static void sort(void* _this, __cmp __cmp)
 {
     vector_t* this = (vector_t*)_this;
-    return cds->sort(this, __comp);
+    return cds->sort(this, __cmp);
 }
 
 static ds_size_t clear(void* _this)

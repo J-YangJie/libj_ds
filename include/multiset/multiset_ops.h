@@ -23,10 +23,13 @@
 #include <_types.h>
 
 typedef struct class_multiset_ops {
-    bool (*valid_value)(multiset_value_t value);                       /* Return true if `value` is valid */
-    bool (*__lt_value)(multiset_value_t left, multiset_value_t right); /* Return true if [ `left` < `right` ] */
-    bool (*copy_value)(multiset_value_t in, multiset_value_t* out);    /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_value` must also be implemented */
-    void (*free_value)(multiset_value_t* value);                       /* The function pointer can be null and manages memory on its own */
+    bool (*valid_key)(multiset_key_t key);                       /* Return true if `key` is valid */
+    bool (*__lt)(multiset_key_t left, multiset_key_t right);     /* Return true if [ `left` < `right` ] */
+    bool (*copy_key)(multiset_key_t in, multiset_key_t* out);    /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_key` must also be implemented */
+    void (*free_key)(multiset_key_t* key);                       /* The function pointer can be null and manages memory on its own */
 } class_multiset_ops_t;
+
+const class_multiset_ops_t* class_multiset_ops_string_ins(void);
+#define g_class_multiset_ops_string()  class_multiset_ops_string_ins()
 
 #endif /* __J_MULTISET_OPS_H */

@@ -1,5 +1,5 @@
 /*
-  Default Implementations Of Vector Custom Operation Interfaces
+  Default Implementations Of Set Custom Operation Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -17,17 +17,17 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <vector/vector_ops.h>
+#include <set/set_ops.h>
 
 #include <operations/ds_ops_string.h>
 
-/* __always_inline */ inline const class_vector_ops_t* class_vector_ops_string_ins(void)
+/* __always_inline */ inline const class_set_ops_t* class_set_ops_string_ins(void)
 {
-    static const class_vector_ops_t ins = {
-        .valid_data = ds_ops_valid_data_default_string,
-        .__eq       = __ds_ops_eq_default_string,
-        .copy_data  = ds_ops_copy_data_default_string,
-        .free_data  = ds_ops_free_data_default_string,
+    static const class_set_ops_t ins = {
+        .valid_key = ds_ops_valid_data_default_string,
+        .__lt      = __ds_ops_lt_default_string,
+        .copy_key  = ds_ops_copy_data_default_string,
+        .free_key  = ds_ops_free_data_default_string,
     };
     return &ins;
 }
