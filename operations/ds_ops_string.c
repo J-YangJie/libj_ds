@@ -140,6 +140,13 @@ static /* __always_inline */ inline bool ds_ops_valid_key_default_string_max_n(d
     return strcmp(l, r) > 0; /* TODO: security */
 }
 
+/* __always_inline */ inline bool __ds_ops_eq_default_string(ds_data_t left, ds_data_t right)
+{
+    char* l = (char*)left;
+    char* r = (char*)right;
+    return 0 == strcmp(l, r); /* TODO: security */
+}
+
 inline bool ds_ops_copy_data_default_string(ds_data_t in, ds_data_t* out)
 {
     char* i = (char*)in;

@@ -26,6 +26,7 @@ typedef struct class_hashmap_ops {
     hashmap_hash_t (*__hash)(hashmap_key_t key);                  /* Caculate and return a hash value based on `key` */
     bool (*valid_key)(hashmap_key_t key);                         /* Return true if `key` is valid */
     bool (*__lt)(hashmap_key_t left, hashmap_key_t right);        /* Return true if [ `left` < `right` ] */
+    bool (*__eq)(hashmap_key_t left, hashmap_key_t right);        /* Return true if [ `left` == `right` ] */
     bool (*copy_key)(hashmap_key_t in, hashmap_key_t* out);       /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_key` must also be implemented */
     void (*free_key)(hashmap_key_t* key);                         /* The function pointer can be null and manages memory on its own */
     bool (*valid_value)(hashmap_value_t value);                   /* Return true if `valid` is valid */

@@ -20,38 +20,53 @@
 #ifndef __J_SET_H
 #define __J_SET_H
 
-#include <linux/_types.h>
 #include <set/set_ops.h>
-
-typedef struct set_node {
-    set_value_t value;
-    struct rb_node node;
-} set_node_t;
 
 typedef struct set_iterator {
     union {
-        set_value_t value;
-        char* svalue;
+        set_key_t key;
+        char* skey;
+        set_data_t data;
+        char* sdata;
     };
 } set_iterator_t;
 
 typedef struct set_reverse_iterator {
     union {
-        set_value_t value;
-        char* svalue;
+        set_key_t key;
+        char* skey;
+        set_data_t data;
+        char* sdata;
     };
 } set_reverse_iterator_t;
 typedef set_reverse_iterator_t set_r_iterator_t;
 
-typedef struct set {
-    const class_set_ops_t* ops;
-    struct rb_root root;
-    set_size_t size;
-} set_t;
+typedef struct set set_t;
 
+/* Method 1 */
+set_size_t        cset_size(const set_t* _this);
+set_count_t       cset_count(const set_t* _this, set_key_t key);
+set_iterator_t*   cset_end(const set_t* _this);
+set_iterator_t*   cset_begin(const set_t* _this);
+set_iterator_t*   cset_next(const set_t* _this, const set_iterator_t* iterator);
+set_iterator_t*   cset_prev(const set_t* _this, const set_iterator_t* iterator);
+set_r_iterator_t* cset_rend(const set_t* _this);
+set_r_iterator_t* cset_rbegin(const set_t* _this);
+set_r_iterator_t* cset_rnext(const set_t* _this, const set_r_iterator_t* r_iterator);
+set_r_iterator_t* cset_rprev(const set_t* _this, const set_r_iterator_t* r_iterator);
+set_iterator_t*   cset_find(const set_t* _this, set_key_t key);
+set_iterator_t*   cset_lower_bound(const set_t* _this, set_key_t key);
+set_iterator_t*   cset_upper_bound(const set_t* _this, set_key_t key);
+set_iterator_t*   cset_insert(set_t* _this, set_key_t key);
+set_iterator_t*   cset_erase(set_t* _this, set_iterator_t* iterator);
+set_size_t        cset_remove(set_t* _this, set_key_t key);
+set_size_t        cset_remove_if(set_t* _this, remove_if_condition_k cond);
+set_size_t        cset_clear(set_t* _this);
+
+/* Method 2 */
 typedef struct class_set {
     set_size_t (*size)(const set_t* _this);
-    set_count_t (*count)(const set_t* _this, set_value_t value);
+    set_count_t (*count)(const set_t* _this, set_key_t key);
     set_iterator_t* (*end)(const set_t* _this);
     set_iterator_t* (*begin)(const set_t* _this);
     set_iterator_t* (*next)(const set_t* _this, const set_iterator_t* iterator);
@@ -60,23 +75,24 @@ typedef struct class_set {
     set_r_iterator_t* (*rbegin)(const set_t* _this);
     set_r_iterator_t* (*rnext)(const set_t* _this, const set_r_iterator_t* r_iterator);
     set_r_iterator_t* (*rprev)(const set_t* _this, const set_r_iterator_t* r_iterator);
-    set_iterator_t* (*find)(const set_t* _this, set_value_t value);
-    set_iterator_t* (*lower_bound)(const set_t* _this, set_value_t value); /* >= value */
-    set_iterator_t* (*upper_bound)(const set_t* _this, set_value_t value); /*  > value */
-    set_iterator_t* (*insert)(set_t* _this, set_value_t value);            /* if input value doesn't match -> insert | if input value match -> return NULL */
+    set_iterator_t* (*find)(const set_t* _this, set_key_t key);
+    set_iterator_t* (*lower_bound)(const set_t* _this, set_key_t key); /* >= key */
+    set_iterator_t* (*upper_bound)(const set_t* _this, set_key_t key); /*  > key */
+    set_iterator_t* (*insert)(set_t* _this, set_key_t key);            /* if input key doesn't match -> insert | if input key match -> return NULL */
     set_iterator_t* (*erase)(set_t* _this, set_iterator_t* iterator);
-    set_size_t (*remove)(set_t* _this, set_value_t value);
-    set_size_t (*remove_if)(set_t* _this, remove_if_condition_v cond);
+    set_size_t (*remove)(set_t* _this, set_key_t key);
+    set_size_t (*remove_if)(set_t* _this, remove_if_condition_k cond);
     set_size_t (*clear)(set_t* _this);
 } class_set_t;
 
-void __set_init(set_t* set);
-void __set_deinit(set_t* set);
+set_t* __set_new(const class_set_ops_t* ops);
+void   __set_delete(set_t** _this);
 const class_set_t* class_set_ins(void);
-#define g_class_set()            class_set_ins()
-#define cset                     g_class_set()
-#define SET_INIT(_ptr)           (set_t) { .ops = NULL, .size = 0, }; __set_init((_ptr))
-#define SET_INIT_OPS(_ptr, _ops) (set_t) { .ops = _ops, .size = 0, }; __set_init((_ptr))
-#define SET_DEINIT(_ptr)         do { __set_deinit((_ptr)); } while(0)
+#define g_class_set()      class_set_ins()
+#define cset               g_class_set()
+#define SET_NEW()          __set_new(NULL)
+#define SET_NEW_OPS(_ops)  __set_new((_ops))
+#define SET_NEW_STRING()   __set_new(g_class_set_ops_string())
+#define SET_DELETE(_pptr)  do { __set_delete((_pptr)); } while(0)
 
 #endif /* __J_SET_H */

@@ -42,6 +42,7 @@ bool ds_ops_valid_data_default_string(ds_data_t data);              /* String ty
                                                                                     without limiting the length */
 bool __ds_ops_lt_default_string(ds_data_t left, ds_data_t right);   /* String type: return true if [ `left` < `right` ] */
 bool __ds_ops_gt_default_string(ds_data_t left, ds_data_t right);   /* String type: return true if [ `left` > `right` ] */
+bool __ds_ops_eq_default_string(ds_data_t left, ds_data_t right);   /* String type: return true if [ `left` == `right` ] */
 bool ds_ops_copy_data_default_string(ds_data_t in, ds_data_t* out); /* String type: deep copy `in` and use `out` to receive the copied memory */
 void ds_ops_free_data_default_string(ds_data_t* data);              /* String type: release the `data` and set `data` to `NULL` */
 

@@ -43,7 +43,14 @@ static inline bool demo_valid_key(ds_key_t key)
     return !is_null(p) && !is_null(p->name) && strlen(p->name) > 0;
 }
 
-static inline bool __demo_cmp(ds_data_t left, ds_data_t right)
+static inline bool __demo_cmp_eq(ds_data_t left, ds_data_t right)
+{
+    test_data_t* l = (test_data_t*)left;
+    test_data_t* r = (test_data_t*)right;
+    return __ds_ops_eq_default_string((ds_data_t)(l->name), (ds_data_t)(r->name));
+}
+
+static inline bool __demo_cmp_gt(ds_data_t left, ds_data_t right)
 {
     test_data_t* l = (test_data_t*)left;
     test_data_t* r = (test_data_t*)right;

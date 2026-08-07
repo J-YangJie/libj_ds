@@ -29,31 +29,31 @@
 
 static void demo_values(void)
 {
-    priority_queue_t demo = PRIORITY_QUEUE_INIT(&demo);
+    priority_queue_t* demo = PRIORITY_QUEUE_NEW();
     priority_queue_size_t ret;
 
     (void)ret;
 
     for (int i = 1; i <= 8; ++i)
-        cds->push(&demo, i);
+        cds->push(demo, i);
     // after for [ 8, 7, 6, 5, 4, 3, 2, 1 ]
 
-    ret = cds->size(&demo);  // size = 8
+    ret = cds->size(demo);  // size = 8
 
-    while (cds->size(&demo) > 0) {
-        pr_test("%zd", cds->top(&demo, -1));
-        cds->pop(&demo, -1);
+    while (cds->size(demo) > 0) {
+        pr_test("%zd", cds->top(demo, -1));
+        cds->pop(demo, -1);
     }
     pr_test("");
 
-    ret = cds->clear(&demo); // [ ], return 0(0 elements has been removed)
+    ret = cds->clear(demo); // [ ], return 0(0 elements has been removed)
 
-    PRIORITY_QUEUE_DEINIT(&demo);
+    PRIORITY_QUEUE_DELETE(&demo);
 }
 
 static void demo_string(void)
 {
-    priority_queue_t demo = PRIORITY_QUEUE_INIT_STRING(&demo);
+    priority_queue_t* demo = PRIORITY_QUEUE_NEW_STRING();
     priority_queue_size_t ret;
 
     (void)ret;
@@ -61,20 +61,20 @@ static void demo_string(void)
     char id[][20] = { "yj", "jy", "123", "?混搭33*&", "中文", "test" };
 
     for (int i = 0; i < sizeof(id) / sizeof(id[0]); ++i)
-        cds->push(&demo, _to(id[i]));
+        cds->push(demo, _to(id[i]));
     // after for [ '中文', 'yj', 'test', 'jy', '?混搭33*&', '123' ]
 
-    ret = cds->size(&demo);  // size = 6
+    ret = cds->size(demo);  // size = 6
 
-    while (cds->size(&demo) > 0) {
-        pr_test("%s", _from(cds->top(&demo, 0)));
-        cds->pop(&demo, 0);
+    while (cds->size(demo) > 0) {
+        pr_test("%s", _from(cds->top(demo, 0)));
+        cds->pop(demo, 0);
     }
     pr_test("");
 
-    ret = cds->clear(&demo); // [ ], return 0(0 elements has been removed)
+    ret = cds->clear(demo); // [ ], return 0(0 elements has been removed)
 
-    PRIORITY_QUEUE_DEINIT(&demo);
+    PRIORITY_QUEUE_DELETE(&demo);
 }
 
 int main(void)

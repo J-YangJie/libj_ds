@@ -21,9 +21,21 @@
 
 #include <_log.h>
 #include <_memory.h>
+#include <linux/_types.h>
 #include <linux/_compiler.h>
 #include <iterator/iterator.h>
 #include <string.h>
+
+typedef struct vector_node {
+    vector_data_t data;
+} vector_node_t;
+
+struct vector {
+    const class_vector_ops_t* ops;
+    vector_node_t* head;
+    vector_size_t size;
+    vector_size_t capacity;
+};
 
 #define TAG "[vector]"
 
@@ -70,14 +82,14 @@ static vector_count_t __vector_count(const vector_t* _this, vector_data_t data)
     vector_size_t ret = 0;
     vector_size_t i = 0;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (i = 0; i < __vector_size(_this); ++i) {
             if (data == _this->head[i].data)
                 ret++;
         }
     } else {
         for (i = 0; i < __vector_size(_this); ++i) {
-            if (!_this->ops->__lt(data, _this->head[i].data) && !_this->ops->__lt(_this->head[i].data, data))
+            if (_this->ops->__eq(data, _this->head[i].data))
                 ret++;
         }
     }
@@ -273,7 +285,7 @@ static vector_node_t* __vector_find(const vector_t* _this, vector_data_t data)
     vector_size_t i = 0;
     vector_node_t* t = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (i = 0; i < __vector_size(_this); ++i) {
             t = &_this->head[i];
             if (data == t->data)
@@ -282,7 +294,7 @@ static vector_node_t* __vector_find(const vector_t* _this, vector_data_t data)
     } else {
         for (i = 0; i < __vector_size(_this); ++i) {
             t = &_this->head[i];
-            if (!_this->ops->__lt(data, t->data) && !_this->ops->__lt(t->data, data))
+            if (_this->ops->__eq(data, t->data))
                 return t;
         }
     }
@@ -493,7 +505,7 @@ static vector_size_t vector_remove(vector_t* _this, vector_data_t data)
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return -1;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (r = 0; r < __vector_size(_this); ++r) {
             if (data != _this->head[r].data) {
                 _this->head[l].data = _this->head[r].data;
@@ -506,7 +518,7 @@ static vector_size_t vector_remove(vector_t* _this, vector_data_t data)
         }
     } else {
         for (r = 0; r < __vector_size(_this); ++r) {
-            if (_this->ops->__lt(data, _this->head[r].data) || _this->ops->__lt(_this->head[r].data, data)) {
+            if (!_this->ops->__eq(data, _this->head[r].data)) {
                 _this->head[l].data = _this->head[r].data;
                 l++;
             } else {
@@ -630,23 +642,19 @@ static bool vector_resize(vector_t* _this, vector_size_t n, vector_data_t defaul
 }
 
 #include <sort/sort.h>
-static /* __always_inline */ inline bool __vector_sort_comp(vector_data_t l, vector_data_t r)
+static /* __always_inline */ inline void __vector_sort(vector_t* _this, __cmp __cmp)
 {
-    return l < r;
+    if (is_null(__cmp))
+        __sort_quick_num(&_this->head[0].data, __vector_size(_this));
+    else
+        __sort_quick(&_this->head[0].data, __vector_size(_this), __cmp);
 }
 
-static /* __always_inline */ inline void __vector_sort(vector_t* _this, __comp __comp)
-{
-    if (is_null(__comp))
-        __comp = is_null(_this->ops) || is_null(_this->ops->__lt) ? __vector_sort_comp : _this->ops->__lt;
-    __sort_quick(&_this->head[0].data, __vector_size(_this), __comp);
-}
-
-static /* __always_inline */ inline void vector_sort(vector_t* _this, __comp __comp)
+static /* __always_inline */ inline void vector_sort(vector_t* _this, __cmp __cmp)
 {
     if (is_null(_this) || __vector_size(_this) < 2)
         return ;
-    __vector_sort(_this, __comp);
+    __vector_sort(_this, __cmp);
 }
 
 static /* __always_inline */ inline vector_size_t vector_clear(vector_t* _this)
@@ -668,21 +676,25 @@ static /* __always_inline */ inline vector_size_t vector_clear(vector_t* _this)
     return ret - __vector_size(_this);
 }
 
-/* __always_inline */ inline void __vector_init(vector_t* vector)
+vector_t* __vector_new(const class_vector_ops_t* ops)
 {
+    vector_t* vector = (vector_t*)p_calloc(1, sizeof(vector_t));
+    if (is_null(vector))
+        return NULL;
+
+    vector->ops  = ops;
     vector->head = NULL;
-    vector->capacity = 0;
+    return vector;
 }
 
-/* __always_inline */ inline void __vector_deinit(vector_t* vector)
+void __vector_delete(vector_t** _this)
 {
-    vector_clear(vector);
-    p_free(vector->head);
+    if (is_null(_this) || is_null(*_this))
+        return;
 
-    vector->ops = NULL;
-    vector->head = NULL;
-    vector->size = 0;
-    vector->capacity = 0;
+    vector_clear(*_this);
+    p_free((*_this)->head);
+    p_free(*_this);
 }
 
 typedef vector_iterator_t* (*fp_end)(const vector_t* _this);
@@ -734,4 +746,148 @@ typedef vector_iterator_t* (*fp_erase_range)(vector_t* _this, vector_iterator_t*
         .clear       = vector_clear,
     };
     return &ins;
+}
+
+
+
+
+
+vector_size_t cvector_size(const vector_t* _this)
+{
+    return _vector_size(_this);
+}
+
+vector_size_t cvector_capacity(const vector_t* _this)
+{
+    return _vector_capacity(_this);
+}
+
+vector_count_t cvector_count(const vector_t* _this, vector_data_t data)
+{
+    return vector_count(_this, data);
+}
+
+vector_iterator_t* cvector_end(const vector_t* _this)
+{
+    return (vector_iterator_t*)__vector_end(_this);
+}
+
+vector_iterator_t* cvector_begin(const vector_t* _this)
+{
+    return (vector_iterator_t*)_vector_begin(_this);
+}
+
+vector_iterator_t* cvector_next(const vector_t* _this, const vector_iterator_t* iterator)
+{
+    return (vector_iterator_t*)_vector_next(_this, (const vector_node_t*)iterator);
+}
+
+vector_iterator_t* cvector_prev(const vector_t* _this, const vector_iterator_t* iterator)
+{
+    return (vector_iterator_t*)_vector_prev(_this, (const vector_node_t*)iterator);
+}
+
+vector_r_iterator_t* cvector_rend(const vector_t* _this)
+{
+    return (vector_r_iterator_t*)__vector_rend(_this);
+}
+
+vector_r_iterator_t* cvector_rbegin(const vector_t* _this)
+{
+    return (vector_r_iterator_t*)_vector_rbegin(_this);
+}
+
+vector_r_iterator_t* cvector_rnext(const vector_t* _this, const vector_r_iterator_t* r_iterator)
+{
+    return (vector_r_iterator_t*)_vector_rnext(_this, (const vector_node_t*)r_iterator);
+}
+
+vector_r_iterator_t* cvector_rprev(const vector_t* _this, const vector_r_iterator_t* r_iterator)
+{
+    return (vector_r_iterator_t*)_vector_rprev(_this, (const vector_node_t*)r_iterator);
+}
+
+vector_iterator_t* cvector_at(const vector_t* _this, vector_size_t n)
+{
+    return (vector_iterator_t*)_vector_at(_this, n);
+}
+
+vector_data_t cvector_first(const vector_t* _this, vector_data_t default_data)
+{
+    return vector_first(_this, default_data);
+}
+
+vector_data_t cvector_last(const vector_t* _this, vector_data_t default_data)
+{
+    return vector_last(_this, default_data);
+}
+
+vector_iterator_t* cvector_find(const vector_t* _this, vector_data_t data)
+{
+    return (vector_iterator_t*)vector_find(_this, data);
+}
+
+vector_iterator_t* cvector_push_back(vector_t* _this, vector_data_t data)
+{
+    return (vector_iterator_t*)vector_push_back(_this, data);
+}
+
+vector_iterator_t* cvector_push_front(vector_t* _this, vector_data_t data)
+{
+    return (vector_iterator_t*)vector_push_front(_this, data);
+}
+
+vector_iterator_t* cvector_insert(vector_t* _this, vector_iterator_t* iterator, vector_data_t data)
+{
+    return (vector_iterator_t*)vector_insert(_this, (vector_node_t*)iterator, data);
+}
+
+vector_iterator_t* cvector_erase(vector_t* _this, vector_iterator_t* iterator)
+{
+    return (vector_iterator_t*)vector_erase(_this, (vector_node_t*)iterator);
+}
+
+vector_iterator_t* cvector_erase_range(vector_t* _this, vector_iterator_t* iterator_begin, vector_iterator_t* iterator_end)
+{
+    return (vector_iterator_t*)vector_erase_range(_this, (vector_node_t*)iterator_begin, (vector_node_t*)iterator_end);
+}
+
+void cvector_pop_back(vector_t* _this)
+{
+    vector_pop_back(_this);
+}
+
+void cvector_pop_front(vector_t* _this)
+{
+    vector_pop_front(_this);
+}
+
+vector_size_t cvector_remove(vector_t* _this, vector_data_t data)
+{
+    return vector_remove(_this, data);
+}
+
+vector_size_t cvector_remove_if(vector_t* _this, remove_if_condition cond)
+{
+    return vector_remove_if(_this, cond);
+}
+
+bool cvector_reserve(vector_t* _this, vector_size_t n)
+{
+    return vector_reserve(_this, n);
+}
+
+bool cvector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data)
+{
+    return vector_resize(_this, n, default_data);
+}
+
+void cvector_sort(vector_t* _this, __cmp __cmp)
+{
+    vector_sort(_this, __cmp);
+}
+
+vector_size_t cvector_clear(vector_t* _this)
+{
+    return vector_clear(_this);
 }

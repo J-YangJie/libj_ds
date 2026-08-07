@@ -20,18 +20,7 @@
 #ifndef __J_BUCKET_H
 #define __J_BUCKET_H
 
-#include <linux/_types.h>
 #include <bucket/bucket_ops.h>
-
-typedef struct bucket_node {
-    bucket_key_t key;
-    bucket_value_t value;
-    bucket_hash_t hash;
-    union {
-        struct rb_node rb_node;
-        struct hlist_node hl_node;
-    } ds_node;
-} bucket_node_t;
 
 typedef struct bucket_iterator {
     bucket_key_t key;
@@ -46,25 +35,8 @@ typedef struct bucket_reverse_iterator {
 } bucket_reverse_iterator_t;
 typedef bucket_reverse_iterator_t bucket_r_iterator_t;
 
-typedef struct bucket {
-    bucket_size_t size;
-    union {
-        struct rb_root rb;
-        struct hlist_head hl;
-        void* p;
-        unsigned long l;
-    } ds;
-} bucket_t;
+typedef struct bucket bucket_t;
 typedef bucket_t bucket_shell_t;
-
-typedef enum bucket_ds {
-    BKT_DS_MIN     = 0x0,
-    BKT_DS_INVALID = BKT_DS_MIN,
-    BKT_DS_HLIST   = 0x1,
-    BKT_DS_RBTREE  = 0x2,
-    BKT_DS_VALID   = BKT_DS_HLIST | BKT_DS_RBTREE,
-    BKT_DS_MAX,
-} bucket_ds_t;
 
 typedef struct class_bucket {
     bucket_size_t (*size)(const bucket_shell_t* bucket_sh);
@@ -84,12 +56,8 @@ typedef struct class_bucket {
     bucket_size_t (*clear)(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops);
 } class_bucket_t;
 
-void __bucket_init(bucket_t* bucket, bucket_ds_t type);
-void __bucket_deinit(bucket_t* bucket, const class_bucket_ops_t* ops, bucket_ds_t type);
 const class_bucket_t* class_bucket_ins(void);
-#define g_class_bucket()                 class_bucket_ins()
-#define cbucket                          g_class_bucket()
-#define BUCKET_INIT(_ptr, _type)         (bucket_t) { .size = 0, }; __bucket_init((_ptr), (_type))
-#define BUCKET_DEINIT(_ptr, _ops, _type) do { __bucket_deinit((_ptr), (_ops), (_type)); } while(0)
+#define g_class_bucket()  class_bucket_ins()
+#define cbucket           g_class_bucket()
 
 #endif /* __J_BUCKET_H */

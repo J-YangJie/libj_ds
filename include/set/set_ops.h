@@ -23,10 +23,13 @@
 #include <_types.h>
 
 typedef struct class_set_ops {
-    bool (*valid_value)(set_value_t value);                  /* Return true if `value` is valid */
-    bool (*__lt_value)(set_value_t left, set_value_t right); /* Return true if [ `left` < `right` ] */
-    bool (*copy_value)(set_value_t in, set_value_t* out);    /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_value` must also be implemented */
-    void (*free_value)(set_value_t* value);                  /* The function pointer can be null and manages memory on its own */
+    bool (*valid_key)(set_key_t key);                  /* Return true if `key` is valid */
+    bool (*__lt)(set_key_t left, set_key_t right);     /* Return true if [ `left` < `right` ] */
+    bool (*copy_key)(set_key_t in, set_key_t* out);    /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_key` must also be implemented */
+    void (*free_key)(set_key_t* key);                  /* The function pointer can be null and manages memory on its own */
 } class_set_ops_t;
+
+const class_set_ops_t* class_set_ops_string_ins(void);
+#define g_class_set_ops_string()  class_set_ops_string_ins()
 
 #endif /* __J_SET_OPS_H */

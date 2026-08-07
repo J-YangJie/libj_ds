@@ -25,6 +25,7 @@
 typedef struct class_bucket_ops {
     bool (*valid_key)(bucket_key_t key);                        /* Return true if `key` is valid */
     bool (*__lt)(bucket_key_t left, bucket_key_t right);        /* Return true if [ `left` < `right` ] */
+    bool (*__eq)(bucket_key_t left, bucket_key_t right);        /* Return true if [ `left` == `right` ] */
     bool (*copy_key)(bucket_key_t in, bucket_key_t* out);       /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_key` must also be implemented */
     void (*free_key)(bucket_key_t* key);                        /* The function pointer can be null and manages memory on its own */
     bool (*valid_value)(bucket_value_t value);                  /* Return true if `value` is valid */

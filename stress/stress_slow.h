@@ -41,7 +41,7 @@ typedef struct {
     void (*pop_front)(void* _this);
     ds_size_t (*remove)(void* _this, ds_data_t data);
     ds_size_t (*remove_if)(void* _this, remove_if_condition cond);
-    void (*sort)(void* _this, __comp __comp);
+    void (*sort)(void* _this, __cmp __cmp);
     ds_size_t (*clear)(void* _this);
 } class_stress_slow_interface_t;
 

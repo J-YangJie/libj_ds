@@ -24,7 +24,7 @@
 
 typedef struct class_list_ops {
     bool (*valid_data)(list_data_t data);                /* Return true if `data` is valid */
-    bool (*__lt)(list_data_t left, list_data_t right);   /* Return true if [ `left` != `right` ], or if [ `left` < `right` ] */
+    bool (*__eq)(list_data_t left, list_data_t right);   /* Return true if [ `left` == `right` ] */
     bool (*copy_data)(list_data_t in, list_data_t* out); /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_data` must also be implemented */
     void (*free_data)(list_data_t* data);                /* The function pointer can be null and manages memory on its own */
 } class_list_ops_t;

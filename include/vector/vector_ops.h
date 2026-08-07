@@ -24,7 +24,7 @@
 
 typedef struct class_vector_ops {
     bool (*valid_data)(vector_data_t data);                  /* Return true if `data` is valid */
-    bool (*__lt)(vector_data_t left, vector_data_t right);   /* Return true if [ `left` != `right` ], or if [ `left` < `right` ] */
+    bool (*__eq)(vector_data_t left, vector_data_t right);   /* Return true if [ `left` == `right` ] */
     bool (*copy_data)(vector_data_t in, vector_data_t* out); /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_data` must also be implemented */
     void (*free_data)(vector_data_t* data);                  /* The function pointer can be null and manages memory on its own */
 } class_vector_ops_t;

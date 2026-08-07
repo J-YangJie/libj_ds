@@ -34,9 +34,8 @@ typedef ssize_t    ds_size_t;
 typedef ssize_t    ds_count_t;
 typedef bool (*remove_if_condition)(ds_data_t data);
 typedef bool (*remove_if_condition_k)(ds_key_t key);
-typedef bool (*remove_if_condition_v)(ds_value_t value);
 typedef bool (*remove_if_condition_kv)(ds_key_t key, ds_value_t value);
-typedef bool (*__comp)(ds_data_t left, ds_data_t right);
+typedef bool (*__cmp)(ds_data_t left, ds_data_t right);
 
 /* list */
 typedef ds_data_t  list_data_t;
@@ -61,12 +60,14 @@ typedef ds_size_t  multimap_size_t;
 typedef ds_count_t multimap_count_t;
 
 /* set */
-typedef ds_value_t set_value_t;
+typedef ds_key_t   set_key_t;
+typedef ds_data_t  set_data_t;
 typedef ds_size_t  set_size_t;
 typedef ds_count_t set_count_t;
 
 /* multiset */
-typedef ds_value_t multiset_value_t;
+typedef ds_key_t   multiset_key_t;
+typedef ds_data_t  multiset_data_t;
 typedef ds_size_t  multiset_size_t;
 typedef ds_count_t multiset_count_t;
 

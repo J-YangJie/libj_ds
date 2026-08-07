@@ -20,12 +20,7 @@
 #ifndef __J_VECTOR_H
 #define __J_VECTOR_H
 
-#include <linux/_types.h>
 #include <vector/vector_ops.h>
-
-typedef struct vector_node {
-    vector_data_t data;
-} vector_node_t;
 
 typedef struct vector_iterator {
     union {
@@ -42,13 +37,39 @@ typedef struct vector_reverse_iterator {
 } vector_reverse_iterator_t;
 typedef vector_reverse_iterator_t vector_r_iterator_t;
 
-typedef struct vector {
-    const class_vector_ops_t* ops;
-    vector_node_t* head;
-    vector_size_t size;
-    vector_size_t capacity;
-} vector_t;
+typedef struct vector vector_t;
 
+/* Method 1 */
+vector_size_t        cvector_size(const vector_t* _this);
+vector_size_t        cvector_capacity(const vector_t* _this);
+vector_count_t       cvector_count(const vector_t* _this, vector_data_t data);
+vector_iterator_t*   cvector_end(const vector_t* _this);
+vector_iterator_t*   cvector_begin(const vector_t* _this);
+vector_iterator_t*   cvector_next(const vector_t* _this, const vector_iterator_t* iterator);
+vector_iterator_t*   cvector_prev(const vector_t* _this, const vector_iterator_t* iterator);
+vector_r_iterator_t* cvector_rend(const vector_t* _this);
+vector_r_iterator_t* cvector_rbegin(const vector_t* _this);
+vector_r_iterator_t* cvector_rnext(const vector_t* _this, const vector_r_iterator_t* r_iterator);
+vector_r_iterator_t* cvector_rprev(const vector_t* _this, const vector_r_iterator_t* r_iterator);
+vector_iterator_t*   cvector_at(const vector_t* _this, vector_size_t n);
+vector_data_t        cvector_first(const vector_t* _this, vector_data_t default_data);
+vector_data_t        cvector_last(const vector_t* _this, vector_data_t default_data);
+vector_iterator_t*   cvector_find(const vector_t* _this, vector_data_t data);
+vector_iterator_t*   cvector_push_back(vector_t* _this, vector_data_t data);
+vector_iterator_t*   cvector_push_front(vector_t* _this, vector_data_t data);
+vector_iterator_t*   cvector_insert(vector_t* _this, vector_iterator_t* iterator, vector_data_t data);
+vector_iterator_t*   cvector_erase(vector_t* _this, vector_iterator_t* iterator);
+vector_iterator_t*   cvector_erase_range(vector_t* _this, vector_iterator_t* iterator_begin, vector_iterator_t* iterator_end);
+void                 cvector_pop_back(vector_t* _this);
+void                 cvector_pop_front(vector_t* _this);
+vector_size_t        cvector_remove(vector_t* _this, vector_data_t data);
+vector_size_t        cvector_remove_if(vector_t* _this, remove_if_condition cond);
+bool                 cvector_reserve(vector_t* _this, vector_size_t n);
+bool                 cvector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data);
+void                 cvector_sort(vector_t* _this, __cmp __cmp);
+vector_size_t        cvector_clear(vector_t* _this);
+
+/* Method 2 */
 typedef struct class_vector {
     vector_size_t (*size)(const vector_t* _this);
     vector_size_t (*capacity)(const vector_t* _this);
@@ -76,20 +97,19 @@ typedef struct class_vector {
     vector_size_t (*remove_if)(vector_t* _this, remove_if_condition cond);
     bool (*reserve)(vector_t* _this, vector_size_t n);
     bool (*resize)(vector_t* _this, vector_size_t n, vector_data_t default_data);
-    void (*sort)(vector_t* _this, __comp __comp); /* When `__lt` is in ascending order, `__gt` is in descending order.
-                                                     Use `class_vector_ops_t->__lt` as the sorting rule if `__comp` is null.
-                                                     Just compare the magnitudes when `class_vector_ops_t->__lt` is null. */
+    void (*sort)(vector_t* _this, __cmp __cmp); /* When `__lt` is in ascending order, `__gt` is in descending order.
+                                                   Just compare the magnitudes when `class_vector_ops_t->__lt` is null. */
     vector_size_t (*clear)(vector_t* _this);
 } class_vector_t;
 
-void __vector_init(vector_t* vector);
-void __vector_deinit(vector_t* vector);
+vector_t* __vector_new(const class_vector_ops_t* ops);
+void      __vector_delete(vector_t** _this);
 const class_vector_t* class_vector_ins(void);
-#define g_class_vector()            class_vector_ins()
-#define cvector                     g_class_vector()
-#define VECTOR_INIT(_ptr)           (vector_t) { .ops = NULL, .size = 0, }; __vector_init((_ptr))
-#define VECTOR_INIT_OPS(_ptr, _ops) (vector_t) { .ops = _ops, .size = 0, }; __vector_init((_ptr))
-#define VECTOR_INIT_STRING(_ptr)    VECTOR_INIT_OPS((_ptr), g_class_vector_ops_string())
-#define VECTOR_DEINIT(_ptr)         do { __vector_deinit((_ptr)); } while(0)
+#define g_class_vector()      class_vector_ins()
+#define cvector               g_class_vector()
+#define VECTOR_NEW()          __vector_new(NULL)
+#define VECTOR_NEW_OPS(_ops)  __vector_new((_ops))
+#define VECTOR_NEW_STRING()   __vector_new(g_class_vector_ops_string())
+#define VECTOR_DELETE(_pptr)  do { __vector_delete((_pptr)); } while(0)
 
 #endif /* __J_VECTOR_H */

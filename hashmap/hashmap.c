@@ -21,11 +21,30 @@
 #include <hashmap/hashmap.h>
 
 #include <string.h>
-#include <stdarg.h>
 #include <_log.h>
 #include <_memory.h>
+#include <linux/_types.h>
 #include <linux/_compiler.h>
 #include <iterator/iterator.h>
+
+typedef struct hashmap_node {
+    bucket_shell_t sh;
+} hashmap_node_t;
+typedef bucket_node_t hashmap_bnode_t;
+
+struct hashmap {
+    const class_hashmap_ops_t* ops;
+    hashmap_node_t*  head;
+    hashmap_size_t   size;
+    hashmap_bcount_t bucket_count;
+    hashmap_bcount_t bucket_count_init;
+    hashmap_bcount_t bucket_count_max;
+    float            load_factor;
+    hashmap_config_t config;
+    hashmap_bcount_t bucket_valid_count;
+    hashmap_bcount_t pi_s;
+    hashmap_bcount_t pi_e;
+};
 
 #ifndef TAG
 #define TAG "[hashmap]"
@@ -375,38 +394,39 @@ static inline hashmap_bnode_t* hashmap_find(const hashmap_t* _this, hashmap_key_
 
     /* TODO: in order to improve performance, the size check comes before parameter check.
              However, the return value needs to be considered carefully */
-    if (__hashmap_size(_this) <= 0)
+    if (unlikely(__hashmap_size(_this) <= 0))
         return __hashmap_end(_this);
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
-        return NULL;
-
-    if (is_null(_this->ops) || is_null(_this->ops->__hash))
+    if (is_null(_this->ops)) {
         hash = key;
-    else
-        hash = _this->ops->__hash(key);
+    } else {
+        if (unlikely(!is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
+            return NULL;
+
+        hash = is_null(_this->ops->__hash) ? key : _this->ops->__hash(key);
+    }
 
     idx = hash & (__hashmap_bucket_count(_this) - 1);
 
     bkt_sh = phmbkt(_this->head[idx].sh);
-    if (___hmbucket_invalid(bkt_sh))
-        return __hashmap_end(_this);
-    return hmbucket_find_hc_valid(bkt_sh, bucket_ops(_this), key); /* Err: by bucket */
+    return ___hmbucket_valid(bkt_sh) 
+            ? hmbucket_find_hc_valid(bkt_sh, bucket_ops(_this), key) /* Err: by bucket */
+            : __hashmap_end(_this);
 }
 
-/* TODO: If the bucket is implemented as a pointer type, pay attention to the `init` and `switch` functions. 
-   Both functions must perform an assignment before returning */
 static __always_inline void __hashmap_bucket_init(const hashmap_t* _this, bucket_shell_t* bucket_sh)
 {
-    *bucket_sh = BUCKET_INIT(bucket_sh, __hashmap_bkt_only_r(_this) ? BKT_DS_RBTREE : BKT_DS_HLIST);
-    ___hmbucket_set_type(bucket_sh, __hashmap_bkt_only_r(_this) ? BKT_DS_RBTREE : BKT_DS_HLIST);
+    /* TODO: Current approach is for performance, only works in this version */
 }
 
 static __always_inline void __hashmap_bucket_deinit(const hashmap_t* _this, bucket_shell_t* bucket_sh)
 {
-    bucket_ds_t type = ___hmbucket_xchg_type(bucket_sh, 0);
-    BUCKET_DEINIT(bucket_sh, bucket_ops(_this), type);
-    ___hmbucket_set_type(bucket_sh, BKT_DS_INVALID);
+    __bucket_deinit(bucket_sh, bucket_ops(_this), ___hmbucket_type(bucket_sh));
+}
+
+static __always_inline void __hashmap_bucket_deinit_without_clear(const hashmap_t* _this, bucket_shell_t* bucket_sh)
+{
+    __bucket_deinit_without_clear(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
 static /* __always_inline */ inline void __hashmap_bucket_switch(hashmap_t* _this, bucket_shell_t* bucket_sh)
@@ -416,10 +436,9 @@ static /* __always_inline */ inline void __hashmap_bucket_switch(hashmap_t* _thi
     if (!__hashmap_bkt_l_to_r(_this))
         return ;
 
-    ntype = ___hmbucket_is_tree(bucket_sh) ? BKT_DS_HLIST : BKT_DS_RBTREE;
-    otype = ___hmbucket_xchg_type(bucket_sh, 0);
+    otype = ___hmbucket_type(bucket_sh);
+    ntype = BKT_DS_RBTREE == otype ? BKT_DS_HLIST : BKT_DS_RBTREE;
     __bucket_switch(bucket_sh, bucket_ops(_this), otype, ntype);
-    ___hmbucket_set_type(bucket_sh, ntype);
 
     pr_debug("Switch [ %s ] -> [ %s ], size [ %zd ]", 
                 BKT_DS_RBTREE == otype ? "tree" : "list", 
@@ -460,16 +479,16 @@ static void __hashmap_rehash_resume(hashmap_t* _this, hashmap_node_t* n, hashmap
             idx_n = idx_o + bcnt_o; /* 2x expansion logic */
             bsh_n = phmbkt((p + bcnt_o)->sh);
             if (___hmbucket_invalid(bsh_n)) {
-                __hashmap_bucket_init(_this, bsh_n);
+                /* __hashmap_bucket_init */
                 vcnt_n++;
             }
 
             bnode = it;
             it = hmbucket_pop(bsh_o, bnode); /* No need to check */
 
-            if (__hmbucket_size(bsh_n) + 1 >= TREEIFY_THRESHOLD 
+            if (unlikely(__hmbucket_size(bsh_n) + 1 >= TREEIFY_THRESHOLD 
                 && bcnt_n >= MIN_TREEIFY_CAPACITY 
-                && !___hmbucket_is_tree(bsh_n)) {
+                && !___hmbucket_is_tree(bsh_n))) {
                 __hashmap_bucket_switch(_this, bsh_n);
             }
 
@@ -481,12 +500,12 @@ static void __hashmap_rehash_resume(hashmap_t* _this, hashmap_node_t* n, hashmap
         }
 
         if (__hmbucket_empty(bsh_o)) {
-            ___hmbucket_set_type(bsh_o, BKT_DS_INVALID);
+            bsh_o->size = 0; /* TODO: Current approach is for performance, only works in this version */
             vcnt_n--;
             continue;
         }
 
-        if (__hmbucket_size(bsh_o) <= UNTREEIFY_THRESHOLD && ___hmbucket_is_tree(bsh_o))
+        if (unlikely(__hmbucket_size(bsh_o) <= UNTREEIFY_THRESHOLD && ___hmbucket_is_tree(bsh_o)))
             __hashmap_bucket_switch(_this, bsh_o);
 
         tpi_s = tpi_s < 0 ? idx_o : idx_o < tpi_s ? idx_o : tpi_s;
@@ -514,7 +533,7 @@ static /* __always_inline */ inline bool __hashmap_buckets_init_alloc(hashmap_t*
     if (!is_null(_this->head))
         return true;
 
-    _this->head = (hashmap_node_t*)p_calloc(_this->bucket_count_init, sizeof(hashmap_node_t)); /* TODO: malloc and memset? because of inline */
+    _this->head = (hashmap_node_t*)p_calloc(_this->bucket_count_init, sizeof(hashmap_node_t));
     if (is_null(_this->head))
         return false;
 
@@ -537,10 +556,10 @@ static bool __hashmap_rehash(hashmap_t* _this)
     hashmap_node_t* n = NULL;
     hashmap_bcount_t bcnt_n, bcnt_o = __hashmap_bucket_count(_this);
 
-    if (is_null(_this->head))
+    if (unlikely(is_null(_this->head)))
         return __hashmap_buckets_init_alloc(_this);
 
-    if (__hashmap_size(_this) <= bcnt_o * _this->load_factor)
+    if (likely(__hashmap_size(_this) <= bcnt_o * _this->load_factor))
         return true;
 
     /* The upper limit has already been reached, keep it */
@@ -584,48 +603,42 @@ static hashmap_bnode_t* hashmap_insert(hashmap_t* _this, hashmap_key_t key, hash
     hashmap_bcount_t idx;
     bucket_shell_t* bkt_sh;
     bucket_node_t* bkt_node;
-    bool f_head = false, f_bkt = false;
+    bool flag = false;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
-        return NULL;
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
-        return NULL;
-
-    if (is_null(_this->head)) {
-        if (!__hashmap_buckets_init_alloc(_this))
+    if (is_null(_this->ops)) {
+        hash = key;
+    } else {
+        if (unlikely(!is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
             return NULL;
 
-        f_head = true;
+        if (unlikely(!is_null(_this->ops->valid_value) && !_this->ops->valid_value(value)))
+            return NULL;
+
+        hash = is_null(_this->ops->__hash) ? key : _this->ops->__hash(key);
     }
 
-    if (is_null(_this->ops) || is_null(_this->ops->__hash))
-        hash = key;
-    else
-        hash = _this->ops->__hash(key);
+    if (unlikely(!__hashmap_rehash(_this) && is_null(_this->head)))
+        return NULL;
 
     idx = hash & (__hashmap_bucket_count(_this) - 1);
     bkt_sh = phmbkt(_this->head[idx].sh);
 
     if (___hmbucket_invalid(bkt_sh)) {
-        __hashmap_bucket_init(_this, bkt_sh);
-        if (unlikely(___hmbucket_invalid(bkt_sh)))
-            goto err;
-
+        /* __hashmap_bucket_init */
         _this->bucket_valid_count++;
-        f_bkt = true;
+        flag = true;
     }
 
     bkt_node = hmbucket_insert_hc_valid(bkt_sh, bucket_ops(_this), hash, key, value);
-    if (is_null(bkt_node))
+    if (unlikely(is_null(bkt_node)))
         goto err;
 
-    if (__hmbucket_size(bkt_sh) >= TREEIFY_THRESHOLD 
+    if (unlikely(__hmbucket_size(bkt_sh) >= TREEIFY_THRESHOLD 
         && __hashmap_bucket_count(_this) >= MIN_TREEIFY_CAPACITY 
-        && !___hmbucket_is_tree(bkt_sh)) {
+        && !___hmbucket_is_tree(bkt_sh))) {
         __hashmap_bucket_switch(_this, bkt_sh);
     }
 
@@ -633,17 +646,13 @@ static hashmap_bnode_t* hashmap_insert(hashmap_t* _this, hashmap_key_t key, hash
     _this->pi_s = _this->pi_s < 0 ? idx : idx < _this->pi_s ? idx : _this->pi_s;
     _this->pi_e = _this->pi_e < 0 ? idx : idx > _this->pi_e ? idx : _this->pi_e;
 
-    __hashmap_rehash(_this);
     return bkt_node;
 
 err:
-    if (f_bkt) {
+    if (flag) {
         __hashmap_bucket_deinit(_this, bkt_sh);
         _this->bucket_valid_count--;
     }
-
-    if (f_head)
-        __hashmap_buckets_free(_this);
     return NULL;
 }
 
@@ -654,52 +663,46 @@ static hashmap_bnode_t* hashmap_insert_replace(hashmap_t* _this, hashmap_key_t k
     bucket_shell_t* bkt_sh;
     bucket_node_t* bkt_node;
     bucket_size_t bkt_size;
-    bool f_head = false, f_bkt = false;
+    bool flag = false;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
-        return NULL;
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
-        return NULL;
-
-    if (is_null(_this->head)) {
-        if (!__hashmap_buckets_init_alloc(_this))
+    if (is_null(_this->ops)) {
+        hash = key;
+    } else {
+        if (unlikely(!is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
             return NULL;
 
-        f_head = true;
+        if (unlikely(!is_null(_this->ops->valid_value) && !_this->ops->valid_value(value)))
+            return NULL;
+
+        hash = is_null(_this->ops->__hash) ? key : _this->ops->__hash(key);
     }
 
-    if (is_null(_this->ops) || is_null(_this->ops->__hash))
-        hash = key;
-    else
-        hash = _this->ops->__hash(key);
+    if (unlikely(!__hashmap_rehash(_this) && is_null(_this->head)))
+        return NULL;
 
     idx = hash & (__hashmap_bucket_count(_this) - 1);
     bkt_sh = phmbkt(_this->head[idx].sh);
 
     if (___hmbucket_invalid(bkt_sh)) {
-        __hashmap_bucket_init(_this, bkt_sh);
-        if (unlikely(___hmbucket_invalid(bkt_sh)))
-            goto err;
-
+        /* __hashmap_bucket_init */
         _this->bucket_valid_count++;
-        f_bkt = true;
+        flag = true;
     }
 
     bkt_size = __hmbucket_size(bkt_sh);
     bkt_node = hmbucket_insert_replace_hc_valid(bkt_sh, bucket_ops(_this), hash, key, value);
-    if (is_null(bkt_node))
+    if (unlikely(is_null(bkt_node)))
         goto err;
 
     if (bkt_size == __hmbucket_size(bkt_sh))
         return bkt_node;
 
-    if (__hmbucket_size(bkt_sh) >= TREEIFY_THRESHOLD 
+    if (unlikely(__hmbucket_size(bkt_sh) >= TREEIFY_THRESHOLD 
         && __hashmap_bucket_count(_this) >= MIN_TREEIFY_CAPACITY 
-        && !___hmbucket_is_tree(bkt_sh)) {
+        && !___hmbucket_is_tree(bkt_sh))) {
         __hashmap_bucket_switch(_this, bkt_sh);
     }
 
@@ -707,17 +710,13 @@ static hashmap_bnode_t* hashmap_insert_replace(hashmap_t* _this, hashmap_key_t k
     _this->pi_s = _this->pi_s < 0 ? idx : idx < _this->pi_s ? idx : _this->pi_s;
     _this->pi_e = _this->pi_e < 0 ? idx : idx > _this->pi_e ? idx : _this->pi_e;
 
-    __hashmap_rehash(_this);
     return bkt_node;
 
 err:
-    if (f_bkt) {
+    if (flag) {
         __hashmap_bucket_deinit(_this, bkt_sh);
         _this->bucket_valid_count--;
     }
-
-    if (f_head)
-        __hashmap_buckets_free(_this);
     return NULL;
 }
 
@@ -731,17 +730,17 @@ static hashmap_bnode_t* hashmap_erase(hashmap_t* _this, hashmap_bnode_t* pos)
         return NULL;
 
     /* The input parameter is `iterator`, and there's no need to check whether it equals `rend` */
-    if (__hashmap_size(_this) <= 0 || __hashmap_end(_this) == pos/* || __hashmap_rend(_this) == pos*/)
+    if (unlikely(__hashmap_size(_this) <= 0 || __hashmap_end(_this) == pos)/* || __hashmap_rend(_this) == pos*/)
         return NULL;
 
     idx = pos->hash & (__hashmap_bucket_count(_this) - 1);
 
     bkt_sh = phmbkt(_this->head[idx].sh);
-    if (___hmbucket_invalid(bkt_sh))
+    if (unlikely(___hmbucket_invalid(bkt_sh)))
         return NULL; /* Err: `pos` doesn't belong to current hashmap or memory `pos->hash` has been modified illegally */
 
     ret = hmbucket_next(bkt_sh, pos);
-    if (is_null(ret))
+    if (unlikely(is_null(ret)))
         return NULL; /* Err: by bucket */
 
     if (__hmbucket_end(bkt_sh) == ret) {
@@ -753,7 +752,7 @@ static hashmap_bnode_t* hashmap_erase(hashmap_t* _this, hashmap_bnode_t* pos)
 
             bkt_for = phmbkt(_this->head[i].sh);
             ret = hmbucket_begin(bkt_for);
-            if (is_null(ret) || __hmbucket_end(bkt_for) == ret)
+            if (unlikely(is_null(ret) || __hmbucket_end(bkt_for) == ret))
                 return NULL; /* Err: by bucket */
 
             break;
@@ -765,16 +764,16 @@ static hashmap_bnode_t* hashmap_erase(hashmap_t* _this, hashmap_bnode_t* pos)
        3. The `pos` doesn't belong to this bucket, erase normally.
        4. The `pos` doesn't belong to this bucket, memory issues are detected. */
     bkt_node = hmbucket_erase(bkt_sh, bucket_ops(_this), pos);
-    if (is_null(bkt_node))
+    if (unlikely(is_null(bkt_node)))
         return NULL; /* Err: by bucket, but the erasing operation was not carried out */
 
     _this->size--;
 
-    if (__hmbucket_size(bkt_sh) <= UNTREEIFY_THRESHOLD && ___hmbucket_is_tree(bkt_sh))
+    if (unlikely(__hmbucket_size(bkt_sh) <= UNTREEIFY_THRESHOLD && ___hmbucket_is_tree(bkt_sh)))
         __hashmap_bucket_switch(_this, bkt_sh);
 
     if (__hmbucket_empty(bkt_sh)) {
-        ___hmbucket_set_type(bkt_sh, BKT_DS_INVALID);
+        bkt_sh->size = 0; /* TODO: Current approach is for performance, only works in this version */
         _this->bucket_valid_count--;
     }
 
@@ -791,16 +790,17 @@ static inline hashmap_size_t hashmap_remove(hashmap_t* _this, hashmap_key_t key)
     if (unlikely(is_null(_this)))
         return -1;
 
-    if (__hashmap_size(_this) <= 0)
+    if (unlikely(__hashmap_size(_this) <= 0))
         return 0;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
-        return -1;
-
-    if (is_null(_this->ops) || is_null(_this->ops->__hash))
+    if (is_null(_this->ops)) {
         hash = key;
-    else
-        hash = _this->ops->__hash(key);
+    } else {
+        if (unlikely(!is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
+            return -1;
+
+        hash = is_null(_this->ops->__hash) ? key : _this->ops->__hash(key);
+    }
 
     idx = hash & (__hashmap_bucket_count(_this) - 1);
 
@@ -812,11 +812,11 @@ static inline hashmap_size_t hashmap_remove(hashmap_t* _this, hashmap_key_t key)
     if (ret > 0)
         _this->size--; /* ret is at most `1` */
 
-    if (__hmbucket_size(bkt_sh) <= UNTREEIFY_THRESHOLD && ___hmbucket_is_tree(bkt_sh))
+    if (unlikely(__hmbucket_size(bkt_sh) <= UNTREEIFY_THRESHOLD && ___hmbucket_is_tree(bkt_sh)))
         __hashmap_bucket_switch(_this, bkt_sh);
 
     if (__hmbucket_empty(bkt_sh)) {
-        ___hmbucket_set_type(bkt_sh, BKT_DS_INVALID);
+        bkt_sh->size = 0; /* TODO: Current approach is for performance, only works in this version */
         _this->bucket_valid_count--;
     }
 
@@ -843,10 +843,10 @@ static hashmap_size_t hashmap_clear(hashmap_t* _this)
 
         bkt_sh = phmbkt(_this->head[i].sh);
         _this->size -= hmbucket_clear(bkt_sh, bucket_ops(_this));
-        ___hmbucket_set_type(bkt_sh, BKT_DS_INVALID);
+        __hashmap_bucket_deinit_without_clear(_this, bkt_sh);
         _this->bucket_valid_count--;
 
-        if (0 == _this->size && 0 == _this->bucket_valid_count)
+        if (unlikely(0 == _this->size && 0 == _this->bucket_valid_count))
             break;
     }
 
@@ -887,41 +887,19 @@ static hashmap_bcount_t bucket_count_correct(hashmap_bcount_t bucket_count)
     return t > 1 ? ret << 1 : ret;
 }
 
-/* __always_inline */ inline void __hashmap_init(hashmap_t* hashmap)
+hashmap_t* __hashmap_new(const class_hashmap_ops_t* ops, 
+                         hashmap_bcount_t bucket_count_init, 
+                         hashmap_bcount_t bucket_count_max, 
+                         float            load_factor, 
+                         hashmap_config_t* config)
 {
-    hashmap->head = NULL;
-    hashmap->bucket_count = 0;
-    hashmap->bucket_count_init = DEFAULT_INITIAL_CAPACITY;
-    hashmap->bucket_count_max  = MAXIMUM_CAPACITY;
-    hashmap->load_factor = DEFAULT_LOAD_FACTOR;
-    hashmap->config.c.b_bkt_only_l = 0;
-    hashmap->config.c.b_bkt_only_r = 0;
-    hashmap->config.c.b_bkt_l_to_r = 1;
-    hashmap->bucket_valid_count = 0;
+    hashmap_t* hashmap = (hashmap_t*)p_calloc(1, sizeof(hashmap_t));
+    if (is_null(hashmap))
+        return NULL;
+
+    hashmap->ops  = ops;
     hashmap->pi_s = -1;
     hashmap->pi_e = -1;
-}
-
-inline void __hashmap_init_arg(hashmap_t* hashmap, int num_arg, ...)
-{
-    hashmap_bcount_t  bucket_count_init;
-    hashmap_bcount_t  bucket_count_max;
-    float             load_factor;
-    hashmap_config_t* config = NULL;
-    va_list alist;
-
-    hashmap->head = NULL;
-    hashmap->bucket_count = 0;
-    hashmap->bucket_valid_count = 0;
-    hashmap->pi_s = -1;
-    hashmap->pi_e = -1;
-
-    va_start(alist, num_arg);
-    bucket_count_init = num_arg > 0 ? va_arg(alist, hashmap_bcount_t) : 0;
-    bucket_count_max  = num_arg > 1 ? va_arg(alist, hashmap_bcount_t) : 0;
-    load_factor       = num_arg > 2 ? va_arg(alist, double) : 0.0f;
-    config            = num_arg > 3 ? va_arg(alist, hashmap_config_t*) : NULL;
-    va_end(alist);
 
     hashmap->bucket_count_max  = bucket_count_max <= 0 ? MAXIMUM_CAPACITY : bucket_count_correct(bucket_count_max);
     hashmap->bucket_count_init = bucket_count_init <= 0 
@@ -932,43 +910,29 @@ inline void __hashmap_init_arg(hashmap_t* hashmap, int num_arg, ...)
     hashmap->load_factor = load_factor < 0.001f || load_factor > 1.0f ? DEFAULT_LOAD_FACTOR : load_factor;
 
     hashmap->config.d = 0;
-
-    if (is_null(config)) {
+    if (is_null(config))
         hashmap->config.c.b_bkt_l_to_r = 1;
-        goto end;
-    }
-
-    if (config->c.b_bkt_only_l && !config->c.b_bkt_only_r && !config->c.b_bkt_l_to_r)
+    else if (config->c.b_bkt_only_l && !config->c.b_bkt_only_r && !config->c.b_bkt_l_to_r)
         hashmap->config.c.b_bkt_only_l = 1;
     else if (!config->c.b_bkt_only_l && config->c.b_bkt_only_r && !config->c.b_bkt_l_to_r)
         hashmap->config.c.b_bkt_only_r = 1;
-    else if (!config->c.b_bkt_only_l && !config->c.b_bkt_only_r && config->c.b_bkt_l_to_r)
-        hashmap->config.c.b_bkt_l_to_r = 1;
     else
         hashmap->config.c.b_bkt_l_to_r = 1;
 
-end:
     pr_attn("In [ %s ], [ %zd | 0x%zx | %f | 0x%x ] -> [ %zd | 0x%zx | %f | 0x%x ]", __func__, 
             bucket_count_init, bucket_count_max, load_factor, is_null(config) ? 0 : config->d, 
             hashmap->bucket_count_init, hashmap->bucket_count_max, hashmap->load_factor, hashmap->config.d);
+    return hashmap;
 }
 
-/* __always_inline */ inline void __hashmap_deinit(hashmap_t* hashmap)
+void __hashmap_delete(hashmap_t** _this)
 {
-    hashmap_clear(hashmap);
-    p_free(hashmap->head);
+    if (is_null(_this) || is_null(*_this))
+        return;
 
-    hashmap->ops = NULL;
-    hashmap->head = NULL;
-    hashmap->size = 0;
-    hashmap->bucket_count = 0;
-    hashmap->bucket_count_init = 0;
-    hashmap->bucket_count_max = 0;
-    hashmap->load_factor = 0.0f;
-    hashmap->config.d = 0;
-    hashmap->bucket_valid_count = 0;
-    hashmap->pi_s = -1;
-    hashmap->pi_e = -1;
+    hashmap_clear(*_this);
+    p_free((*_this)->head);
+    p_free(*_this);
 }
 
 typedef hashmap_iterator_t* (*hm_fp_end)(const hashmap_t* _this);
@@ -1009,3 +973,96 @@ typedef hashmap_iterator_t* (*hm_fp_erase)(hashmap_t* _this, hashmap_iterator_t*
     return &ins;
 }
 
+
+
+
+
+hashmap_size_t chashmap_size(const hashmap_t* _this)
+{
+    return _hashmap_size(_this);
+}
+
+hashmap_bcount_t chashmap_bucket_count(const hashmap_t* _this)
+{
+    return _hashmap_bucket_count(_this);
+}
+
+hashmap_bcount_t chashmap_bucket_valid_count(const hashmap_t* _this)
+{
+    return _hashmap_bucket_valid_count(_this);
+}
+
+hashmap_count_t chashmap_count(const hashmap_t* _this, hashmap_key_t key)
+{
+    return hashmap_count(_this, key);
+}
+
+hashmap_iterator_t* chashmap_end(const hashmap_t* _this)
+{
+    return (hashmap_iterator_t*)__hashmap_end(_this);
+}
+
+hashmap_iterator_t* chashmap_begin(const hashmap_t* _this)
+{
+    return (hashmap_iterator_t*)_hashmap_begin(_this);
+}
+
+hashmap_iterator_t* chashmap_next(const hashmap_t* _this, const hashmap_iterator_t* iterator)
+{
+    return (hashmap_iterator_t*)_hashmap_next(_this, (const hashmap_bnode_t*)iterator);
+}
+
+hashmap_iterator_t* chashmap_prev(const hashmap_t* _this, const hashmap_iterator_t* iterator)
+{
+    return (hashmap_iterator_t*)_hashmap_prev(_this, (const hashmap_bnode_t*)iterator);
+}
+
+hashmap_r_iterator_t* chashmap_rend(const hashmap_t* _this)
+{
+    return (hashmap_r_iterator_t*)__hashmap_rend(_this);
+}
+
+hashmap_r_iterator_t* chashmap_rbegin(const hashmap_t* _this)
+{
+    return (hashmap_r_iterator_t*)_hashmap_rbegin(_this);
+}
+
+hashmap_r_iterator_t* chashmap_rnext(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator)
+{
+    return (hashmap_r_iterator_t*)_hashmap_rnext(_this, (const hashmap_bnode_t*)r_iterator);
+}
+
+hashmap_r_iterator_t* chashmap_rprev(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator)
+{
+    return (hashmap_r_iterator_t*)_hashmap_rprev(_this, (const hashmap_bnode_t*)r_iterator);
+}
+
+hashmap_iterator_t* chashmap_find(const hashmap_t* _this, hashmap_key_t key)
+{
+    return (hashmap_iterator_t*)hashmap_find(_this, key);
+}
+
+hashmap_iterator_t* chashmap_insert(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value)
+{
+    return (hashmap_iterator_t*)hashmap_insert(_this, key, value);
+}
+
+hashmap_iterator_t* chashmap_insert_replace(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value)
+{
+    return (hashmap_iterator_t*)hashmap_insert_replace(_this, key, value);
+}
+
+hashmap_iterator_t* chashmap_erase(hashmap_t* _this, hashmap_iterator_t* iterator)
+{
+    return (hashmap_iterator_t*)hashmap_erase(_this, (hashmap_bnode_t*)iterator);
+}
+
+hashmap_size_t chashmap_remove(hashmap_t* _this, hashmap_key_t key)
+{
+    return hashmap_remove(_this, key);
+}
+
+hashmap_size_t chashmap_clear(hashmap_t* _this)
+{
+    return hashmap_clear(_this);
+}

@@ -20,13 +20,25 @@
 #include <set/set.h>
 
 #include <_memory.h>
+#include <linux/_types.h>
 #include <linux/rbtree.h>
 #include <linux/_compiler.h>
 #include <iterator/iterator.h>
 
+typedef struct set_node {
+    set_key_t key;
+    struct rb_node node;
+} set_node_t;
+
+struct set {
+    const class_set_ops_t* ops;
+    struct rb_root root;
+    set_size_t size;
+};
+
 #define set_entry(ptr) rb_entry((ptr), struct set_node, node)
 
-static /* __always_inline */ inline set_node_t* set_find(const set_t* _this, set_value_t value);
+static /* __always_inline */ inline set_node_t* set_find(const set_t* _this, set_key_t key);
 static /* __always_inline */ inline set_node_t* __set_end(const set_t* _this);
 
 static /* __always_inline */ inline set_size_t __set_size(const set_t* _this)
@@ -41,9 +53,9 @@ static /* __always_inline */ inline set_size_t _set_size(const set_t* _this)
     return __set_size(_this);
 }
 
-static /* __always_inline */ inline set_count_t set_count(const set_t* _this, set_value_t value)
+static /* __always_inline */ inline set_count_t set_count(const set_t* _this, set_key_t key)
 {
-    set_node_t* t = set_find(_this, value);
+    set_node_t* t = set_find(_this, key);
     return is_null(t) ? -1 : (__set_end(_this) == t ? 0 : 1);
 }
 
@@ -201,18 +213,18 @@ static /* __always_inline */ inline set_node_t* _set_rprev(const set_t* _this, c
     return __set_rprev(_this, node);
 }
 
-static set_node_t* __set_find(const set_t* _this, set_value_t value)
+static set_node_t* __set_find(const set_t* _this, set_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     set_node_t* t = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(n)) {
             t = set_entry(n);
 
-            if (value < t->value)
+            if (key < t->key)
                 n = n->rb_left;
-            else if (value > t->value)
+            else if (key > t->key)
                 n = n->rb_right;
             else
                 return t;
@@ -221,9 +233,9 @@ static set_node_t* __set_find(const set_t* _this, set_value_t value)
         while (!is_null(n)) {
             t = set_entry(n);
 
-            if (_this->ops->__lt_value(value, t->value))
+            if (_this->ops->__lt(key, t->key))
                 n = n->rb_left;
-            else if (_this->ops->__lt_value(t->value, value))
+            else if (_this->ops->__lt(t->key, key))
                 n = n->rb_right;
             else
                 return t;
@@ -233,34 +245,34 @@ static set_node_t* __set_find(const set_t* _this, set_value_t value)
     return NULL;
 }
 
-static /* __always_inline */ inline set_node_t* set_find(const set_t* _this, set_value_t value)
+static /* __always_inline */ inline set_node_t* set_find(const set_t* _this, set_key_t key)
 {
     set_node_t* t = NULL;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
         return NULL;
 
-    t = __set_find(_this, value);
+    t = __set_find(_this, key);
     return is_null(t) ? __set_end(_this) : t;
 }
 
-static set_node_t* __set_lower_bound(const set_t* _this, set_value_t value)
+static set_node_t* __set_lower_bound(const set_t* _this, set_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     set_node_t* t = NULL;
     set_node_t* ret = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(n)) {
             t = set_entry(n);
 
-            if (value < t->value) {
+            if (key < t->key) {
                 n = n->rb_left;
                 ret = t;
-            } else if (value > t->value) {
+            } else if (key > t->key) {
                 n = n->rb_right;
             } else {
                 return t;
@@ -270,10 +282,10 @@ static set_node_t* __set_lower_bound(const set_t* _this, set_value_t value)
         while (!is_null(n)) {
             t = set_entry(n);
 
-            if (_this->ops->__lt_value(value, t->value)) {
+            if (_this->ops->__lt(key, t->key)) {
                 n = n->rb_left;
                 ret = t;
-            } else if (_this->ops->__lt_value(t->value, value)) {
+            } else if (_this->ops->__lt(t->key, key)) {
                 n = n->rb_right;
             } else {
                 return t;
@@ -284,34 +296,34 @@ static set_node_t* __set_lower_bound(const set_t* _this, set_value_t value)
     return ret;
 }
 
-static /* __always_inline */ inline set_node_t* set_lower_bound(const set_t* _this, set_value_t value)
+static /* __always_inline */ inline set_node_t* set_lower_bound(const set_t* _this, set_key_t key)
 {
     set_node_t* t = NULL;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
         return NULL;
 
-    t = __set_lower_bound(_this, value);
+    t = __set_lower_bound(_this, key);
     return is_null(t) ? __set_end(_this) : t;
 }
 
-static set_node_t* __set_upper_bound(const set_t* _this, set_value_t value)
+static set_node_t* __set_upper_bound(const set_t* _this, set_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     set_node_t* t = NULL;
     set_node_t* ret = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(n)) {
             t = set_entry(n);
 
-            if (value < t->value) {
+            if (key < t->key) {
                 n = n->rb_left;
                 ret = t;
-            } else if (value > t->value) {
+            } else if (key > t->key) {
                 n = n->rb_right;
             } else {
                 n = rb_next(n);
@@ -322,10 +334,10 @@ static set_node_t* __set_upper_bound(const set_t* _this, set_value_t value)
         while (!is_null(n)) {
             t = set_entry(n);
 
-            if (_this->ops->__lt_value(value, t->value)) {
+            if (_this->ops->__lt(key, t->key)) {
                 n = n->rb_left;
                 ret = t;
-            } else if (_this->ops->__lt_value(t->value, value)) {
+            } else if (_this->ops->__lt(t->key, key)) {
                 n = n->rb_right;
             } else {
                 n = rb_next(n);
@@ -337,17 +349,17 @@ static set_node_t* __set_upper_bound(const set_t* _this, set_value_t value)
     return ret;
 }
 
-static /* __always_inline */ inline set_node_t* set_upper_bound(const set_t* _this, set_value_t value)
+static /* __always_inline */ inline set_node_t* set_upper_bound(const set_t* _this, set_key_t key)
 {
     set_node_t* t = NULL;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
         return NULL;
 
-    t = __set_upper_bound(_this, value);
+    t = __set_upper_bound(_this, key);
     return is_null(t) ? __set_end(_this) : t;
 }
 
@@ -357,14 +369,14 @@ static set_node_t* __set_insert(set_t* _this, set_node_t* node)
     struct rb_node* parent = NULL;
     set_node_t* t = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(*n)) {
             parent = *n;
             t = set_entry(parent);
 
-            if (node->value < t->value)
+            if (node->key < t->key)
                 n = &parent->rb_left;
-            else if (node->value > t->value)
+            else if (node->key > t->key)
                 n = &parent->rb_right;
             else
                 return t;
@@ -374,9 +386,9 @@ static set_node_t* __set_insert(set_t* _this, set_node_t* node)
             parent = *n;
             t = set_entry(parent);
 
-            if (_this->ops->__lt_value(node->value, t->value))
+            if (_this->ops->__lt(node->key, t->key))
                 n = &parent->rb_left;
-            else if (_this->ops->__lt_value(t->value, node->value))
+            else if (_this->ops->__lt(t->key, node->key))
                 n = &parent->rb_right;
             else
                 return t;
@@ -389,7 +401,7 @@ static set_node_t* __set_insert(set_t* _this, set_node_t* node)
     return node;
 }
 
-static inline set_node_t* set_insert(set_t* _this, set_value_t value)
+static inline set_node_t* set_insert(set_t* _this, set_key_t key)
 {
     set_node_t* t = NULL;
     set_node_t* ret = NULL;
@@ -397,17 +409,17 @@ static inline set_node_t* set_insert(set_t* _this, set_value_t value)
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
         return NULL;
 
     t = (set_node_t*)p_calloc(1, sizeof(set_node_t));
     if (unlikely(is_null(t)))
         return NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->copy_value)) {
-        t->value = value;
+    if (is_null(_this->ops) || is_null(_this->ops->copy_key)) {
+        t->key = key;
     } else {
-        if (!_this->ops->copy_value(value, &t->value))
+        if (!_this->ops->copy_key(key, &t->key))
             goto err;
     }
 
@@ -417,8 +429,8 @@ static inline set_node_t* set_insert(set_t* _this, set_value_t value)
     return t;
 
 err:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_value))
-        _this->ops->free_value(&t->value);
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+        _this->ops->free_key(&t->key);
 
     p_free(t);
     return NULL;
@@ -449,22 +461,22 @@ static inline set_node_t* set_erase(set_t* _this, set_node_t* pos)
 
     __set_erase(_this, pos);
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_value))
-        _this->ops->free_value(&pos->value);
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+        _this->ops->free_key(&pos->key);
 
     p_free(pos);
 
     return t;
 }
 
-static inline set_size_t set_remove(set_t* _this, set_value_t value)
+static inline set_size_t set_remove(set_t* _this, set_key_t key)
 {
     set_node_t* t = NULL;
 
     if (unlikely(is_null(_this)))
         return -1;
 
-    t = set_find(_this, value);
+    t = set_find(_this, key);
     if (is_null(t))
         return -1;
 
@@ -473,15 +485,15 @@ static inline set_size_t set_remove(set_t* _this, set_value_t value)
 
     __set_erase(_this, t);
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_value))
-        _this->ops->free_value(&t->value);
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+        _this->ops->free_key(&t->key);
 
     p_free(t);
 
     return 1;
 }
 
-static set_size_t set_remove_if(set_t* _this, remove_if_condition_v cond)
+static set_size_t set_remove_if(set_t* _this, remove_if_condition_k cond)
 {
     set_size_t ret = 0;
     set_node_t* t = NULL;
@@ -490,7 +502,7 @@ static set_size_t set_remove_if(set_t* _this, remove_if_condition_v cond)
         return -1;
 
     for (t = __set_begin(_this); __set_end(_this) != t; ) {
-        if (!cond(t->value)) {
+        if (!cond(t->key)) {
             t = __set_next(_this, t);
             continue;
         }
@@ -518,18 +530,24 @@ static set_size_t set_clear(set_t* _this)
     return ret;
 }
 
-/* __always_inline */ inline void __set_init(set_t* set)
+set_t* __set_new(const class_set_ops_t* ops)
 {
+    set_t* set = (set_t*)p_calloc(1, sizeof(set_t));
+    if (is_null(set))
+        return NULL;
+
+    set->ops  = ops;
     set->root = RB_ROOT;
+    return set;
 }
 
-/* __always_inline */ inline void __set_deinit(set_t* set)
+void __set_delete(set_t** _this)
 {
-    set_clear(set);
+    if (is_null(_this) || is_null(*_this))
+        return;
 
-    set->ops = NULL;
-    set->root = RB_ROOT;
-    set->size = 0;
+    set_clear(*_this);
+    p_free(*_this);
 }
 
 typedef set_iterator_t* (*fp_end)(const set_t* _this);
@@ -540,10 +558,10 @@ typedef set_r_iterator_t* (*fp_rend)(const set_t* _this);
 typedef set_r_iterator_t* (*fp_rbegin)(const set_t* _this);
 typedef set_r_iterator_t* (*fp_rnext)(const set_t* _this, const set_r_iterator_t* r_iterator);
 typedef set_r_iterator_t* (*fp_rprev)(const set_t* _this, const set_r_iterator_t* r_iterator);
-typedef set_iterator_t* (*fp_find)(const set_t* _this, set_value_t value);
-typedef set_iterator_t* (*fp_lower_bound)(const set_t* _this, set_value_t value);
-typedef set_iterator_t* (*fp_upper_bound)(const set_t* _this, set_value_t value);
-typedef set_iterator_t* (*fp_insert)(set_t* _this, set_value_t value);
+typedef set_iterator_t* (*fp_find)(const set_t* _this, set_key_t key);
+typedef set_iterator_t* (*fp_lower_bound)(const set_t* _this, set_key_t key);
+typedef set_iterator_t* (*fp_upper_bound)(const set_t* _this, set_key_t key);
+typedef set_iterator_t* (*fp_insert)(set_t* _this, set_key_t key);
 typedef set_iterator_t* (*fp_erase)(set_t* _this, set_iterator_t* iterator);
 
 const class_set_t* class_set_ins(void)
@@ -569,4 +587,98 @@ const class_set_t* class_set_ins(void)
         .clear       = set_clear,
     };
     return &ins;
+}
+
+
+
+
+
+set_size_t cset_size(const set_t* _this)
+{
+    return _set_size(_this);
+}
+
+set_count_t cset_count(const set_t* _this, set_key_t key)
+{
+    return set_count(_this, key);
+}
+
+set_iterator_t* cset_end(const set_t* _this)
+{
+    return (set_iterator_t*)__set_end(_this);
+}
+
+set_iterator_t* cset_begin(const set_t* _this)
+{
+    return (set_iterator_t*)_set_begin(_this);
+}
+
+set_iterator_t* cset_next(const set_t* _this, const set_iterator_t* iterator)
+{
+    return (set_iterator_t*)_set_next(_this, (const set_node_t*)iterator);
+}
+
+set_iterator_t* cset_prev(const set_t* _this, const set_iterator_t* iterator)
+{
+    return (set_iterator_t*)_set_prev(_this, (const set_node_t*)iterator);
+}
+
+set_r_iterator_t* cset_rend(const set_t* _this)
+{
+    return (set_r_iterator_t*)__set_rend(_this);
+}
+
+set_r_iterator_t* cset_rbegin(const set_t* _this)
+{
+    return (set_r_iterator_t*)_set_rbegin(_this);
+}
+
+set_r_iterator_t* cset_rnext(const set_t* _this, const set_r_iterator_t* r_iterator)
+{
+    return (set_r_iterator_t*)_set_rnext(_this, (const set_node_t*)r_iterator);
+}
+
+set_r_iterator_t* cset_rprev(const set_t* _this, const set_r_iterator_t* r_iterator)
+{
+    return (set_r_iterator_t*)_set_rprev(_this, (const set_node_t*)r_iterator);
+}
+
+set_iterator_t* cset_find(const set_t* _this, set_key_t key)
+{
+    return (set_iterator_t*)set_find(_this, key);
+}
+
+set_iterator_t* cset_lower_bound(const set_t* _this, set_key_t key)
+{
+    return (set_iterator_t*)set_lower_bound(_this, key);
+}
+
+set_iterator_t* cset_upper_bound(const set_t* _this, set_key_t key)
+{
+    return (set_iterator_t*)set_upper_bound(_this, key);
+}
+
+set_iterator_t* cset_insert(set_t* _this, set_key_t key)
+{
+    return (set_iterator_t*)set_insert(_this, key);
+}
+
+set_iterator_t* cset_erase(set_t* _this, set_iterator_t* iterator)
+{
+    return (set_iterator_t*)set_erase(_this, (set_node_t*)iterator);
+}
+
+set_size_t cset_remove(set_t* _this, set_key_t key)
+{
+    return set_remove(_this, key);
+}
+
+set_size_t cset_remove_if(set_t* _this, remove_if_condition_k cond)
+{
+    return set_remove_if(_this, cond);
+}
+
+set_size_t cset_clear(set_t* _this)
+{
+    return set_clear(_this);
 }

@@ -20,14 +20,7 @@
 #ifndef __J_MAP_H
 #define __J_MAP_H
 
-#include <linux/_types.h>
 #include <map/map_ops.h>
-
-typedef struct map_node {
-    map_key_t key;
-    map_value_t value;
-    struct rb_node node;
-} map_node_t;
 
 typedef struct map_iterator {
     union {
@@ -52,12 +45,30 @@ typedef struct map_reverse_iterator {
 } map_reverse_iterator_t;
 typedef map_reverse_iterator_t map_r_iterator_t;
 
-typedef struct map {
-    const class_map_ops_t* ops;
-    struct rb_root root;
-    map_size_t size;
-} map_t;
+typedef struct map map_t;
 
+/* Method 1 */
+map_size_t        cmap_size(const map_t* _this);
+map_count_t       cmap_count(const map_t* _this, map_key_t key);
+map_iterator_t*   cmap_end(const map_t* _this);
+map_iterator_t*   cmap_begin(const map_t* _this);
+map_iterator_t*   cmap_next(const map_t* _this, const map_iterator_t* iterator);
+map_iterator_t*   cmap_prev(const map_t* _this, const map_iterator_t* iterator);
+map_r_iterator_t* cmap_rend(const map_t* _this);
+map_r_iterator_t* cmap_rbegin(const map_t* _this);
+map_r_iterator_t* cmap_rnext(const map_t* _this, const map_r_iterator_t* r_iterator);
+map_r_iterator_t* cmap_rprev(const map_t* _this, const map_r_iterator_t* r_iterator);
+map_iterator_t*   cmap_find(const map_t* _this, map_key_t key);
+map_iterator_t*   cmap_lower_bound(const map_t* _this, map_key_t key);
+map_iterator_t*   cmap_upper_bound(const map_t* _this, map_key_t key);
+map_iterator_t*   cmap_insert(map_t* _this, map_key_t key, map_value_t value);
+map_iterator_t*   cmap_insert_replace(map_t* _this, map_key_t key, map_value_t value);
+map_iterator_t*   cmap_erase(map_t* _this, map_iterator_t* iterator);
+map_size_t        cmap_remove(map_t* _this, map_key_t key);
+map_size_t        cmap_remove_if(map_t* _this, remove_if_condition_kv cond);
+map_size_t        cmap_clear(map_t* _this);
+
+/* Method 2 */
 typedef struct class_map {
     map_size_t (*size)(const map_t* _this);
     map_count_t (*count)(const map_t* _this, map_key_t key);
@@ -80,13 +91,13 @@ typedef struct class_map {
     map_size_t (*clear)(map_t* _this);
 } class_map_t;
 
-void __map_init(map_t* map);
-void __map_deinit(map_t* map);
+map_t* __map_new(const class_map_ops_t* ops);
+void   __map_delete(map_t** _this);
 const class_map_t* class_map_ins(void);
-#define g_class_map()            class_map_ins()
-#define cmap                     g_class_map()
-#define MAP_INIT(_ptr)           (map_t) { .ops = NULL, .size = 0, }; __map_init((_ptr))
-#define MAP_INIT_OPS(_ptr, _ops) (map_t) { .ops = _ops, .size = 0, }; __map_init((_ptr))
-#define MAP_DEINIT(_ptr)         do { __map_deinit((_ptr)); } while(0)
+#define g_class_map()      class_map_ins()
+#define cmap               g_class_map()
+#define MAP_NEW()          __map_new(NULL)
+#define MAP_NEW_OPS(_ops)  __map_new((_ops))
+#define MAP_DELETE(_pptr)  do { __map_delete((_pptr)); } while(0)
 
 #endif /* __J_MAP_H */
