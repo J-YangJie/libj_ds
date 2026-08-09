@@ -22,10 +22,38 @@
 #include <string.h>
 #include <_log.h>
 #include <_memory.h>
+#include <linux/_types.h>
 #include <linux/list.h>
 #include <linux/rbtree.h>
 #include <linux/_compiler.h>
 #include <iterator/iterator.h>
+
+typedef struct bucket_node {
+    bucket_key_t key;
+    bucket_value_t value;
+    bucket_hash_t hash;
+    union {
+        struct rb_node rb_node;
+        struct hlist_node hl_node;
+    } ds_node;
+} bucket_node_t;
+
+struct bucket {
+    bucket_size_t size;
+    union {
+        struct rb_root rb;
+        struct hlist_head hl;
+        void* p;
+        unsigned long l;
+    } ds;
+};
+
+typedef enum bucket_ds {
+    BKT_DS_MIN     = 0x0,
+    BKT_DS_HLIST   = 0x0,
+    BKT_DS_RBTREE  = 0x1,
+    BKT_DS_MAX,
+} bucket_ds_t;
 
 #ifndef TAG
 #define TAG "[hashmap]"
@@ -395,26 +423,22 @@ static /* __always_inline */ inline bucket_node_t* _bucket_last(const bucket_t* 
 
 static /* __always_inline */ inline bucket_node_t* bucket_begin(const bucket_t* _this, bucket_ds_t type)
 {
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         return _bucket_hl_begin(_this);
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         return _bucket_rb_begin(_this);
-    default:
+    } else {
         return NULL;
     }
 }
 
 static /* __always_inline */ inline bucket_node_t* bucket_next(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         return _bucket_hl_next(_this, node);
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         return _bucket_rb_next(_this, node);
-    default:
+    } else {
         return NULL;
     }
 }
@@ -506,7 +530,7 @@ static bucket_node_t* __bucket_rb_find(const bucket_t* _this, const class_bucket
     return NULL;
 }
 
-static bucket_node_t* __bucket_hl_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
+static /* __always_inline */ inline bucket_node_t* __bucket_hl_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     bucket_node_t* t = NULL;
     struct hlist_node* thl = NULL;
@@ -514,6 +538,11 @@ static bucket_node_t* __bucket_hl_find(const bucket_t* _this, const class_bucket
     if (is_null(ops) || is_null(ops->__lt)) {
         hlist_for_each_entry(t, thl, &_this->ds.hl, ds_node.hl_node) {
             if (key == t->key)
+                return t;
+        }
+    } else if (!is_null(ops->__eq)) {
+        hlist_for_each_entry(t, thl, &_this->ds.hl, ds_node.hl_node) {
+            if (ops->__eq(key, t->key))
                 return t;
         }
     } else {
@@ -556,15 +585,11 @@ static /* __always_inline */ inline bucket_node_t* bucket_find_has_checked_valid
     if (unlikely(is_null(_this)))
         return NULL;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         t = __bucket_hl_find(_this, ops, key);
-        break;
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         t = __bucket_rb_find(_this, ops, key);
-        break;
-    default:
+    } else {
         return NULL;
     }
     return is_null(t) ? __bucket_end(_this) : t;
@@ -623,13 +648,11 @@ static /* __always_inline */ inline bucket_node_t* bucket_insert_has_checked_sam
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         return __bucket_hl_push_front(_this, node);
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         return __bucket_rb_insert(_this, ops, node);
-    default:
+    } else {
         return NULL;
     }
 }
@@ -709,7 +732,7 @@ static inline bucket_node_t* bucket_insert_has_checked_valid(bucket_t* _this, co
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (BKT_DS_RBTREE != type) {
+    if (likely(BKT_DS_RBTREE != type)) {
         t = bucket_find_has_checked_valid(_this, ops, type, key);
         if (is_null(t) || __bucket_end(_this) != t)
             return NULL;
@@ -722,32 +745,27 @@ static inline bucket_node_t* bucket_insert_has_checked_valid(bucket_t* _this, co
     if (is_null(ops) || is_null(ops->copy_key)) {
         t->key = key;
     } else {
-        if (!ops->copy_key(key, &t->key))
+        if (unlikely(!ops->copy_key(key, &t->key)))
             goto err;
     }
 
     if (is_null(ops) || is_null(ops->copy_value)) {
         t->value = value;
     } else {
-        if (!ops->copy_value(value, &t->value))
+        if (unlikely(!ops->copy_value(value, &t->value)))
             goto err;
     }
 
     t->hash = hash;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         ret = __bucket_hl_push_front(_this, t);
-        break;
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         ret = __bucket_rb_insert(_this, ops, t);
-        break;
-    default:
+    } else {
         ret = NULL;
-        break;
     }
-    if (t != ret)
+    if (unlikely(t != ret))
         goto err;
     return t;
 
@@ -788,7 +806,7 @@ static inline bucket_node_t* bucket_insert_replace(bucket_t* _this, const class_
                 return NULL;
             }
 
-            if (!is_null(ops) && !is_null(ops->free_value))
+            if (!is_null(ops->free_value))
                 ops->free_value(&tvalue);
         }
 
@@ -851,7 +869,7 @@ static inline bucket_node_t* bucket_insert_replace_has_checked_valid(bucket_t* _
         return NULL;
 
     t = bucket_find_has_checked_valid(_this, ops, type, key);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return NULL;
 
     if (__bucket_end(_this) != t) {
@@ -860,12 +878,12 @@ static inline bucket_node_t* bucket_insert_replace_has_checked_valid(bucket_t* _
         if (is_null(ops) || is_null(ops->copy_value)) {
             t->value = value;
         } else {
-            if (!ops->copy_value(value, &t->value)) {
+            if (unlikely(!ops->copy_value(value, &t->value))) {
                 t->value = tvalue;
                 return NULL;
             }
 
-            if (!is_null(ops) && !is_null(ops->free_value))
+            if (likely(!is_null(ops->free_value)))
                 ops->free_value(&tvalue);
         }
 
@@ -879,32 +897,27 @@ static inline bucket_node_t* bucket_insert_replace_has_checked_valid(bucket_t* _
     if (is_null(ops) || is_null(ops->copy_key)) {
         t->key = key;
     } else {
-        if (!ops->copy_key(key, &t->key))
+        if (unlikely(!ops->copy_key(key, &t->key)))
             goto err;
     }
 
     if (is_null(ops) || is_null(ops->copy_value)) {
         t->value = value;
     } else {
-        if (!ops->copy_value(value, &t->value))
+        if (unlikely(!ops->copy_value(value, &t->value)))
             goto err;
     }
 
     t->hash = hash;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         ret = __bucket_hl_push_front(_this, t);
-        break;
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         ret = __bucket_rb_insert(_this, ops, t);
-        break;
-    default:
+    } else {
         ret = NULL;
-        break;
     }
-    if (t != ret)
+    if (unlikely(t != ret))
         goto err;
     return t;
 
@@ -939,11 +952,11 @@ static inline bucket_node_t* bucket_rb_erase(bucket_t* _this, const class_bucket
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
-    if (RB_EMPTY_ROOT(&_this->ds.rb) || __bucket_end(_this) == pos/* || __bucket_rend(_this) == pos*/)
+    if (unlikely(RB_EMPTY_ROOT(&_this->ds.rb) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
     t = __bucket_rb_next(_this, pos);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return NULL;
 
     __bucket_rb_erase(_this, pos);
@@ -974,7 +987,7 @@ static inline bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
-    if (hlist_empty(&_this->ds.hl) || __bucket_end(_this) == pos/* || __bucket_rend(_this) == pos*/)
+    if (unlikely(hlist_empty(&_this->ds.hl) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
     t = __bucket_hl_next(_this, pos); /* Never return `NULL` */
@@ -994,13 +1007,11 @@ static inline bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket
 
 static /* __always_inline */ inline bucket_node_t* bucket_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* pos)
 {
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         return bucket_hl_erase(_this, ops, pos);
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         return bucket_rb_erase(_this, ops, pos);    
-    default:
+    } else {
         return NULL;
     }
 }
@@ -1050,21 +1061,17 @@ static inline bucket_size_t bucket_remove_has_checked_valid(bucket_t* _this, con
         return -1;
 
     t = bucket_find_has_checked_valid(_this, ops, type, key);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return -1;
 
     if (__bucket_end(_this) == t)
         return 0;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         __bucket_hl_erase(_this, t); /* Always right */
-        break;
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         __bucket_rb_erase(_this, t); /* Always right */
-        break;
-    default:
+    } else {
         return -1;
     }
 
@@ -1124,13 +1131,11 @@ static /* __always_inline */ inline bucket_node_t* bucket_hl_pop(bucket_t* _this
 
 static /* __always_inline */ inline bucket_node_t* bucket_pop(bucket_t* _this, bucket_ds_t type, bucket_node_t* pos)
 {
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         return bucket_hl_pop(_this, pos);
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         return bucket_rb_pop(_this, pos);
-    default:
+    } else {
         return NULL;
     }
 }
@@ -1185,17 +1190,12 @@ static /* __always_inline */ inline bucket_size_t bucket_clear(bucket_t* _this, 
     bucket_size_t ret;
     bucket_size_t size = _bucket_size(_this);
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type)) {
         ret = bucket_hl_clear(_this, ops);
-        break;
-    case BKT_DS_RBTREE:
+    } else if (BKT_DS_RBTREE == type) {
         ret = bucket_rb_clear(_this, ops);
-        break;
-    default:
+    } else {
         ret = -1;
-        break;
     }
 
     if (unlikely(size != ret))
@@ -1203,7 +1203,38 @@ static /* __always_inline */ inline bucket_size_t bucket_clear(bucket_t* _this, 
     return ret;
 }
 
+
+
+/* Init */
+static __always_inline void __bucket_init(bucket_t* bucket, bucket_ds_t type)
+{
+    bucket->size = 0;
+
 #if 1
+    bucket->ds.p = NULL; /* TODO: Current approach is for performance, only works in this version */
+#else
+    if (likely(BKT_DS_HLIST == type)) {
+        INIT_HLIST_HEAD(&bucket->ds.hl);
+    } else if (BKT_DS_RBTREE == type) {
+        bucket->ds.rb = RB_ROOT;
+    }
+#endif
+}
+
+static __always_inline void __bucket_deinit_without_clear(bucket_t* bucket, bucket_ds_t type)
+{
+    __bucket_init(bucket, type);
+}
+
+static __always_inline void __bucket_deinit(bucket_t* bucket, const class_bucket_ops_t* ops, bucket_ds_t type)
+{
+    bucket_clear(bucket, ops, type);
+    __bucket_deinit_without_clear(bucket, type);
+}
+
+
+
+/* For hashmap */
 static __always_inline bool __bucket_empty(const bucket_t* _this)
 {
     return is_null(_this->ds.p); /* TODO: Current approach is for performance, only works in this version */
@@ -1211,7 +1242,7 @@ static __always_inline bool __bucket_empty(const bucket_t* _this)
 
 static inline void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type_from, bucket_ds_t type_to)
 {
-    bucket_t tmp = BUCKET_INIT(&tmp, type_to);
+    bucket_t tmp; __bucket_init(&tmp, type_to);
     bucket_size_t size = __bucket_size(_this);
     bucket_node_t* bkt_node;
 
@@ -1240,87 +1271,16 @@ static inline void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* op
 
     _this->size = tmp.size;
 }
-#else
-static __always_inline bool __bucket_empty(const bucket_t* _this, bucket_ds_t type)
-{
-    return BKT_DS_RBTREE == type ? RB_EMPTY_ROOT(&_this->ds.rb) : hlist_empty(&_this->ds.hl);
-}
-
-static inline void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type_from, bucket_ds_t type_to)
-{
-    bucket_t tmp = BUCKET_INIT(&tmp, type_to);
-    bucket_size_t size = __bucket_size(_this);
-    bucket_node_t* bkt_node;
-
-    while (!__bucket_empty(_this, type_from)) {
-        bkt_node = bucket_begin(_this, type_from);
-        bucket_pop(_this, type_from, bkt_node);
-        bucket_insert_has_checked_same(&tmp, ops, type_to, bkt_node);
-    }
-    BUCKET_DEINIT(_this, ops, type_from);
-
-    *_this = BUCKET_INIT(_this, type_to); /* memset(_this, 0, sizeof(bucket_t)); */
-
-    switch (type_to)
-    {
-    case BKT_DS_HLIST:
-        hlist_move_list(&tmp.ds.hl, &_this->ds.hl);
-        break;
-    case BKT_DS_RBTREE:
-        _this->ds.rb.rb_node = tmp.ds.rb.rb_node;
-        break;
-    default:
-        return ; /* Segment fault: may occur */
-    }
-
-    if (unlikely(size != tmp.size))
-        pr_err("After switching bucket, errors were discovered [ %zd | %zd ] and forcibly corrected!", tmp.size, size);
-
-    _this->size = tmp.size;
-}
-#endif
 
 static __always_inline void __bucket_resume(bucket_t* _this, bucket_ds_t type)
 {
     struct hlist_head* hh = &_this->ds.hl;
-    if (BKT_DS_HLIST == type && hh->first) {
+    if (likely(BKT_DS_HLIST == type)/* && hh->first */) { /* TODO: Current approach is for performance, only works in this version */
         hh->first->pprev = &hh->first;
     }
 }
 
-__always_inline void __bucket_init(bucket_t* bucket, bucket_ds_t type)
-{
-    switch (type)
-    {
-    case BKT_DS_HLIST:
-        INIT_HLIST_HEAD(&bucket->ds.hl);
-        break;
-    case BKT_DS_RBTREE:
-        bucket->ds.rb = RB_ROOT;
-        break;
-    default:
-        break;
-    }
-}
 
-__always_inline void __bucket_deinit(bucket_t* bucket, const class_bucket_ops_t* ops, bucket_ds_t type)
-{
-    bucket_clear(bucket, ops, type);
-
-    switch (type)
-    {
-    case BKT_DS_HLIST:
-        INIT_HLIST_HEAD(&bucket->ds.hl);
-        break;
-    case BKT_DS_RBTREE:
-        bucket->ds.rb = RB_ROOT;
-        break;
-    default:
-        break;
-    }
-
-    bucket->size = 0;
-}
 
 #if 0
 typedef struct class_bucket {
@@ -1438,42 +1398,27 @@ const class_bucket_priv_t* class_bucket_priv_ins(void);
 #define cbucket_priv                     g_class_bucket_priv()
 #else
 
-/* Macros */
-#define ___hmbucket_type(p) (p->ds.l & BKT_DS_VALID)
-
-static __always_inline void ___hmbucket_set_type(bucket_shell_t* p, bucket_ds_t ntype)
-{
-    p->ds.l = (p->ds.l & ~BKT_DS_VALID) | ntype;
-}
-
-static __always_inline bucket_ds_t ___hmbucket_xchg_type(bucket_shell_t* p, bucket_ds_t ntype)
-{
-    bucket_ds_t ret = ___hmbucket_type(p);
-    p->ds.l = (p->ds.l & ~BKT_DS_VALID) | ntype;
-    return ret;
-}
+/* Macros */ /* TODO: Current approach is for performance, only works in this version */
+#define ___hmbucket_type(p_bsh) ((p_bsh)->ds.p ? ((p_bsh)->ds.rb.rb_node->rb_parent_color & 1) : BKT_DS_HLIST)
 
 static __always_inline bool ___hmbucket_is_tree(const bucket_shell_t* p)
 {
-    return !!(p->ds.l & BKT_DS_RBTREE);
+    return p->ds.p && (p->ds.rb.rb_node->rb_parent_color & 1); /* TODO: Current approach is for performance, only works in this version */
 }
 
 static __always_inline bool ___hmbucket_valid(const bucket_shell_t* p)
 {
-    return !!___hmbucket_type(p);
+    return p->ds.p;
 }
 
 static __always_inline bool ___hmbucket_invalid(const bucket_shell_t* p)
 {
-    return !___hmbucket_type(p);
+    return !p->ds.p;
 }
 
 #define __hmbucket_is_tree(sh) ___hmbucket_is_tree(&(sh))
 #define __hmbucket_valid(sh)   ___hmbucket_valid(&(sh))
 #define __hmbucket_invalid(sh) ___hmbucket_invalid(&(sh))
-
-#define BUCKET_SH_TYPE_GET_CLEAR(sh) bucket_ds_t type = ___hmbucket_xchg_type((bucket_shell_t*)(sh), 0)
-#define BUCKET_SH_TYPE_RESUME(sh)    do { ___hmbucket_set_type((bucket_shell_t*)(sh), type); } while(0)
 
 /* Interface: bucket shell */
 static __always_inline bucket_size_t _shbucket_size(const bucket_shell_t* bucket_sh)
@@ -1488,26 +1433,17 @@ static __always_inline bucket_node_t* __shbucket_end(const bucket_shell_t* bucke
 
 static __always_inline bucket_node_t* shbucket_begin(const bucket_shell_t* bucket_sh)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_begin(bucket_sh, type);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_begin(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
 static __always_inline bucket_node_t* shbucket_next(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_next(bucket_sh, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_next(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* shbucket_prev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_prev(bucket_sh, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_prev(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* __shbucket_rend(const bucket_shell_t* bucket_sh)
@@ -1517,74 +1453,47 @@ static __always_inline bucket_node_t* __shbucket_rend(const bucket_shell_t* buck
 
 static __always_inline bucket_node_t* shbucket_rbegin(const bucket_shell_t* bucket_sh)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_rbegin(bucket_sh, type);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_rbegin(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
 static __always_inline bucket_node_t* shbucket_rnext(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_rnext(bucket_sh, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_rnext(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* shbucket_rprev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_rprev(bucket_sh, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_rprev(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* shbucket_find(const bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_find(bucket_sh, ops, type, key);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_find(bucket_sh, ops, ___hmbucket_type(bucket_sh), key);
 }
 
 static __always_inline bucket_node_t* shbucket_insert(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_insert(bucket_sh, ops, type, hash, key, value);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_insert(bucket_sh, ops, ___hmbucket_type(bucket_sh), hash, key, value);
 }
 
 static __always_inline bucket_node_t* shbucket_insert_replace(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_insert_replace(bucket_sh, ops, type, hash, key, value);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_insert_replace(bucket_sh, ops, ___hmbucket_type(bucket_sh), hash, key, value);
 }
 
 static __always_inline bucket_node_t* shbucket_erase(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* pos)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_erase(bucket_sh, ops, type, pos);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_erase(bucket_sh, ops, ___hmbucket_type(bucket_sh), pos);
 }
 
 static __always_inline bucket_size_t shbucket_remove(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_size_t ret = bucket_remove(bucket_sh, ops, type, key);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_remove(bucket_sh, ops, ___hmbucket_type(bucket_sh), key);
 }
 
 static __always_inline bucket_size_t shbucket_clear(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_size_t ret = bucket_clear(bucket_sh, ops, type);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_clear(bucket_sh, ops, ___hmbucket_type(bucket_sh));
 }
 
 typedef bucket_iterator_t* (*shfp_end)(const bucket_shell_t* bucket_sh);
@@ -1627,7 +1536,7 @@ typedef bucket_iterator_t* (*shfp_erase)(bucket_shell_t* bucket_sh, const class_
 /* Interface: hashmap */
 static __always_inline bool __hmbucket_empty(const bucket_shell_t* bucket_sh)
 {
-    return is_null(bucket_sh->ds.l & ~BKT_DS_VALID); /* TODO: Current approach is for performance, only works in this version */
+    return !bucket_sh->ds.p; /* TODO: Current approach is for performance, only works in this version */
 }
 
 static __always_inline bucket_size_t __hmbucket_size(const bucket_shell_t* bucket_sh)
@@ -1647,128 +1556,81 @@ static __always_inline bucket_node_t* __hmbucket_rend(const bucket_shell_t* buck
 
 static __always_inline bucket_node_t* _hmbucket_first(const bucket_shell_t* bucket_sh)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = _bucket_first(bucket_sh, type);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return _bucket_first(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
 static __always_inline bucket_node_t* _hmbucket_last(const bucket_shell_t* bucket_sh)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = _bucket_last(bucket_sh, type);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return _bucket_last(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
 static __always_inline bucket_node_t* hmbucket_begin(const bucket_shell_t* bucket_sh)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_begin(bucket_sh, type);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_begin(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
 static __always_inline bucket_node_t* hmbucket_next(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_next(bucket_sh, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_next(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* hmbucket_prev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_prev(bucket_sh, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_prev(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* hmbucket_rnext(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_rnext(bucket_sh, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_rnext(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* hmbucket_rprev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_rprev(bucket_sh, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_rprev(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* hmbucket_find_hc_valid(const bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_find_has_checked_valid(bucket_sh, ops, type, key);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_find_has_checked_valid(bucket_sh, ops, ___hmbucket_type(bucket_sh), key);
 }
 
 static __always_inline bucket_node_t* hmbucket_insert_hc_same(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* node)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_insert_has_checked_same(bucket_sh, ops, type, node);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_insert_has_checked_same(bucket_sh, ops, ___hmbucket_type(bucket_sh), node);
 }
 
 static __always_inline bucket_node_t* hmbucket_insert_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_insert_has_checked_valid(bucket_sh, ops, type, hash, key, value);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_insert_has_checked_valid(bucket_sh, ops, ___hmbucket_type(bucket_sh), hash, key, value);
 }
 
 static __always_inline bucket_node_t* hmbucket_insert_replace_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_insert_replace_has_checked_valid(bucket_sh, ops, type, hash, key, value);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_insert_replace_has_checked_valid(bucket_sh, ops, ___hmbucket_type(bucket_sh), hash, key, value);
 }
 
 static __always_inline bucket_node_t* hmbucket_erase(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* pos)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_erase(bucket_sh, ops, type, pos);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_erase(bucket_sh, ops, ___hmbucket_type(bucket_sh), pos);
 }
 
 static __always_inline bucket_size_t hmbucket_remove_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_size_t ret = bucket_remove_has_checked_valid(bucket_sh, ops, type, key);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_remove_has_checked_valid(bucket_sh, ops, ___hmbucket_type(bucket_sh), key);
 }
 
 static __always_inline bucket_node_t* hmbucket_pop(bucket_shell_t* bucket_sh, bucket_node_t* pos)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_node_t* ret = bucket_pop(bucket_sh, type, pos);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_pop(bucket_sh, ___hmbucket_type(bucket_sh), pos);
 }
 
 static __always_inline bucket_size_t hmbucket_clear(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    bucket_size_t ret = bucket_clear(bucket_sh, ops, type);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
-    return ret;
+    return bucket_clear(bucket_sh, ops, ___hmbucket_type(bucket_sh));
 }
 
 static __always_inline void __hmbucket_resume(bucket_shell_t* bucket_sh)
 {
-    BUCKET_SH_TYPE_GET_CLEAR(bucket_sh);
-    __bucket_resume(bucket_sh, type);
-    BUCKET_SH_TYPE_RESUME(bucket_sh);
+    __bucket_resume(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 #endif

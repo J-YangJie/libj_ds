@@ -20,14 +20,7 @@
 #ifndef __J_MULTIMAP_H
 #define __J_MULTIMAP_H
 
-#include <linux/_types.h>
 #include <multimap/multimap_ops.h>
-
-typedef struct multimap_node {
-    multimap_key_t key;
-    multimap_value_t value;
-    struct rb_node node;
-} multimap_node_t;
 
 typedef struct multimap_iterator {
     union {
@@ -52,12 +45,29 @@ typedef struct multimap_reverse_iterator {
 } multimap_reverse_iterator_t;
 typedef multimap_reverse_iterator_t multimap_r_iterator_t;
 
-typedef struct multimap {
-    const class_multimap_ops_t* ops;
-    struct rb_root root;
-    multimap_size_t size;
-} multimap_t;
+typedef struct multimap multimap_t;
 
+/* Method 1 */
+multimap_size_t        cmultimap_size(const multimap_t* _this);
+multimap_count_t       cmultimap_count(const multimap_t* _this, multimap_key_t key);
+multimap_iterator_t*   cmultimap_end(const multimap_t* _this);
+multimap_iterator_t*   cmultimap_begin(const multimap_t* _this);
+multimap_iterator_t*   cmultimap_next(const multimap_t* _this, const multimap_iterator_t* iterator);
+multimap_iterator_t*   cmultimap_prev(const multimap_t* _this, const multimap_iterator_t* iterator);
+multimap_r_iterator_t* cmultimap_rend(const multimap_t* _this);
+multimap_r_iterator_t* cmultimap_rbegin(const multimap_t* _this);
+multimap_r_iterator_t* cmultimap_rnext(const multimap_t* _this, const multimap_r_iterator_t* r_iterator);
+multimap_r_iterator_t* cmultimap_rprev(const multimap_t* _this, const multimap_r_iterator_t* r_iterator);
+multimap_iterator_t*   cmultimap_find(const multimap_t* _this, multimap_key_t key);
+multimap_iterator_t*   cmultimap_lower_bound(const multimap_t* _this, multimap_key_t key);
+multimap_iterator_t*   cmultimap_upper_bound(const multimap_t* _this, multimap_key_t key);
+multimap_iterator_t*   cmultimap_insert(multimap_t* _this, multimap_key_t key, multimap_value_t value);
+multimap_iterator_t*   cmultimap_erase(multimap_t* _this, multimap_iterator_t* iterator);
+multimap_size_t        cmultimap_remove(multimap_t* _this, multimap_key_t key);
+multimap_size_t        cmultimap_remove_if(multimap_t* _this, remove_if_condition_kv cond);
+multimap_size_t        cmultimap_clear(multimap_t* _this);
+
+/* Method 2 */
 typedef struct class_multimap {
     multimap_size_t (*size)(const multimap_t* _this);
     multimap_count_t (*count)(const multimap_t* _this, multimap_key_t key);
@@ -79,13 +89,13 @@ typedef struct class_multimap {
     multimap_size_t (*clear)(multimap_t* _this);
 } class_multimap_t;
 
-void __multimap_init(multimap_t* multimap);
-void __multimap_deinit(multimap_t* multimap);
+multimap_t* __multimap_new(const class_multimap_ops_t* ops);
+void        __multimap_delete(multimap_t** _this);
 const class_multimap_t* class_multimap_ins(void);
-#define g_class_multimap()            class_multimap_ins()
-#define cmultimap                     g_class_multimap()
-#define MULTIMAP_INIT(_ptr)           (multimap_t) { .ops = NULL, .size = 0, }; __multimap_init((_ptr))
-#define MULTIMAP_INIT_OPS(_ptr, _ops) (multimap_t) { .ops = _ops, .size = 0, }; __multimap_init((_ptr))
-#define MULTIMAP_DEINIT(_ptr)         do { __multimap_deinit((_ptr)); } while(0)
+#define g_class_multimap()      class_multimap_ins()
+#define cmultimap               g_class_multimap()
+#define MULTIMAP_NEW()          __multimap_new(NULL)
+#define MULTIMAP_NEW_OPS(_ops)  __multimap_new((_ops))
+#define MULTIMAP_DELETE(_pptr)  do { __multimap_delete((_pptr)); } while(0)
 
 #endif /* __J_MULTIMAP_H */

@@ -20,15 +20,7 @@
 #ifndef __J_HASH_MAP_H
 #define __J_HASH_MAP_H
 
-#include <stdint.h>
-#include <linux/_types.h>
-#include <bucket/bucket.h>
 #include <hashmap/hashmap_ops.h>
-
-typedef struct hashmap_node {
-    bucket_shell_t sh;
-} hashmap_node_t;
-typedef bucket_node_t hashmap_bnode_t;
 
 typedef struct hashmap_iterator {
     union {
@@ -58,26 +50,35 @@ typedef hashmap_reverse_iterator_t hashmap_r_iterator_t;
 typedef union hashmap_config {
     struct {
         uint32_t b_bkt_only_l : 1;
-        uint32_t b_bkt_only_r : 1;
+        uint32_t b_bkt_only_r : 1; /* TODO: Currently invalid */
         uint32_t b_bkt_l_to_r : 1;
     } c;
     uint32_t d;
 } hashmap_config_t;
 
-typedef struct hashmap {
-    const class_hashmap_ops_t* ops;
-    hashmap_node_t*  head;
-    hashmap_size_t   size;
-    hashmap_bcount_t bucket_count;
-    hashmap_bcount_t bucket_count_init;
-    hashmap_bcount_t bucket_count_max;
-    float            load_factor;
-    hashmap_config_t config;
-    hashmap_bcount_t bucket_valid_count;
-    hashmap_bcount_t pi_s;
-    hashmap_bcount_t pi_e;
-} hashmap_t;
+typedef struct hashmap hashmap_t;
 
+/* Method 1 */
+hashmap_size_t        chashmap_size(const hashmap_t* _this);
+hashmap_bcount_t      chashmap_bucket_count(const hashmap_t* _this);
+hashmap_bcount_t      chashmap_bucket_valid_count(const hashmap_t* _this);
+hashmap_count_t       chashmap_count(const hashmap_t* _this, hashmap_key_t key);
+hashmap_iterator_t*   chashmap_end(const hashmap_t* _this);
+hashmap_iterator_t*   chashmap_begin(const hashmap_t* _this);
+hashmap_iterator_t*   chashmap_next(const hashmap_t* _this, const hashmap_iterator_t* iterator);
+hashmap_iterator_t*   chashmap_prev(const hashmap_t* _this, const hashmap_iterator_t* iterator);
+hashmap_r_iterator_t* chashmap_rend(const hashmap_t* _this);
+hashmap_r_iterator_t* chashmap_rbegin(const hashmap_t* _this);
+hashmap_r_iterator_t* chashmap_rnext(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
+hashmap_r_iterator_t* chashmap_rprev(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
+hashmap_iterator_t*   chashmap_find(const hashmap_t* _this, hashmap_key_t key);
+hashmap_iterator_t*   chashmap_insert(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
+hashmap_iterator_t*   chashmap_insert_replace(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
+hashmap_iterator_t*   chashmap_erase(hashmap_t* _this, hashmap_iterator_t* iterator);
+hashmap_size_t        chashmap_remove(hashmap_t* _this, hashmap_key_t key);
+hashmap_size_t        chashmap_clear(hashmap_t* _this);
+
+/* Method 2 */
 typedef struct class_hashmap {
     hashmap_size_t (*size)(const hashmap_t* _this);
     hashmap_bcount_t (*bucket_count)(const hashmap_t* _this);
@@ -99,32 +100,35 @@ typedef struct class_hashmap {
     hashmap_size_t (*clear)(hashmap_t* _this);
 } class_hashmap_t;
 
-void __hashmap_init(hashmap_t* hashmap);
-void __hashmap_init_arg(hashmap_t* hashmap, int num_arg, ...);
-void __hashmap_deinit(hashmap_t* hashmap);
+hashmap_t* __hashmap_new(const class_hashmap_ops_t* ops,
+                         hashmap_bcount_t bucket_count_init,
+                         hashmap_bcount_t bucket_count_max,
+                         float            load_factor,
+                         hashmap_config_t* config);
+void       __hashmap_delete(hashmap_t** _this);
 const class_hashmap_t* class_hashmap_ins(void);
-#define g_class_hashmap()            class_hashmap_ins()
-#define chashmap                     g_class_hashmap()
-#define HASHMAP_INIT(_ptr)           (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init((_ptr))
-#define HASHMAP_INIT_OPS(_ptr, _ops) (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init((_ptr))
-#define HASHMAP_DEINIT(_ptr)         do { __hashmap_deinit((_ptr)); } while(0)
+#define g_class_hashmap()      class_hashmap_ins()
+#define chashmap               g_class_hashmap()
+#define HASHMAP_NEW()          __hashmap_new(NULL, 0, 0, 0.0f, NULL)
+#define HASHMAP_NEW_OPS(_ops)  __hashmap_new((_ops), 0, 0, 0.0f, NULL)
+#define HASHMAP_DELETE(_pptr)  do { __hashmap_delete((_pptr)); } while(0)
 
-#define HASHMAP_INIT_1(_ptr, _bucket_count_init) \
-        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 1, (_bucket_count_init))
-#define HASHMAP_INIT_2(_ptr, _bucket_count_init, _bucket_count_max) \
-        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 2, (_bucket_count_init), (_bucket_count_max))
-#define HASHMAP_INIT_3(_ptr, _bucket_count_init, _bucket_count_max, _load_factor) \
-        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 3, (_bucket_count_init), (_bucket_count_max), (_load_factor))
-#define HASHMAP_INIT_4(_ptr, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
-        (hashmap_t) { .ops = NULL, .size = 0, }; __hashmap_init_arg((_ptr), 4, (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
+#define HASHMAP_NEW_1(_bucket_count_init) \
+        __hashmap_new(NULL, (_bucket_count_init), 0, 0.0f, NULL)
+#define HASHMAP_NEW_2(_bucket_count_init, _bucket_count_max) \
+        __hashmap_new(NULL, (_bucket_count_init), (_bucket_count_max), 0.0f, NULL)
+#define HASHMAP_NEW_3(_bucket_count_init, _bucket_count_max, _load_factor) \
+        __hashmap_new(NULL, (_bucket_count_init), (_bucket_count_max), (_load_factor), NULL)
+#define HASHMAP_NEW_4(_bucket_count_init, _bucket_count_max, _load_factor, _config) \
+        __hashmap_new(NULL, (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
 
-#define HASHMAP_INIT_OPS_1(_ptr, _ops, _bucket_count_init) \
-        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 1, (_bucket_count_init))
-#define HASHMAP_INIT_OPS_2(_ptr, _ops, _bucket_count_init, _bucket_count_max) \
-        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 2, (_bucket_count_init), (_bucket_count_max))
-#define HASHMAP_INIT_OPS_3(_ptr, _ops, _bucket_count_init, _bucket_count_max, _load_factor) \
-        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 3, (_bucket_count_init), (_bucket_count_max), (_load_factor))
-#define HASHMAP_INIT_OPS_4(_ptr, _ops, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
-        (hashmap_t) { .ops = _ops, .size = 0, }; __hashmap_init_arg((_ptr), 4, (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
+#define HASHMAP_NEW_OPS_1(_ops, _bucket_count_init) \
+        __hashmap_new((_ops), (_bucket_count_init), 0, 0.0f, NULL)
+#define HASHMAP_NEW_OPS_2(_ops, _bucket_count_init, _bucket_count_max) \
+        __hashmap_new((_ops), (_bucket_count_init), (_bucket_count_max), 0.0f, NULL)
+#define HASHMAP_NEW_OPS_3(_ops, _bucket_count_init, _bucket_count_max, _load_factor) \
+        __hashmap_new((_ops), (_bucket_count_init), (_bucket_count_max), (_load_factor), NULL)
+#define HASHMAP_NEW_OPS_4(_ops, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
+        __hashmap_new((_ops), (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
 
 #endif /* __J_HASH_MAP_H */
