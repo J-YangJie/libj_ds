@@ -20,9 +20,22 @@
 #include <map/map.h>
 
 #include <_memory.h>
+#include <linux/_types.h>
 #include <linux/rbtree.h>
 #include <linux/_compiler.h>
 #include <iterator/iterator.h>
+
+typedef struct map_node {
+    map_key_t key;
+    map_value_t value;
+    struct rb_node node;
+} map_node_t;
+
+struct map {
+    const class_map_ops_t* ops;
+    struct rb_root root;
+    map_size_t size;
+};
 
 #define map_entry(ptr) rb_entry((ptr), struct map_node, node)
 
@@ -604,18 +617,24 @@ static map_size_t map_clear(map_t* _this)
     return ret;
 }
 
-/* __always_inline */ inline void __map_init(map_t* map)
+map_t* __map_new(const class_map_ops_t* ops)
 {
+    map_t* map = (map_t*)p_calloc(1, sizeof(map_t));
+    if (is_null(map))
+        return NULL;
+
+    map->ops  = ops;
     map->root = RB_ROOT;
+    return map;
 }
 
-/* __always_inline */ inline void __map_deinit(map_t* map)
+void __map_delete(map_t** _this)
 {
-    map_clear(map);
+    if (is_null(_this) || is_null(*_this))
+        return;
 
-    map->ops = NULL;
-    map->root = RB_ROOT;
-    map->size = 0;
+    map_clear(*_this);
+    p_free(*_this);
 }
 
 typedef map_iterator_t* (*fp_end)(const map_t* _this);
@@ -657,4 +676,103 @@ const class_map_t* class_map_ins(void)
         .clear          = map_clear,
     };
     return &ins;
+}
+
+
+
+
+
+map_size_t cmap_size(const map_t* _this)
+{
+    return _map_size(_this);
+}
+
+map_count_t cmap_count(const map_t* _this, map_key_t key)
+{
+    return map_count(_this, key);
+}
+
+map_iterator_t* cmap_end(const map_t* _this)
+{
+    return (map_iterator_t*)__map_end(_this);
+}
+
+map_iterator_t* cmap_begin(const map_t* _this)
+{
+    return (map_iterator_t*)_map_begin(_this);
+}
+
+map_iterator_t* cmap_next(const map_t* _this, const map_iterator_t* iterator)
+{
+    return (map_iterator_t*)_map_next(_this, (const map_node_t*)iterator);
+}
+
+map_iterator_t* cmap_prev(const map_t* _this, const map_iterator_t* iterator)
+{
+    return (map_iterator_t*)_map_prev(_this, (const map_node_t*)iterator);
+}
+
+map_r_iterator_t* cmap_rend(const map_t* _this)
+{
+    return (map_r_iterator_t*)__map_rend(_this);
+}
+
+map_r_iterator_t* cmap_rbegin(const map_t* _this)
+{
+    return (map_r_iterator_t*)_map_rbegin(_this);
+}
+
+map_r_iterator_t* cmap_rnext(const map_t* _this, const map_r_iterator_t* r_iterator)
+{
+    return (map_r_iterator_t*)_map_rnext(_this, (const map_node_t*)r_iterator);
+}
+
+map_r_iterator_t* cmap_rprev(const map_t* _this, const map_r_iterator_t* r_iterator)
+{
+    return (map_r_iterator_t*)_map_rprev(_this, (const map_node_t*)r_iterator);
+}
+
+map_iterator_t* cmap_find(const map_t* _this, map_key_t key)
+{
+    return (map_iterator_t*)map_find(_this, key);
+}
+
+map_iterator_t* cmap_lower_bound(const map_t* _this, map_key_t key)
+{
+    return (map_iterator_t*)map_lower_bound(_this, key);
+}
+
+map_iterator_t* cmap_upper_bound(const map_t* _this, map_key_t key)
+{
+    return (map_iterator_t*)map_upper_bound(_this, key);
+}
+
+map_iterator_t* cmap_insert(map_t* _this, map_key_t key, map_value_t value)
+{
+    return (map_iterator_t*)map_insert(_this, key, value);
+}
+
+map_iterator_t* cmap_insert_replace(map_t* _this, map_key_t key, map_value_t value)
+{
+    return (map_iterator_t*)map_insert_replace(_this, key, value);
+}
+
+map_iterator_t* cmap_erase(map_t* _this, map_iterator_t* iterator)
+{
+    return (map_iterator_t*)map_erase(_this, (map_node_t*)iterator);
+}
+
+map_size_t cmap_remove(map_t* _this, map_key_t key)
+{
+    return map_remove(_this, key);
+}
+
+map_size_t cmap_remove_if(map_t* _this, remove_if_condition_kv cond)
+{
+    return map_remove_if(_this, cond);
+}
+
+map_size_t cmap_clear(map_t* _this)
+{
+    return map_clear(_this);
 }

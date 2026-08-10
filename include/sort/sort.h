@@ -22,13 +22,14 @@
 
 #include <_types.h>
 
-void __sort_bubble(ds_data_t* a, ds_size_t size, __comp __comp);
-void sort_bubble(ds_data_t* a, ds_size_t size, __comp __comp);
-void __sort_insert(ds_data_t* a, ds_size_t size, __comp __comp);
-void sort_insert(ds_data_t* a, ds_size_t size, __comp __comp);
-void __sort_heap(ds_data_t* a, ds_size_t size, __comp __comp);
-void sort_heap(ds_data_t* a, ds_size_t size, __comp __comp);
-void __sort_quick(ds_data_t* a, ds_size_t size, __comp __comp);
-void sort_quick(ds_data_t* a, ds_size_t size, __comp __comp);
+void __sort_bubble(ds_data_t* a, ds_size_t size, __cmp __cmp);
+void sort_bubble(ds_data_t* a, ds_size_t size, __cmp __cmp);
+void __sort_insert(ds_data_t* a, ds_size_t size, __cmp __cmp);
+void sort_insert(ds_data_t* a, ds_size_t size, __cmp __cmp);
+void __sort_heap(ds_data_t* a, ds_size_t size, __cmp __cmp);
+void sort_heap(ds_data_t* a, ds_size_t size, __cmp __cmp);
+void __sort_quick(ds_data_t* a, ds_size_t size, __cmp __cmp);
+void sort_quick(ds_data_t* a, ds_size_t size, __cmp __cmp);
+void __sort_quick_num(ds_data_t* a, ds_size_t size);
 
 #endif /* __J_SORT_H */
