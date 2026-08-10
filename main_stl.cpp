@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <malloc.h>
 #include <stdlib.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -1000,10 +1001,22 @@ static void test_s_rand(void)
 
 int main(int argc, char** argv)
 {
-    test_i_for();
-    sleep(1);
-    test_i_rand();
-    sleep(1);
-    test_s_rand();
+    int n;
+
+    if (argc <= 1) {
+        test_i_for();
+        malloc_trim(0);
+        sleep(1);
+        test_i_rand();
+        malloc_trim(0);
+        sleep(1);
+        test_s_rand();
+    } else if (1 == (n = atoi(argv[1])))
+        test_i_for();
+    else if (2 == n)
+        test_i_rand();
+    else if (3 == n)
+        test_s_rand();
+
     return 0;
 }

@@ -20,9 +20,22 @@
 #include <multimap/multimap.h>
 
 #include <_memory.h>
+#include <linux/_types.h>
 #include <linux/rbtree.h>
 #include <linux/_compiler.h>
 #include <iterator/iterator.h>
+
+typedef struct multimap_node {
+    multimap_key_t key;
+    multimap_value_t value;
+    struct rb_node node;
+} multimap_node_t;
+
+struct multimap {
+    const class_multimap_ops_t* ops;
+    struct rb_root root;
+    multimap_size_t size;
+};
 
 #define multimap_entry(ptr) rb_entry((ptr), struct multimap_node, node)
 
@@ -578,18 +591,24 @@ static multimap_size_t multimap_clear(multimap_t* _this)
     return ret;
 }
 
-/* __always_inline */ inline void __multimap_init(multimap_t* multimap)
+multimap_t* __multimap_new(const class_multimap_ops_t* ops)
 {
+    multimap_t* multimap = (multimap_t*)p_calloc(1, sizeof(multimap_t));
+    if (is_null(multimap))
+        return NULL;
+
+    multimap->ops  = ops;
     multimap->root = RB_ROOT;
+    return multimap;
 }
 
-/* __always_inline */ inline void __multimap_deinit(multimap_t* multimap)
+void __multimap_delete(multimap_t** _this)
 {
-    multimap_clear(multimap);
+    if (is_null(_this) || is_null(*_this))
+        return;
 
-    multimap->ops = NULL;
-    multimap->root = RB_ROOT;
-    multimap->size = 0;
+    multimap_clear(*_this);
+    p_free(*_this);
 }
 
 typedef multimap_iterator_t* (*fp_end)(const multimap_t* _this);
@@ -629,4 +648,98 @@ const class_multimap_t* class_multimap_ins(void)
         .clear       = multimap_clear,
     };
     return &ins;
+}
+
+
+
+
+
+multimap_size_t cmultimap_size(const multimap_t* _this)
+{
+    return _multimap_size(_this);
+}
+
+multimap_count_t cmultimap_count(const multimap_t* _this, multimap_key_t key)
+{
+    return multimap_count(_this, key);
+}
+
+multimap_iterator_t* cmultimap_end(const multimap_t* _this)
+{
+    return (multimap_iterator_t*)__multimap_end(_this);
+}
+
+multimap_iterator_t* cmultimap_begin(const multimap_t* _this)
+{
+    return (multimap_iterator_t*)_multimap_begin(_this);
+}
+
+multimap_iterator_t* cmultimap_next(const multimap_t* _this, const multimap_iterator_t* iterator)
+{
+    return (multimap_iterator_t*)_multimap_next(_this, (const multimap_node_t*)iterator);
+}
+
+multimap_iterator_t* cmultimap_prev(const multimap_t* _this, const multimap_iterator_t* iterator)
+{
+    return (multimap_iterator_t*)_multimap_prev(_this, (const multimap_node_t*)iterator);
+}
+
+multimap_r_iterator_t* cmultimap_rend(const multimap_t* _this)
+{
+    return (multimap_r_iterator_t*)__multimap_rend(_this);
+}
+
+multimap_r_iterator_t* cmultimap_rbegin(const multimap_t* _this)
+{
+    return (multimap_r_iterator_t*)_multimap_rbegin(_this);
+}
+
+multimap_r_iterator_t* cmultimap_rnext(const multimap_t* _this, const multimap_r_iterator_t* r_iterator)
+{
+    return (multimap_r_iterator_t*)_multimap_rnext(_this, (const multimap_node_t*)r_iterator);
+}
+
+multimap_r_iterator_t* cmultimap_rprev(const multimap_t* _this, const multimap_r_iterator_t* r_iterator)
+{
+    return (multimap_r_iterator_t*)_multimap_rprev(_this, (const multimap_node_t*)r_iterator);
+}
+
+multimap_iterator_t* cmultimap_find(const multimap_t* _this, multimap_key_t key)
+{
+    return (multimap_iterator_t*)multimap_find(_this, key);
+}
+
+multimap_iterator_t* cmultimap_lower_bound(const multimap_t* _this, multimap_key_t key)
+{
+    return (multimap_iterator_t*)multimap_lower_bound(_this, key);
+}
+
+multimap_iterator_t* cmultimap_upper_bound(const multimap_t* _this, multimap_key_t key)
+{
+    return (multimap_iterator_t*)multimap_upper_bound(_this, key);
+}
+
+multimap_iterator_t* cmultimap_insert(multimap_t* _this, multimap_key_t key, multimap_value_t value)
+{
+    return (multimap_iterator_t*)multimap_insert(_this, key, value);
+}
+
+multimap_iterator_t* cmultimap_erase(multimap_t* _this, multimap_iterator_t* iterator)
+{
+    return (multimap_iterator_t*)multimap_erase(_this, (multimap_node_t*)iterator);
+}
+
+multimap_size_t cmultimap_remove(multimap_t* _this, multimap_key_t key)
+{
+    return multimap_remove(_this, key);
+}
+
+multimap_size_t cmultimap_remove_if(multimap_t* _this, remove_if_condition_kv cond)
+{
+    return multimap_remove_if(_this, cond);
+}
+
+multimap_size_t cmultimap_clear(multimap_t* _this)
+{
+    return multimap_clear(_this);
 }

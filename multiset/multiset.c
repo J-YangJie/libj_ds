@@ -20,13 +20,25 @@
 #include <multiset/multiset.h>
 
 #include <_memory.h>
+#include <linux/_types.h>
 #include <linux/rbtree.h>
 #include <linux/_compiler.h>
 #include <iterator/iterator.h>
 
+typedef struct multiset_node {
+    multiset_key_t key;
+    struct rb_node node;
+} multiset_node_t;
+
+struct multiset {
+    const class_multiset_ops_t* ops;
+    struct rb_root root;
+    multiset_size_t size;
+};
+
 #define multiset_entry(ptr) rb_entry((ptr), struct multiset_node, node)
 
-static /* __always_inline */ inline multiset_node_t* multiset_find(const multiset_t* _this, multiset_value_t value);
+static /* __always_inline */ inline multiset_node_t* multiset_find(const multiset_t* _this, multiset_key_t key);
 static /* __always_inline */ inline multiset_node_t* __multiset_end(const multiset_t* _this);
 static /* __always_inline */ inline multiset_node_t* __multiset_next(const multiset_t* _this, const multiset_node_t* node);
 
@@ -42,10 +54,10 @@ static /* __always_inline */ inline multiset_size_t _multiset_size(const multise
     return __multiset_size(_this);
 }
 
-static multiset_count_t multiset_count(const multiset_t* _this, multiset_value_t value)
+static multiset_count_t multiset_count(const multiset_t* _this, multiset_key_t key)
 {
     multiset_count_t ret = 0;
-    multiset_node_t* t = multiset_find(_this, value);
+    multiset_node_t* t = multiset_find(_this, key);
 
     if (is_null(t))
         return -1;
@@ -55,16 +67,16 @@ static multiset_count_t multiset_count(const multiset_t* _this, multiset_value_t
 
     /* TODO: The current way of writing code will result in low performance. It's 
              necessary to balance the memory usage and performance for optimization. */
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         for (; __multiset_end(_this) != t; t = __multiset_next(_this, t)) {
-            if (value != t->value)
+            if (key != t->key)
                 break;
 
             ret++;
         }
     } else {
         for (; __multiset_end(_this) != t; t = __multiset_next(_this, t)) {
-            if (_this->ops->__lt_value(value, t->value) || _this->ops->__lt_value(t->value, value))
+            if (_this->ops->__lt(key, t->key) || _this->ops->__lt(t->key, key))
                 break;
 
             ret++;
@@ -227,19 +239,19 @@ static /* __always_inline */ inline multiset_node_t* _multiset_rprev(const multi
     return __multiset_rprev(_this, node);
 }
 
-static multiset_node_t* __multiset_find(const multiset_t* _this, multiset_value_t value)
+static multiset_node_t* __multiset_find(const multiset_t* _this, multiset_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     multiset_node_t* t = NULL;
     multiset_node_t* ret = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(n)) {
             t = multiset_entry(n);
 
-            if (value < t->value) {
+            if (key < t->key) {
                 n = n->rb_left;
-            } else if (value > t->value) {
+            } else if (key > t->key) {
                 n = n->rb_right;
             } else {
                 n = n->rb_left;
@@ -250,9 +262,9 @@ static multiset_node_t* __multiset_find(const multiset_t* _this, multiset_value_
         while (!is_null(n)) {
             t = multiset_entry(n);
 
-            if (_this->ops->__lt_value(value, t->value)) {
+            if (_this->ops->__lt(key, t->key)) {
                 n = n->rb_left;
-            } else if (_this->ops->__lt_value(t->value, value)) {
+            } else if (_this->ops->__lt(t->key, key)) {
                 n = n->rb_right;
             } else {
                 n = n->rb_left;
@@ -264,35 +276,35 @@ static multiset_node_t* __multiset_find(const multiset_t* _this, multiset_value_
     return ret;
 }
 
-static /* __always_inline */ inline multiset_node_t* multiset_find(const multiset_t* _this, multiset_value_t value)
+static /* __always_inline */ inline multiset_node_t* multiset_find(const multiset_t* _this, multiset_key_t key)
 {
     multiset_node_t* t = NULL;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
         return NULL;
 
-    t = __multiset_find(_this, value);
+    t = __multiset_find(_this, key);
     return is_null(t) ? __multiset_end(_this) : t;
 }
 
-static multiset_node_t* __multiset_lower_bound(const multiset_t* _this, multiset_value_t value)
+static multiset_node_t* __multiset_lower_bound(const multiset_t* _this, multiset_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     multiset_node_t* t = NULL;
     multiset_node_t* eq = NULL;
     multiset_node_t* gt = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(n)) {
             t = multiset_entry(n);
 
-            if (value < t->value) {
+            if (key < t->key) {
                 n = n->rb_left;
                 gt = t;
-            } else if (value > t->value) {
+            } else if (key > t->key) {
                 n = n->rb_right;
             } else {
                 n = n->rb_left;
@@ -303,10 +315,10 @@ static multiset_node_t* __multiset_lower_bound(const multiset_t* _this, multiset
         while (!is_null(n)) {
             t = multiset_entry(n);
 
-            if (_this->ops->__lt_value(value, t->value)) {
+            if (_this->ops->__lt(key, t->key)) {
                 n = n->rb_left;
                 gt = t;
-            } else if (_this->ops->__lt_value(t->value, value)) {
+            } else if (_this->ops->__lt(t->key, key)) {
                 n = n->rb_right;
             } else {
                 n = n->rb_left;
@@ -318,34 +330,34 @@ static multiset_node_t* __multiset_lower_bound(const multiset_t* _this, multiset
     return is_null(eq) ? gt : eq;
 }
 
-static /* __always_inline */ inline multiset_node_t* multiset_lower_bound(const multiset_t* _this, multiset_value_t value)
+static /* __always_inline */ inline multiset_node_t* multiset_lower_bound(const multiset_t* _this, multiset_key_t key)
 {
     multiset_node_t* t = NULL;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
         return NULL;
 
-    t = __multiset_lower_bound(_this, value);
+    t = __multiset_lower_bound(_this, key);
     return is_null(t) ? __multiset_end(_this) : t;
 }
 
-static multiset_node_t* __multiset_upper_bound(const multiset_t* _this, multiset_value_t value)
+static multiset_node_t* __multiset_upper_bound(const multiset_t* _this, multiset_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
     multiset_node_t* t = NULL;
     multiset_node_t* ret = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(n)) {
             t = multiset_entry(n);
 
-            if (value < t->value) {
+            if (key < t->key) {
                 n = n->rb_left;
                 ret = t;
-            } else if (value > t->value) {
+            } else if (key > t->key) {
                 n = n->rb_right;
             } else {
                 n = n->rb_right;
@@ -355,10 +367,10 @@ static multiset_node_t* __multiset_upper_bound(const multiset_t* _this, multiset
         while (!is_null(n)) {
             t = multiset_entry(n);
 
-            if (_this->ops->__lt_value(value, t->value)) {
+            if (_this->ops->__lt(key, t->key)) {
                 n = n->rb_left;
                 ret = t;
-            } else if (_this->ops->__lt_value(t->value, value)) {
+            } else if (_this->ops->__lt(t->key, key)) {
                 n = n->rb_right;
             } else {
                 n = n->rb_right;
@@ -369,17 +381,17 @@ static multiset_node_t* __multiset_upper_bound(const multiset_t* _this, multiset
     return ret;
 }
 
-static /* __always_inline */ inline multiset_node_t* multiset_upper_bound(const multiset_t* _this, multiset_value_t value)
+static /* __always_inline */ inline multiset_node_t* multiset_upper_bound(const multiset_t* _this, multiset_key_t key)
 {
     multiset_node_t* t = NULL;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
         return NULL;
 
-    t = __multiset_upper_bound(_this, value);
+    t = __multiset_upper_bound(_this, key);
     return is_null(t) ? __multiset_end(_this) : t;
 }
 
@@ -389,14 +401,14 @@ static multiset_node_t* __multiset_insert(multiset_t* _this, multiset_node_t* no
     struct rb_node* parent = NULL;
     multiset_node_t* t = NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(*n)) {
             parent = *n;
             t = multiset_entry(parent);
 
-            if (node->value < t->value)
+            if (node->key < t->key)
                 n = &parent->rb_left;
-            else if (node->value > t->value)
+            else if (node->key > t->key)
                 n = &parent->rb_right;
             else
                 n = &parent->rb_right;
@@ -406,9 +418,9 @@ static multiset_node_t* __multiset_insert(multiset_t* _this, multiset_node_t* no
             parent = *n;
             t = multiset_entry(parent);
 
-            if (_this->ops->__lt_value(node->value, t->value))
+            if (_this->ops->__lt(node->key, t->key))
                 n = &parent->rb_left;
-            else if (_this->ops->__lt_value(t->value, node->value))
+            else if (_this->ops->__lt(t->key, node->key))
                 n = &parent->rb_right;
             else
                 n = &parent->rb_right;
@@ -421,7 +433,7 @@ static multiset_node_t* __multiset_insert(multiset_t* _this, multiset_node_t* no
     return node;
 }
 
-static inline multiset_node_t* multiset_insert(multiset_t* _this, multiset_value_t value)
+static inline multiset_node_t* multiset_insert(multiset_t* _this, multiset_key_t key)
 {
     multiset_node_t* t = NULL;
     multiset_node_t* ret = NULL;
@@ -429,17 +441,17 @@ static inline multiset_node_t* multiset_insert(multiset_t* _this, multiset_value
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
         return NULL;
 
     t = (multiset_node_t*)p_calloc(1, sizeof(multiset_node_t));
     if (unlikely(is_null(t)))
         return NULL;
 
-    if (is_null(_this->ops) || is_null(_this->ops->copy_value)) {
-        t->value = value;
+    if (is_null(_this->ops) || is_null(_this->ops->copy_key)) {
+        t->key = key;
     } else {
-        if (!_this->ops->copy_value(value, &t->value))
+        if (!_this->ops->copy_key(key, &t->key))
             goto err;
     }
 
@@ -449,8 +461,8 @@ static inline multiset_node_t* multiset_insert(multiset_t* _this, multiset_value
     return t;
 
 err:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_value))
-        _this->ops->free_value(&t->value);
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+        _this->ops->free_key(&t->key);
 
     p_free(t);
     return NULL;
@@ -481,15 +493,15 @@ static inline multiset_node_t* multiset_erase(multiset_t* _this, multiset_node_t
 
     __multiset_erase(_this, pos);
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_value))
-        _this->ops->free_value(&pos->value);
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+        _this->ops->free_key(&pos->key);
 
     p_free(pos);
 
     return t;
 }
 
-static multiset_size_t multiset_remove(multiset_t* _this, multiset_value_t value)
+static multiset_size_t multiset_remove(multiset_t* _this, multiset_key_t key)
 {
     multiset_size_t ret = 0;
     multiset_node_t* t = NULL;
@@ -497,16 +509,16 @@ static multiset_size_t multiset_remove(multiset_t* _this, multiset_value_t value
     if (unlikely(is_null(_this)))
         return -1;
 
-    t = multiset_find(_this, value);
+    t = multiset_find(_this, key);
     if (is_null(t))
         return -1;
 
     if (__multiset_end(_this) == t)
         return 0;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__lt_value)) {
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         for (; __multiset_end(_this) != t; ) {
-            if (value != t->value)
+            if (key != t->key)
                 break;
 
             t = multiset_erase(_this, t);
@@ -514,7 +526,7 @@ static multiset_size_t multiset_remove(multiset_t* _this, multiset_value_t value
         }
     } else {
         for (; __multiset_end(_this) != t; ) {
-            if (_this->ops->__lt_value(value, t->value) || _this->ops->__lt_value(t->value, value))
+            if (_this->ops->__lt(key, t->key) || _this->ops->__lt(t->key, key))
                 break;
 
             t = multiset_erase(_this, t);
@@ -525,7 +537,7 @@ static multiset_size_t multiset_remove(multiset_t* _this, multiset_value_t value
     return ret;
 }
 
-static multiset_size_t multiset_remove_if(multiset_t* _this, remove_if_condition_v cond)
+static multiset_size_t multiset_remove_if(multiset_t* _this, remove_if_condition_k cond)
 {
     multiset_size_t ret = 0;
     multiset_node_t* t = NULL;
@@ -534,7 +546,7 @@ static multiset_size_t multiset_remove_if(multiset_t* _this, remove_if_condition
         return -1;
 
     for (t = __multiset_begin(_this); __multiset_end(_this) != t; ) {
-        if (!cond(t->value)) {
+        if (!cond(t->key)) {
             t = __multiset_next(_this, t);
             continue;
         }
@@ -562,18 +574,24 @@ static multiset_size_t multiset_clear(multiset_t* _this)
     return ret;
 }
 
-/* __always_inline */ inline void __multiset_init(multiset_t* multiset)
+multiset_t* __multiset_new(const class_multiset_ops_t* ops)
 {
+    multiset_t* multiset = (multiset_t*)p_calloc(1, sizeof(multiset_t));
+    if (is_null(multiset))
+        return NULL;
+
+    multiset->ops  = ops;
     multiset->root = RB_ROOT;
+    return multiset;
 }
 
-/* __always_inline */ inline void __multiset_deinit(multiset_t* multiset)
+void __multiset_delete(multiset_t** _this)
 {
-    multiset_clear(multiset);
+    if (is_null(_this) || is_null(*_this))
+        return;
 
-    multiset->ops = NULL;
-    multiset->root = RB_ROOT;
-    multiset->size = 0;
+    multiset_clear(*_this);
+    p_free(*_this);
 }
 
 typedef multiset_iterator_t* (*fp_end)(const multiset_t* _this);
@@ -584,10 +602,10 @@ typedef multiset_r_iterator_t* (*fp_rend)(const multiset_t* _this);
 typedef multiset_r_iterator_t* (*fp_rbegin)(const multiset_t* _this);
 typedef multiset_r_iterator_t* (*fp_rnext)(const multiset_t* _this, const multiset_r_iterator_t* r_iterator);
 typedef multiset_r_iterator_t* (*fp_rprev)(const multiset_t* _this, const multiset_r_iterator_t* r_iterator);
-typedef multiset_iterator_t* (*fp_find)(const multiset_t* _this, multiset_value_t value);
-typedef multiset_iterator_t* (*fp_lower_bound)(const multiset_t* _this, multiset_value_t value);
-typedef multiset_iterator_t* (*fp_upper_bound)(const multiset_t* _this, multiset_value_t value);
-typedef multiset_iterator_t* (*fp_insert)(multiset_t* _this, multiset_value_t value);
+typedef multiset_iterator_t* (*fp_find)(const multiset_t* _this, multiset_key_t key);
+typedef multiset_iterator_t* (*fp_lower_bound)(const multiset_t* _this, multiset_key_t key);
+typedef multiset_iterator_t* (*fp_upper_bound)(const multiset_t* _this, multiset_key_t key);
+typedef multiset_iterator_t* (*fp_insert)(multiset_t* _this, multiset_key_t key);
 typedef multiset_iterator_t* (*fp_erase)(multiset_t* _this, multiset_iterator_t* iterator);
 
 const class_multiset_t* class_multiset_ins(void)
@@ -613,4 +631,98 @@ const class_multiset_t* class_multiset_ins(void)
         .clear       = multiset_clear,
     };
     return &ins;
+}
+
+
+
+
+
+multiset_size_t cmultiset_size(const multiset_t* _this)
+{
+    return _multiset_size(_this);
+}
+
+multiset_count_t cmultiset_count(const multiset_t* _this, multiset_key_t key)
+{
+    return multiset_count(_this, key);
+}
+
+multiset_iterator_t* cmultiset_end(const multiset_t* _this)
+{
+    return (multiset_iterator_t*)__multiset_end(_this);
+}
+
+multiset_iterator_t* cmultiset_begin(const multiset_t* _this)
+{
+    return (multiset_iterator_t*)_multiset_begin(_this);
+}
+
+multiset_iterator_t* cmultiset_next(const multiset_t* _this, const multiset_iterator_t* iterator)
+{
+    return (multiset_iterator_t*)_multiset_next(_this, (const multiset_node_t*)iterator);
+}
+
+multiset_iterator_t* cmultiset_prev(const multiset_t* _this, const multiset_iterator_t* iterator)
+{
+    return (multiset_iterator_t*)_multiset_prev(_this, (const multiset_node_t*)iterator);
+}
+
+multiset_r_iterator_t* cmultiset_rend(const multiset_t* _this)
+{
+    return (multiset_r_iterator_t*)__multiset_rend(_this);
+}
+
+multiset_r_iterator_t* cmultiset_rbegin(const multiset_t* _this)
+{
+    return (multiset_r_iterator_t*)_multiset_rbegin(_this);
+}
+
+multiset_r_iterator_t* cmultiset_rnext(const multiset_t* _this, const multiset_r_iterator_t* r_iterator)
+{
+    return (multiset_r_iterator_t*)_multiset_rnext(_this, (const multiset_node_t*)r_iterator);
+}
+
+multiset_r_iterator_t* cmultiset_rprev(const multiset_t* _this, const multiset_r_iterator_t* r_iterator)
+{
+    return (multiset_r_iterator_t*)_multiset_rprev(_this, (const multiset_node_t*)r_iterator);
+}
+
+multiset_iterator_t* cmultiset_find(const multiset_t* _this, multiset_key_t key)
+{
+    return (multiset_iterator_t*)multiset_find(_this, key);
+}
+
+multiset_iterator_t* cmultiset_lower_bound(const multiset_t* _this, multiset_key_t key)
+{
+    return (multiset_iterator_t*)multiset_lower_bound(_this, key);
+}
+
+multiset_iterator_t* cmultiset_upper_bound(const multiset_t* _this, multiset_key_t key)
+{
+    return (multiset_iterator_t*)multiset_upper_bound(_this, key);
+}
+
+multiset_iterator_t* cmultiset_insert(multiset_t* _this, multiset_key_t key)
+{
+    return (multiset_iterator_t*)multiset_insert(_this, key);
+}
+
+multiset_iterator_t* cmultiset_erase(multiset_t* _this, multiset_iterator_t* iterator)
+{
+    return (multiset_iterator_t*)multiset_erase(_this, (multiset_node_t*)iterator);
+}
+
+multiset_size_t cmultiset_remove(multiset_t* _this, multiset_key_t key)
+{
+    return multiset_remove(_this, key);
+}
+
+multiset_size_t cmultiset_remove_if(multiset_t* _this, remove_if_condition_k cond)
+{
+    return multiset_remove_if(_this, cond);
+}
+
+multiset_size_t cmultiset_clear(multiset_t* _this)
+{
+    return multiset_clear(_this);
 }
