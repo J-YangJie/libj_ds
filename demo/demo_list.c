@@ -25,11 +25,10 @@
 #define TAG "[demo_list]"
 
 #define _to(x)   ((list_data_t)(x))
-#define _from(x) ((x) ? (x) : "null string")
 
-#define foreach()          { for (list_iterator_t* it = cds->begin(demo); cds->end(demo) != it; it = cds->next(demo, it)) pr_test("%zd", it->data); }
-#define foreach_string()   { for (list_iterator_t* it = cds->begin(demo); cds->end(demo) != it; it = cds->next(demo, it)) pr_test("%s", _from(it->sdata)); }
-#define foreach_r_string() { for (list_r_iterator_t* it = cds->rbegin(demo); cds->rend(demo) != it; it = cds->rnext(demo, it)) pr_test("%s", _from(it->sdata)); }
+#define foreach()          { for (list_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("%zd", it_data_safe(it)); }
+#define foreach_string()   { for (list_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("%s", it_sdata_safe(it)); }
+#define foreach_r_string() { for (list_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it)) pr_test("%s", it_sdata_safe(it)); }
 
 static void demo_base_and_iterator(void)
 {
@@ -49,11 +48,11 @@ static void demo_base_and_iterator(void)
     pr_test("");
 
     {
-        for (list_iterator_t* it = cds->prev(demo, cds->end(demo)); cds->end(demo) != it; it = cds->prev(demo, it)) pr_test("%zd", it->data);       // [ 8, 8, 7, 6, 5, 4, 3, 2, 1 ]
+        for (list_iterator_t   it = cds->end(demo);    it_ne(cds->begin(demo), it); )  { it = cds->prev(demo, it);  pr_test("%zd", it_data_safe(it)); }  // [ 8, 8, 7, 6, 5, 4, 3, 2, 1 ]
         pr_test("");
-        for (list_r_iterator_t* it = cds->rbegin(demo); cds->rend(demo) != it; it = cds->rnext(demo, it)) pr_test("%zd", it->data);                  // [ 8, 8, 7, 6, 5, 4, 3, 2, 1 ]
+        for (list_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it))       pr_test("%zd", it_data_safe(it));  // [ 8, 8, 7, 6, 5, 4, 3, 2, 1 ]
         pr_test("");
-        for (list_r_iterator_t* it = cds->rprev(demo, cds->rend(demo)); cds->rend(demo) != it; it = cds->rprev(demo, it)) pr_test("%zd", it->data); // [ 1, 2, 3, 4, 5, 6, 7, 8, 8 ]
+        for (list_r_iterator_t it = cds->rend(demo);   it_ne(cds->rbegin(demo), it); ) { it = cds->rprev(demo, it); pr_test("%zd", it_data_safe(it)); }  // [ 1, 2, 3, 4, 5, 6, 7, 8, 8 ]
         pr_test("");
     }
 
@@ -85,7 +84,7 @@ static bool demo_remove_if_condition(ds_data_t data)
 static void demo_about_erase(void)
 {
     list_t* demo = LIST_NEW();
-    list_iterator_t* it = NULL;
+    list_iterator_t it;
     list_size_t ret;
 
     (void)it;
@@ -114,7 +113,7 @@ static void demo_about_erase(void)
 static void demo_about_find(void)
 {
     list_t* demo = LIST_NEW();
-    list_iterator_t* it = NULL;
+    list_iterator_t it;
 
     (void)it;
 

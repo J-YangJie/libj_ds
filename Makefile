@@ -1,5 +1,5 @@
 
-DLIB_VERSION = 1.0.3
+DLIB_VERSION = 1.1.0
 DLIB_NAME := libj_ds.so
 SLIB_NAME := libj_ds.a
 
@@ -23,7 +23,6 @@ AR  = $(CROSS_COMPILE)ar
 
 OBJS = \
 	operations/ds_ops_string.o
-#	iterator/iterator.o
 
 ifeq ($(WITH_LIST), y)
 OBJS += list/list.o list/list_ops.o
@@ -68,6 +67,7 @@ endif
 CFLAGS += -Iinclude
 CFLAGS += -std=gnu99 -Wall -fmessage-length=0 -fPIC -fno-common
 CFLAGS += -O2
+# CFLAGS += -DJDSC_DEBUG
 # CFLAGS += -g3
 CFLAGS += -Werror
 

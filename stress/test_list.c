@@ -35,52 +35,76 @@ static ds_count_t count(void* _this, ds_data_t data)
     return cds->count(this, data);
 }
 
-static void* end(void* _this)
+static stress_iterator_t end(void* _this)
 {
     list_t* this = (list_t*)_this;
-    return cds->end(this);
+    list_iterator_t it = cds->end(this);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* begin(void* _this)
+static stress_iterator_t begin(void* _this)
 {
     list_t* this = (list_t*)_this;
-    return cds->begin(this);
+    list_iterator_t it = cds->begin(this);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* next(void* _this, void* iterator)
+static stress_iterator_t next(void* _this, stress_iterator_t iterator)
 {
     list_t* this = (list_t*)_this;
-    return cds->next(this, iterator);
+    list_iterator_t it;
+    it.d = (list_data_t*)iterator.d;
+    it = cds->next(this, it);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* prev(void* _this, void* iterator)
+static stress_iterator_t prev(void* _this, stress_iterator_t iterator)
 {
     list_t* this = (list_t*)_this;
-    return cds->prev(this, iterator);
+    list_iterator_t it;
+    it.d = (list_data_t*)iterator.d;
+    it = cds->prev(this, it);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* rend(void* _this)
+static stress_iterator_t rend(void* _this)
 {
     list_t* this = (list_t*)_this;
-    return cds->rend(this);
+    list_r_iterator_t it = cds->rend(this);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* rbegin(void* _this)
+static stress_iterator_t rbegin(void* _this)
 {
     list_t* this = (list_t*)_this;
-    return cds->rbegin(this);
+    list_r_iterator_t it = cds->rbegin(this);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* rnext(void* _this, void* r_iterator)
+static stress_iterator_t rnext(void* _this, stress_iterator_t r_iterator)
 {
     list_t* this = (list_t*)_this;
-    return cds->rnext(this, r_iterator);
+    list_r_iterator_t it;
+    it.d = (list_data_t*)r_iterator.d;
+    it = cds->rnext(this, it);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* rprev(void* _this, void* r_iterator)
+static stress_iterator_t rprev(void* _this, stress_iterator_t r_iterator)
 {
     list_t* this = (list_t*)_this;
-    return cds->rprev(this, r_iterator);
+    list_r_iterator_t it;
+    it.d = (list_data_t*)r_iterator.d;
+    it = cds->rprev(this, it);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
 static ds_data_t first(void* _this, ds_data_t default_data)
@@ -95,40 +119,59 @@ static ds_data_t last(void* _this, ds_data_t default_data)
     return cds->last(this, default_data);
 }
 
-static void* find(void* _this, ds_data_t data)
+static stress_iterator_t find(void* _this, ds_data_t data)
 {
     list_t* this = (list_t*)_this;
-    return cds->find(this, data);
+    list_iterator_t it = cds->find(this, data);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* push_back(void* _this, ds_data_t data)
+static stress_iterator_t push_back(void* _this, ds_data_t data)
 {
     list_t* this = (list_t*)_this;
-    return cds->push_back(this, data);
+    list_iterator_t it = cds->push_back(this, data);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* push_front(void* _this, ds_data_t data)
+static stress_iterator_t push_front(void* _this, ds_data_t data)
 {
     list_t* this = (list_t*)_this;
-    return cds->push_front(this, data);
+    list_iterator_t it = cds->push_front(this, data);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* insert(void* _this, void* iterator, ds_data_t data)
+static stress_iterator_t insert(void* _this, stress_iterator_t iterator, ds_data_t data)
 {
     list_t* this = (list_t*)_this;
-    return cds->insert(this, iterator, data);
+    list_iterator_t it;
+    it.d = (list_data_t*)iterator.d;
+    it = cds->insert(this, it, data);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* erase(void* _this, void* iterator)
+static stress_iterator_t erase(void* _this, stress_iterator_t iterator)
 {
     list_t* this = (list_t*)_this;
-    return cds->erase(this, iterator);
+    list_iterator_t it;
+    it.d = (list_data_t*)iterator.d;
+    it = cds->erase(this, it);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
-static void* erase_range(void* _this, void* iterator_begin, void* iterator_end)
+static stress_iterator_t erase_range(void* _this, stress_iterator_t iterator_begin, stress_iterator_t iterator_end)
 {
     list_t* this = (list_t*)_this;
-    return cds->erase_range(this, iterator_begin, iterator_end);
+    list_iterator_t itb, ite, it;
+    itb.d = (list_data_t*)iterator_begin.d;
+    ite.d = (list_data_t*)iterator_end.d;
+    it = cds->erase_range(this, itb, ite);
+    stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
+    return r;
 }
 
 static void pop_back(void* _this)
@@ -191,3 +234,4 @@ const class_stress_slow_interface_t* class_stress_slow_list_ins(void)
     };
     return &ins;
 }
+

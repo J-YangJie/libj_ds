@@ -66,15 +66,6 @@ typedef struct {
     const class_stress_interface_t* interface;
 } stress_t;
 
-typedef struct {
-    ds_key_t key;
-    ds_value_t value;
-} stress_iterator_kv_t;
-
-typedef struct {
-    ds_data_t data;
-} stress_iterator_d_t;
-
 #define NUM_DS 6
 
 static bool test_insert(stress_t* stress, ds_data_t data)
@@ -88,8 +79,8 @@ static bool test_insert(stress_t* stress, ds_data_t data)
             continue;
 
         {
-            stress_iterator_d_t* it = interface->insert(this, data, 666);
-            if (!it)
+            stress_iterator_t it = interface->insert(this, data, 666);
+            if (stress_it_null(it))
                 goto err;
 
             ds_count_t tcount = interface->count(this, data);
@@ -97,11 +88,11 @@ static bool test_insert(stress_t* stress, ds_data_t data)
         }
 
         if (interface->insert_replace) {
-            stress_iterator_kv_t* it = interface->insert_replace(this, data, value_replace);
-            if (!it)
+            stress_iterator_t it = interface->insert_replace(this, data, value_replace);
+            if (stress_it_null(it))
                 goto err;
 
-            if (value_replace != it->value)
+            if (value_replace != stress_it_value(it))
                 while(true); /* 排查问题 */
         }
     }
@@ -123,7 +114,7 @@ err:
 
 static bool test_iterator(stress_t* stress)
 {
-    stress_iterator_d_t* its[NUM_DS];
+    stress_iterator_t its[NUM_DS];
     ds_size_t ts[4];
 
     for (int i = 0; stress[i].this; ++i) {
@@ -133,10 +124,10 @@ static bool test_iterator(stress_t* stress)
             continue;
 
         {
-            for (ts[0] = 0, its[i] = interface->begin(this);  interface->end(this) != its[i];  its[i] = interface->next(this, its[i]))  ts[0]++;
-            for (ts[1] = 0, its[i] = interface->end(this);    interface->end(this) != its[i];  its[i] = interface->prev(this, its[i]))  ts[1]++;
-            for (ts[2] = 0, its[i] = interface->rbegin(this); interface->rend(this) != its[i]; its[i] = interface->rnext(this, its[i])) ts[2]++;
-            for (ts[3] = 0, its[i] = interface->rend(this);   interface->rend(this) != its[i]; its[i] = interface->rprev(this, its[i])) ts[3]++;
+            for (ts[0] = 0, its[i] = interface->begin(this);  stress_it_ne(interface->end(this), its[i]);  its[i] = interface->next(this, its[i]))        ts[0]++;
+            for (ts[1] = 0, its[i] = interface->end(this);    stress_it_ne(interface->begin(this), its[i]); )  { its[i] = interface->prev(this, its[i]);  ts[1]++; }
+            for (ts[2] = 0, its[i] = interface->rbegin(this); stress_it_ne(interface->rend(this), its[i]); its[i] = interface->rnext(this, its[i]))       ts[2]++;
+            for (ts[3] = 0, its[i] = interface->rend(this);   stress_it_ne(interface->rbegin(this), its[i]); ) { its[i] = interface->rprev(this, its[i]); ts[3]++; }
             if (ts[0] ^ ts[1] ^ ts[2] ^ ts[3])
                 while(true); /* 排查问题 */
         }
@@ -146,7 +137,7 @@ static bool test_iterator(stress_t* stress)
 
 static bool test_is_same(stress_t* stress)
 {
-    stress_iterator_d_t* its[NUM_DS];
+    stress_iterator_t its[NUM_DS];
     class_priority_queue_ops_t ds_ops = {
         .valid_data = demo_valid_key,
         .__lt       = __demo_cmp_gt,
@@ -161,8 +152,8 @@ static bool test_is_same(stress_t* stress)
         void* this = stress[0].this;
         const class_stress_interface_t* interface = stress[0].interface;
 
-        for (its[0] = interface->begin(this); interface->end(this) != its[0]; its[0] = interface->next(this, its[0]))
-            cpriority_queue->push(ds, its[0]->data);
+        for (its[0] = interface->begin(this); stress_it_ne(interface->end(this), its[0]); its[0] = interface->next(this, its[0]))
+            cpriority_queue->push(ds, stress_it_data(its[0]));
     }
 
     while (cpriority_queue->size(ds) > 0) {
@@ -173,7 +164,7 @@ static bool test_is_same(stress_t* stress)
             if (!interface)
                 continue;
 
-            if (interface->end(this) == interface->find(this, tdata))
+            if (stress_it_eq(interface->end(this), interface->find(this, tdata)))
                 while(true); /* 排查问题 */
         }
         demo_free_key(&tdata);
@@ -186,7 +177,7 @@ static bool test_is_same(stress_t* stress)
 
 static bool test_find_and_erase(stress_t* stress, ds_data_t data)
 {
-    stress_iterator_d_t* its[NUM_DS] = { 0 };
+    stress_iterator_t its[NUM_DS] = { 0 };
     ds_data_t cache = 0;
 
     for (int i = 0; stress[i].this; ++i) {
@@ -201,11 +192,11 @@ static bool test_find_and_erase(stress_t* stress, ds_data_t data)
             if (count < 0)
                 while(true); /* 排查问题 */
 
-            if ((0 == count && interface->end(this) != its[i]) || (count > 0 && interface->end(this) == its[i]))
+            if ((0 == count && stress_it_ne(interface->end(this), its[i])) || (count > 0 && stress_it_eq(interface->end(this), its[i])))
                 while(true); /* 排查问题 */
 
             if (count > 0)
-                cache = its[i]->data;
+                cache = stress_it_data(its[i]);
         }
     }
 
@@ -218,12 +209,12 @@ static bool test_find_and_erase(stress_t* stress, ds_data_t data)
         if (!interface)
             continue;
 
-        if (!__demo_cmp_eq(cache, its[i]->data))
+        if (!__demo_cmp_eq(cache, stress_it_data(its[i])))
             while(true); /* 排查问题 */
 
         {
             its[i] = interface->erase(this, its[i]);
-            pr_test("Found element and erase [ %s ]!", its[i] ? "successfully" : "failed");
+            pr_test("Found element and erase [ %s ]!", stress_it_null(its[i]) ? "failed" : "successfully");
         }
     }
     return true;
@@ -241,8 +232,8 @@ static bool test_lower_and_upper(stress_t* stress, ds_data_t data)
             continue;
 
         if (interface->lower_bound) {
-            stress_iterator_d_t* tit = interface->lower_bound(this, data);
-            ds_data_t tdata = interface->end(this) == tit ? 0 : tit->data;
+            stress_iterator_t tit = interface->lower_bound(this, data);
+            ds_data_t tdata = stress_it_eq(interface->end(this), tit) ? 0 : stress_it_data(tit);
 
             if (first) {
                 data_first = tdata;
@@ -268,8 +259,8 @@ static bool test_lower_and_upper(stress_t* stress, ds_data_t data)
             continue;
 
         if (interface->upper_bound) {
-            stress_iterator_d_t* tit = interface->upper_bound(this, data);
-            ds_data_t tdata = interface->end(this) == tit ? 0 : tit->data;
+            stress_iterator_t tit = interface->upper_bound(this, data);
+            ds_data_t tdata = stress_it_eq(interface->end(this), tit) ? 0 : stress_it_data(tit);
 
             if (first) {
                 data_first = tdata;

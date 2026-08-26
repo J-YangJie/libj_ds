@@ -23,7 +23,7 @@
 #include <linux/_types.h>
 #include <linux/list.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator.h>
+#include <iterator/iterator_inter.h>
 
 typedef struct list_node {
     list_data_t data;
@@ -637,6 +637,7 @@ void __list_delete(list_t** _this)
     p_free(*_this);
 }
 
+#if 0
 typedef list_iterator_t* (*fp_end)(const list_t* _this);
 typedef list_iterator_t* (*fp_begin)(const list_t* _this);
 typedef list_iterator_t* (*fp_next)(const list_t* _this, const list_iterator_t* iterator);
@@ -682,6 +683,40 @@ typedef list_iterator_t* (*fp_erase_range)(list_t* _this, list_iterator_t* itera
     return &ins;
 }
 
+#else
+
+const class_list_t* class_list_ins(void)
+{
+    static const class_list_t ins = {
+        .size        = clist_size,
+        .count       = clist_count,
+        .end         = clist_end,
+        .begin       = clist_begin,
+        .next        = clist_next,
+        .prev        = clist_prev,
+        .rend        = clist_rend,
+        .rbegin      = clist_rbegin,
+        .rnext       = clist_rnext,
+        .rprev       = clist_rprev,
+        .first       = clist_first,
+        .last        = clist_last,
+        .find        = clist_find,
+        .push_back   = clist_push_back,
+        .push_front  = clist_push_front,
+        .insert      = clist_insert,
+        .erase       = clist_erase,
+        .erase_range = clist_erase_range,
+        .pop_back    = clist_pop_back,
+        .pop_front   = clist_pop_front,
+        .remove      = clist_remove,
+        .remove_if   = clist_remove_if,
+        .clear       = clist_clear,
+    };
+    return &ins;
+}
+#endif /* 0 */
+
+
 
 
 
@@ -696,44 +731,60 @@ list_count_t clist_count(const list_t* _this, list_data_t data)
     return dlist_count(_this, data);
 }
 
-list_iterator_t* clist_end(const list_t* _this)
+list_iterator_t clist_end(const list_t* _this)
 {
-    return (list_iterator_t*)__dlist_end(_this);
+    list_iterator_t it;
+    it.d = (list_data_t*)__dlist_end(_this);
+    return it;
 }
 
-list_iterator_t* clist_begin(const list_t* _this)
+list_iterator_t clist_begin(const list_t* _this)
 {
-    return (list_iterator_t*)_dlist_begin(_this);
+    list_iterator_t it;
+    it.d = (list_data_t*)_dlist_begin(_this);
+    return it;
 }
 
-list_iterator_t* clist_next(const list_t* _this, const list_iterator_t* iterator)
+list_iterator_t clist_next(const list_t* _this, const list_iterator_t iterator)
 {
-    return (list_iterator_t*)_dlist_next(_this, (const list_node_t*)iterator);
+    list_iterator_t it;
+    it.d = (list_data_t*)_dlist_next(_this, (const list_node_t*)iterator.d);
+    return it;
 }
 
-list_iterator_t* clist_prev(const list_t* _this, const list_iterator_t* iterator)
+list_iterator_t clist_prev(const list_t* _this, const list_iterator_t iterator)
 {
-    return (list_iterator_t*)_dlist_prev(_this, (const list_node_t*)iterator);
+    list_iterator_t it;
+    it.d = (list_data_t*)_dlist_prev(_this, (const list_node_t*)iterator.d);
+    return it;
 }
 
-list_r_iterator_t* clist_rend(const list_t* _this)
+list_r_iterator_t clist_rend(const list_t* _this)
 {
-    return (list_r_iterator_t*)__dlist_rend(_this);
+    list_r_iterator_t it;
+    it.d = (list_data_t*)__dlist_rend(_this);
+    return it;
 }
 
-list_r_iterator_t* clist_rbegin(const list_t* _this)
+list_r_iterator_t clist_rbegin(const list_t* _this)
 {
-    return (list_r_iterator_t*)_dlist_rbegin(_this);
+    list_r_iterator_t it;
+    it.d = (list_data_t*)_dlist_rbegin(_this);
+    return it;
 }
 
-list_r_iterator_t* clist_rnext(const list_t* _this, const list_r_iterator_t* r_iterator)
+list_r_iterator_t clist_rnext(const list_t* _this, const list_r_iterator_t r_iterator)
 {
-    return (list_r_iterator_t*)_dlist_rnext(_this, (const list_node_t*)r_iterator);
+    list_r_iterator_t it;
+    it.d = (list_data_t*)_dlist_rnext(_this, (const list_node_t*)r_iterator.d);
+    return it;
 }
 
-list_r_iterator_t* clist_rprev(const list_t* _this, const list_r_iterator_t* r_iterator)
+list_r_iterator_t clist_rprev(const list_t* _this, const list_r_iterator_t r_iterator)
 {
-    return (list_r_iterator_t*)_dlist_rprev(_this, (const list_node_t*)r_iterator);
+    list_r_iterator_t it;
+    it.d = (list_data_t*)_dlist_rprev(_this, (const list_node_t*)r_iterator.d);
+    return it;
 }
 
 list_data_t clist_first(const list_t* _this, list_data_t default_data)
@@ -746,34 +797,46 @@ list_data_t clist_last(const list_t* _this, list_data_t default_data)
     return dlist_last(_this, default_data);
 }
 
-list_iterator_t* clist_find(const list_t* _this, list_data_t data)
+list_iterator_t clist_find(const list_t* _this, list_data_t data)
 {
-    return (list_iterator_t*)dlist_find(_this, data);
+    list_iterator_t it;
+    it.d = (list_data_t*)dlist_find(_this, data);
+    return it;
 }
 
-list_iterator_t* clist_push_back(list_t* _this, list_data_t data)
+list_iterator_t clist_push_back(list_t* _this, list_data_t data)
 {
-    return (list_iterator_t*)dlist_push_back(_this, data);
+    list_iterator_t it;
+    it.d = (list_data_t*)dlist_push_back(_this, data);
+    return it;
 }
 
-list_iterator_t* clist_push_front(list_t* _this, list_data_t data)
+list_iterator_t clist_push_front(list_t* _this, list_data_t data)
 {
-    return (list_iterator_t*)dlist_push_front(_this, data);
+    list_iterator_t it;
+    it.d = (list_data_t*)dlist_push_front(_this, data);
+    return it;
 }
 
-list_iterator_t* clist_insert(list_t* _this, list_iterator_t* iterator, list_data_t data)
+list_iterator_t clist_insert(list_t* _this, list_iterator_t iterator, list_data_t data)
 {
-    return (list_iterator_t*)dlist_insert(_this, (list_node_t*)iterator, data);
+    list_iterator_t it;
+    it.d = (list_data_t*)dlist_insert(_this, (list_node_t*)iterator.d, data);
+    return it;
 }
 
-list_iterator_t* clist_erase(list_t* _this, list_iterator_t* iterator)
+list_iterator_t clist_erase(list_t* _this, list_iterator_t iterator)
 {
-    return (list_iterator_t*)dlist_erase(_this, (list_node_t*)iterator);
+    list_iterator_t it;
+    it.d = (list_data_t*)dlist_erase(_this, (list_node_t*)iterator.d);
+    return it;
 }
 
-list_iterator_t* clist_erase_range(list_t* _this, list_iterator_t* iterator_begin, list_iterator_t* iterator_end)
+list_iterator_t clist_erase_range(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)
 {
-    return (list_iterator_t*)dlist_erase_range(_this, (list_node_t*)iterator_begin, (list_node_t*)iterator_end);
+    list_iterator_t it;
+    it.d = (list_data_t*)dlist_erase_range(_this, (list_node_t*)iterator_begin.d, (list_node_t*)iterator_end.d);
+    return it;
 }
 
 void clist_pop_back(list_t* _this)

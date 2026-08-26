@@ -23,7 +23,7 @@
 #include <_memory.h>
 #include <linux/_types.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator.h>
+#include <iterator/iterator_inter.h>
 #include <string.h>
 
 typedef struct vector_node {
@@ -697,6 +697,7 @@ void __vector_delete(vector_t** _this)
     p_free(*_this);
 }
 
+#if 0
 typedef vector_iterator_t* (*fp_end)(const vector_t* _this);
 typedef vector_iterator_t* (*fp_begin)(const vector_t* _this);
 typedef vector_iterator_t* (*fp_next)(const vector_t* _this, const vector_iterator_t* iterator);
@@ -748,6 +749,44 @@ typedef vector_iterator_t* (*fp_erase_range)(vector_t* _this, vector_iterator_t*
     return &ins;
 }
 
+#else
+
+const class_vector_t* class_vector_ins(void)
+{
+    static const class_vector_t ins = {
+        .size        = cvector_size,
+        .capacity    = cvector_capacity,
+        .count       = cvector_count,
+        .end         = cvector_end,
+        .begin       = cvector_begin,
+        .next        = cvector_next,
+        .prev        = cvector_prev,
+        .rend        = cvector_rend,
+        .rbegin      = cvector_rbegin,
+        .rnext       = cvector_rnext,
+        .rprev       = cvector_rprev,
+        .at          = cvector_at,
+        .first       = cvector_first,
+        .last        = cvector_last,
+        .find        = cvector_find,
+        .push_back   = cvector_push_back,
+        .push_front  = cvector_push_front,
+        .insert      = cvector_insert,
+        .erase       = cvector_erase,
+        .erase_range = cvector_erase_range,
+        .pop_back    = cvector_pop_back,
+        .pop_front   = cvector_pop_front,
+        .remove      = cvector_remove,
+        .remove_if   = cvector_remove_if,
+        .reserve     = cvector_reserve,
+        .resize      = cvector_resize,
+        .sort        = cvector_sort,
+        .clear       = cvector_clear,
+    };
+    return &ins;
+}
+#endif /* 0 */
+
 
 
 
@@ -767,49 +806,67 @@ vector_count_t cvector_count(const vector_t* _this, vector_data_t data)
     return vector_count(_this, data);
 }
 
-vector_iterator_t* cvector_end(const vector_t* _this)
+vector_iterator_t cvector_end(const vector_t* _this)
 {
-    return (vector_iterator_t*)__vector_end(_this);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)__vector_end(_this);
+    return it;
 }
 
-vector_iterator_t* cvector_begin(const vector_t* _this)
+vector_iterator_t cvector_begin(const vector_t* _this)
 {
-    return (vector_iterator_t*)_vector_begin(_this);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)_vector_begin(_this);
+    return it;
 }
 
-vector_iterator_t* cvector_next(const vector_t* _this, const vector_iterator_t* iterator)
+vector_iterator_t cvector_next(const vector_t* _this, const vector_iterator_t iterator)
 {
-    return (vector_iterator_t*)_vector_next(_this, (const vector_node_t*)iterator);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)_vector_next(_this, (const vector_node_t*)iterator.d);
+    return it;
 }
 
-vector_iterator_t* cvector_prev(const vector_t* _this, const vector_iterator_t* iterator)
+vector_iterator_t cvector_prev(const vector_t* _this, const vector_iterator_t iterator)
 {
-    return (vector_iterator_t*)_vector_prev(_this, (const vector_node_t*)iterator);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)_vector_prev(_this, (const vector_node_t*)iterator.d);
+    return it;
 }
 
-vector_r_iterator_t* cvector_rend(const vector_t* _this)
+vector_r_iterator_t cvector_rend(const vector_t* _this)
 {
-    return (vector_r_iterator_t*)__vector_rend(_this);
+    vector_r_iterator_t it;
+    it.d = (vector_data_t*)__vector_rend(_this);
+    return it;
 }
 
-vector_r_iterator_t* cvector_rbegin(const vector_t* _this)
+vector_r_iterator_t cvector_rbegin(const vector_t* _this)
 {
-    return (vector_r_iterator_t*)_vector_rbegin(_this);
+    vector_r_iterator_t it;
+    it.d = (vector_data_t*)_vector_rbegin(_this);
+    return it;
 }
 
-vector_r_iterator_t* cvector_rnext(const vector_t* _this, const vector_r_iterator_t* r_iterator)
+vector_r_iterator_t cvector_rnext(const vector_t* _this, const vector_r_iterator_t r_iterator)
 {
-    return (vector_r_iterator_t*)_vector_rnext(_this, (const vector_node_t*)r_iterator);
+    vector_r_iterator_t it;
+    it.d = (vector_data_t*)_vector_rnext(_this, (const vector_node_t*)r_iterator.d);
+    return it;
 }
 
-vector_r_iterator_t* cvector_rprev(const vector_t* _this, const vector_r_iterator_t* r_iterator)
+vector_r_iterator_t cvector_rprev(const vector_t* _this, const vector_r_iterator_t r_iterator)
 {
-    return (vector_r_iterator_t*)_vector_rprev(_this, (const vector_node_t*)r_iterator);
+    vector_r_iterator_t it;
+    it.d = (vector_data_t*)_vector_rprev(_this, (const vector_node_t*)r_iterator.d);
+    return it;
 }
 
-vector_iterator_t* cvector_at(const vector_t* _this, vector_size_t n)
+vector_iterator_t cvector_at(const vector_t* _this, vector_size_t n)
 {
-    return (vector_iterator_t*)_vector_at(_this, n);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)_vector_at(_this, n);
+    return it;
 }
 
 vector_data_t cvector_first(const vector_t* _this, vector_data_t default_data)
@@ -822,34 +879,46 @@ vector_data_t cvector_last(const vector_t* _this, vector_data_t default_data)
     return vector_last(_this, default_data);
 }
 
-vector_iterator_t* cvector_find(const vector_t* _this, vector_data_t data)
+vector_iterator_t cvector_find(const vector_t* _this, vector_data_t data)
 {
-    return (vector_iterator_t*)vector_find(_this, data);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)vector_find(_this, data);
+    return it;
 }
 
-vector_iterator_t* cvector_push_back(vector_t* _this, vector_data_t data)
+vector_iterator_t cvector_push_back(vector_t* _this, vector_data_t data)
 {
-    return (vector_iterator_t*)vector_push_back(_this, data);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)vector_push_back(_this, data);
+    return it;
 }
 
-vector_iterator_t* cvector_push_front(vector_t* _this, vector_data_t data)
+vector_iterator_t cvector_push_front(vector_t* _this, vector_data_t data)
 {
-    return (vector_iterator_t*)vector_push_front(_this, data);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)vector_push_front(_this, data);
+    return it;
 }
 
-vector_iterator_t* cvector_insert(vector_t* _this, vector_iterator_t* iterator, vector_data_t data)
+vector_iterator_t cvector_insert(vector_t* _this, vector_iterator_t iterator, vector_data_t data)
 {
-    return (vector_iterator_t*)vector_insert(_this, (vector_node_t*)iterator, data);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)vector_insert(_this, (vector_node_t*)iterator.d, data);
+    return it;
 }
 
-vector_iterator_t* cvector_erase(vector_t* _this, vector_iterator_t* iterator)
+vector_iterator_t cvector_erase(vector_t* _this, vector_iterator_t iterator)
 {
-    return (vector_iterator_t*)vector_erase(_this, (vector_node_t*)iterator);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)vector_erase(_this, (vector_node_t*)iterator.d);
+    return it;
 }
 
-vector_iterator_t* cvector_erase_range(vector_t* _this, vector_iterator_t* iterator_begin, vector_iterator_t* iterator_end)
+vector_iterator_t cvector_erase_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
 {
-    return (vector_iterator_t*)vector_erase_range(_this, (vector_node_t*)iterator_begin, (vector_node_t*)iterator_end);
+    vector_iterator_t it;
+    it.d = (vector_data_t*)vector_erase_range(_this, (vector_node_t*)iterator_begin.d, (vector_node_t*)iterator_end.d);
+    return it;
 }
 
 void cvector_pop_back(vector_t* _this)
@@ -891,3 +960,4 @@ vector_size_t cvector_clear(vector_t* _this)
 {
     return vector_clear(_this);
 }
+

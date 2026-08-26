@@ -21,18 +21,19 @@
 #define __J_VECTOR_H
 
 #include <vector/vector_ops.h>
+#include <iterator/iterator.h>
 
 typedef struct vector_iterator {
     union {
-        vector_data_t data;
-        char* sdata;
+        vector_data_t* d;
+        char** sd;
     };
 } vector_iterator_t;
 
 typedef struct vector_reverse_iterator {
     union {
-        vector_data_t data;
-        char* sdata;
+        vector_data_t* d;
+        char** sd;
     };
 } vector_reverse_iterator_t;
 typedef vector_reverse_iterator_t vector_r_iterator_t;
@@ -43,23 +44,23 @@ typedef struct vector vector_t;
 vector_size_t        cvector_size(const vector_t* _this);
 vector_size_t        cvector_capacity(const vector_t* _this);
 vector_count_t       cvector_count(const vector_t* _this, vector_data_t data);
-vector_iterator_t*   cvector_end(const vector_t* _this);
-vector_iterator_t*   cvector_begin(const vector_t* _this);
-vector_iterator_t*   cvector_next(const vector_t* _this, const vector_iterator_t* iterator);
-vector_iterator_t*   cvector_prev(const vector_t* _this, const vector_iterator_t* iterator);
-vector_r_iterator_t* cvector_rend(const vector_t* _this);
-vector_r_iterator_t* cvector_rbegin(const vector_t* _this);
-vector_r_iterator_t* cvector_rnext(const vector_t* _this, const vector_r_iterator_t* r_iterator);
-vector_r_iterator_t* cvector_rprev(const vector_t* _this, const vector_r_iterator_t* r_iterator);
-vector_iterator_t*   cvector_at(const vector_t* _this, vector_size_t n);
+vector_iterator_t    cvector_end(const vector_t* _this);
+vector_iterator_t    cvector_begin(const vector_t* _this);
+vector_iterator_t    cvector_next(const vector_t* _this, const vector_iterator_t iterator);
+vector_iterator_t    cvector_prev(const vector_t* _this, const vector_iterator_t iterator);
+vector_r_iterator_t  cvector_rend(const vector_t* _this);
+vector_r_iterator_t  cvector_rbegin(const vector_t* _this);
+vector_r_iterator_t  cvector_rnext(const vector_t* _this, const vector_r_iterator_t r_iterator);
+vector_r_iterator_t  cvector_rprev(const vector_t* _this, const vector_r_iterator_t r_iterator);
+vector_iterator_t    cvector_at(const vector_t* _this, vector_size_t n);
 vector_data_t        cvector_first(const vector_t* _this, vector_data_t default_data);
 vector_data_t        cvector_last(const vector_t* _this, vector_data_t default_data);
-vector_iterator_t*   cvector_find(const vector_t* _this, vector_data_t data);
-vector_iterator_t*   cvector_push_back(vector_t* _this, vector_data_t data);
-vector_iterator_t*   cvector_push_front(vector_t* _this, vector_data_t data);
-vector_iterator_t*   cvector_insert(vector_t* _this, vector_iterator_t* iterator, vector_data_t data);
-vector_iterator_t*   cvector_erase(vector_t* _this, vector_iterator_t* iterator);
-vector_iterator_t*   cvector_erase_range(vector_t* _this, vector_iterator_t* iterator_begin, vector_iterator_t* iterator_end);
+vector_iterator_t    cvector_find(const vector_t* _this, vector_data_t data);
+vector_iterator_t    cvector_push_back(vector_t* _this, vector_data_t data);
+vector_iterator_t    cvector_push_front(vector_t* _this, vector_data_t data);
+vector_iterator_t    cvector_insert(vector_t* _this, vector_iterator_t iterator, vector_data_t data);
+vector_iterator_t    cvector_erase(vector_t* _this, vector_iterator_t iterator);
+vector_iterator_t    cvector_erase_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);
 void                 cvector_pop_back(vector_t* _this);
 void                 cvector_pop_front(vector_t* _this);
 vector_size_t        cvector_remove(vector_t* _this, vector_data_t data);
@@ -74,23 +75,23 @@ typedef struct class_vector {
     vector_size_t (*size)(const vector_t* _this);
     vector_size_t (*capacity)(const vector_t* _this);
     vector_count_t (*count)(const vector_t* _this, vector_data_t data);
-    vector_iterator_t* (*end)(const vector_t* _this);
-    vector_iterator_t* (*begin)(const vector_t* _this);
-    vector_iterator_t* (*next)(const vector_t* _this, const vector_iterator_t* iterator);
-    vector_iterator_t* (*prev)(const vector_t* _this, const vector_iterator_t* iterator);
-    vector_r_iterator_t* (*rend)(const vector_t* _this);
-    vector_r_iterator_t* (*rbegin)(const vector_t* _this);
-    vector_r_iterator_t* (*rnext)(const vector_t* _this, const vector_r_iterator_t* r_iterator);
-    vector_r_iterator_t* (*rprev)(const vector_t* _this, const vector_r_iterator_t* r_iterator);
-    vector_iterator_t* (*at)(const vector_t* _this, vector_size_t n);
+    vector_iterator_t (*end)(const vector_t* _this);
+    vector_iterator_t (*begin)(const vector_t* _this);
+    vector_iterator_t (*next)(const vector_t* _this, const vector_iterator_t iterator);
+    vector_iterator_t (*prev)(const vector_t* _this, const vector_iterator_t iterator);
+    vector_r_iterator_t (*rend)(const vector_t* _this);
+    vector_r_iterator_t (*rbegin)(const vector_t* _this);
+    vector_r_iterator_t (*rnext)(const vector_t* _this, const vector_r_iterator_t r_iterator);
+    vector_r_iterator_t (*rprev)(const vector_t* _this, const vector_r_iterator_t r_iterator);
+    vector_iterator_t (*at)(const vector_t* _this, vector_size_t n);
     vector_data_t (*first)(const vector_t* _this, vector_data_t default_data);
     vector_data_t (*last)(const vector_t* _this, vector_data_t default_data);
-    vector_iterator_t* (*find)(const vector_t* _this, vector_data_t data);
-    vector_iterator_t* (*push_back)(vector_t* _this, vector_data_t data);
-    vector_iterator_t* (*push_front)(vector_t* _this, vector_data_t data);
-    vector_iterator_t* (*insert)(vector_t* _this, vector_iterator_t* iterator, vector_data_t data);                         /* insert data before `iterator` */
-    vector_iterator_t* (*erase)(vector_t* _this, vector_iterator_t* iterator);
-    vector_iterator_t* (*erase_range)(vector_t* _this, vector_iterator_t* iterator_begin, vector_iterator_t* iterator_end); /* [iterator_begin, iterator_end) */
+    vector_iterator_t (*find)(const vector_t* _this, vector_data_t data);
+    vector_iterator_t (*push_back)(vector_t* _this, vector_data_t data);
+    vector_iterator_t (*push_front)(vector_t* _this, vector_data_t data);
+    vector_iterator_t (*insert)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);                         /* insert data before `iterator` */
+    vector_iterator_t (*erase)(vector_t* _this, vector_iterator_t iterator);
+    vector_iterator_t (*erase_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end); /* [iterator_begin, iterator_end) */
     void (*pop_back)(vector_t* _this);
     void (*pop_front)(vector_t* _this);
     vector_size_t (*remove)(vector_t* _this, vector_data_t data);

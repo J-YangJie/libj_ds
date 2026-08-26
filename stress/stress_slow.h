@@ -19,24 +19,37 @@
 #include <_types.h>
 
 typedef struct {
+    void* d;      /* element pointer */
+    void* ptr1;   /* reserved */
+    void* ptr2;   /* reserved */
+    void* ptr3;   /* reserved */
+} stress_iterator_t;
+
+static inline bool stress_it_null(stress_iterator_t it)   { return NULL == it.d; }
+static inline bool stress_it_eq(stress_iterator_t a, stress_iterator_t b)  { return a.d == b.d; }
+static inline bool stress_it_ne(stress_iterator_t a, stress_iterator_t b)  { return a.d != b.d; }
+#define stress_it_data(it)   (*((ds_data_t*)((it).d)))
+#define stress_it_sdata(it)  (*((char**)((it).d)))
+
+typedef struct {
     ds_size_t (*size)(void* _this);
     ds_count_t (*count)(void* _this, ds_data_t data);
-    void* (*end)(void* _this);
-    void* (*begin)(void* _this);
-    void* (*next)(void* _this, void* iterator);
-    void* (*prev)(void* _this, void* iterator);
-    void* (*rend)(void* _this);
-    void* (*rbegin)(void* _this);
-    void* (*rnext)(void* _this, void* r_iterator);
-    void* (*rprev)(void* _this, void* r_iterator);
+    stress_iterator_t (*end)(void* _this);
+    stress_iterator_t (*begin)(void* _this);
+    stress_iterator_t (*next)(void* _this, stress_iterator_t iterator);
+    stress_iterator_t (*prev)(void* _this, stress_iterator_t iterator);
+    stress_iterator_t (*rend)(void* _this);
+    stress_iterator_t (*rbegin)(void* _this);
+    stress_iterator_t (*rnext)(void* _this, stress_iterator_t r_iterator);
+    stress_iterator_t (*rprev)(void* _this, stress_iterator_t r_iterator);
     ds_data_t (*first)(void* _this, ds_data_t default_data);
     ds_data_t (*last)(void* _this, ds_data_t default_data);
-    void* (*find)(void* _this, ds_data_t data);
-    void* (*push_back)(void* _this, ds_data_t data);
-    void* (*push_front)(void* _this, ds_data_t data);
-    void* (*insert)(void* _this, void* iterator, ds_data_t data);                /* insert data before `iterator` */
-    void* (*erase)(void* _this, void* iterator);
-    void* (*erase_range)(void* _this, void* iterator_begin, void* iterator_end); /* [iterator_begin, iterator_end) */
+    stress_iterator_t (*find)(void* _this, ds_data_t data);
+    stress_iterator_t (*push_back)(void* _this, ds_data_t data);
+    stress_iterator_t (*push_front)(void* _this, ds_data_t data);
+    stress_iterator_t (*insert)(void* _this, stress_iterator_t iterator, ds_data_t data);                            /* insert data before `iterator` */
+    stress_iterator_t (*erase)(void* _this, stress_iterator_t iterator);
+    stress_iterator_t (*erase_range)(void* _this, stress_iterator_t iterator_begin, stress_iterator_t iterator_end); /* [iterator_begin, iterator_end) */
     void (*pop_back)(void* _this);
     void (*pop_front)(void* _this);
     ds_size_t (*remove)(void* _this, ds_data_t data);

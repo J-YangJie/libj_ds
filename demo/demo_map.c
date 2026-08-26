@@ -28,9 +28,9 @@
 #define _tok(x)  ((map_key_t)(x))
 #define _from(x) ((x) ? (x) : "null string")
 
-#define foreach()           { for (map_iterator_t* it = cds->begin(demo); cds->end(demo) != it; it = cds->next(demo, it)) pr_test("(%zd, %zd)", it->key, it->value); }
-#define foreach_kstring()   { for (map_iterator_t* it = cds->begin(demo); cds->end(demo) != it; it = cds->next(demo, it)) pr_test("(%s, %zd)", _from(it->skey), it->value); }
-#define foreach_r_kstring() { for (map_r_iterator_t* it = cds->rbegin(demo); cds->rend(demo) != it; it = cds->rnext(demo, it)) pr_test("(%s, %zd)", _from(it->skey), it->value); }
+#define foreach()           { for (map_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it)); }
+#define foreach_kstring()   { for (map_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("(%s, %zd)", it_skey_safe(it), it_value_safe(it)); }
+#define foreach_r_kstring() { for (map_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it)) pr_test("(%s, %zd)", it_skey_safe(it), it_value_safe(it)); }
 
 static class_map_ops_t demo_ops = {
     .valid_key   = ds_ops_valid_key_default_string_max_128,
@@ -64,11 +64,11 @@ static void demo_base_and_iterator(void)
     pr_test("");
 
     {
-        for (map_iterator_t* it = cds->prev(demo, cds->end(demo)); cds->end(demo) != it; it = cds->prev(demo, it)) pr_test("(%zd, %zd)", it->key, it->value);
+        for (map_iterator_t   it = cds->end(demo);    it_ne(cds->begin(demo), it); )  { it = cds->prev(demo, it);  pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it)); }
         pr_test("");             // [ (8, 8), (7, 7), (6, 6), (5, 5), (4, 4), (3, 3), (2, 2), (1, 1), (0, 0) ]
-        for (map_r_iterator_t* it = cds->rbegin(demo); cds->rend(demo) != it; it = cds->rnext(demo, it)) pr_test("(%zd, %zd)", it->key, it->value);
+        for (map_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it))       pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it));
         pr_test("");             // [ (8, 8), (7, 7), (6, 6), (5, 5), (4, 4), (3, 3), (2, 2), (1, 1), (0, 0) ]
-        for (map_r_iterator_t* it = cds->rprev(demo, cds->rend(demo)); cds->rend(demo) != it; it = cds->rprev(demo, it)) pr_test("(%zd, %zd)", it->key, it->value);
+        for (map_r_iterator_t it = cds->rend(demo);   it_ne(cds->rbegin(demo), it); ) { it = cds->rprev(demo, it); pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it)); }
         pr_test("");             // [ (0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8) ]
     }
 
@@ -102,7 +102,7 @@ static bool demo_remove_if_condition_kv(ds_key_t key, ds_value_t value)
 static void demo_about_erase(void)
 {
     map_t* demo = MAP_NEW_OPS(&demo_ops);
-    map_iterator_t* it = NULL;
+    map_iterator_t it;
     map_size_t ret;
 
     (void)it;
@@ -113,8 +113,8 @@ static void demo_about_erase(void)
         cds->insert(demo, _tok(id[i]), i);
     // after for [ ('123', 2), ('?混搭33*&', 3), ('jy', 1), ('test', 5), ('yj', 0), ('中文', 4) ]
 
-    for (it = cds->begin(demo); cds->end(demo) != it; ) {
-        if (NULL != strstr(id[1], _from(it->skey)))
+    for (it = cds->begin(demo); it_ne(cds->end(demo), it); ) {
+        if (NULL != strstr(id[1], it_skey_safe(it)))
             it = cds->erase(demo, it);
         else
             it = cds->next(demo, it);
@@ -135,7 +135,7 @@ static void demo_about_erase(void)
 static void demo_about_find(void)
 {
     map_t* demo = MAP_NEW();
-    map_iterator_t* it = NULL;
+    map_iterator_t it;
 
     (void)it;
 
@@ -146,15 +146,15 @@ static void demo_about_find(void)
     it = cds->find(demo, 3);  // found, it -> (3, 3)
     it = cds->find(demo, 66); // no found, it -> end()
 
-    it = cds->lower_bound(demo, 0); pr_test("%zd", it && cds->end(demo) != it ? it->key : -1); // it -> (1, 1)
-    it = cds->lower_bound(demo, 6); pr_test("%zd", it && cds->end(demo) != it ? it->key : -1); // it -> (6, 6)
-    it = cds->lower_bound(demo, 8); pr_test("%zd", it && cds->end(demo) != it ? it->key : -1); // it -> (8, 8)
-    it = cds->lower_bound(demo, 9); pr_test("%zd", it && cds->end(demo) != it ? it->key : -1); // it -> end()
+    it = cds->lower_bound(demo, 0); pr_test("%zd", it_ne(cds->end(demo), it) ? it_key_safe(it) : -1); // it -> (1, 1)
+    it = cds->lower_bound(demo, 6); pr_test("%zd", it_ne(cds->end(demo), it) ? it_key_safe(it) : -1); // it -> (6, 6)
+    it = cds->lower_bound(demo, 8); pr_test("%zd", it_ne(cds->end(demo), it) ? it_key_safe(it) : -1); // it -> (8, 8)
+    it = cds->lower_bound(demo, 9); pr_test("%zd", it_ne(cds->end(demo), it) ? it_key_safe(it) : -1); // it -> end()
 
-    it = cds->upper_bound(demo, 0); pr_test("%zd", it && cds->end(demo) != it ? it->key : -1); // it -> (1, 1)
-    it = cds->upper_bound(demo, 6); pr_test("%zd", it && cds->end(demo) != it ? it->key : -1); // it -> (7, 7)
-    it = cds->upper_bound(demo, 8); pr_test("%zd", it && cds->end(demo) != it ? it->key : -1); // it -> end()
-    it = cds->upper_bound(demo, 9); pr_test("%zd", it && cds->end(demo) != it ? it->key : -1); // it -> end()
+    it = cds->upper_bound(demo, 0); pr_test("%zd", it_ne(cds->end(demo), it) ? it_key_safe(it) : -1); // it -> (1, 1)
+    it = cds->upper_bound(demo, 6); pr_test("%zd", it_ne(cds->end(demo), it) ? it_key_safe(it) : -1); // it -> (7, 7)
+    it = cds->upper_bound(demo, 8); pr_test("%zd", it_ne(cds->end(demo), it) ? it_key_safe(it) : -1); // it -> end()
+    it = cds->upper_bound(demo, 9); pr_test("%zd", it_ne(cds->end(demo), it) ? it_key_safe(it) : -1); // it -> end()
     pr_test("");
 
     MAP_DELETE(&demo);

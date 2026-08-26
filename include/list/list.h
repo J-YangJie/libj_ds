@@ -21,18 +21,19 @@
 #define __J_LIST_H
 
 #include <list/list_ops.h>
+#include <iterator/iterator.h>
 
 typedef struct list_iterator {
     union {
-        list_data_t data;
-        char* sdata;
+        list_data_t* d;
+        char** sd;
     };
 } list_iterator_t;
 
 typedef struct list_reverse_iterator {
     union {
-        list_data_t data;
-        char* sdata;
+        list_data_t* d;
+        char** sd;
     };
 } list_reverse_iterator_t;
 typedef list_reverse_iterator_t list_r_iterator_t;
@@ -42,22 +43,22 @@ typedef struct list list_t;
 /* Method 1 */
 list_size_t        clist_size(const list_t* _this);
 list_count_t       clist_count(const list_t* _this, list_data_t data);
-list_iterator_t*   clist_end(const list_t* _this);
-list_iterator_t*   clist_begin(const list_t* _this);
-list_iterator_t*   clist_next(const list_t* _this, const list_iterator_t* iterator);
-list_iterator_t*   clist_prev(const list_t* _this, const list_iterator_t* iterator);
-list_r_iterator_t* clist_rend(const list_t* _this);
-list_r_iterator_t* clist_rbegin(const list_t* _this);
-list_r_iterator_t* clist_rnext(const list_t* _this, const list_r_iterator_t* r_iterator);
-list_r_iterator_t* clist_rprev(const list_t* _this, const list_r_iterator_t* r_iterator);
+list_iterator_t    clist_end(const list_t* _this);
+list_iterator_t    clist_begin(const list_t* _this);
+list_iterator_t    clist_next(const list_t* _this, const list_iterator_t iterator);
+list_iterator_t    clist_prev(const list_t* _this, const list_iterator_t iterator);
+list_r_iterator_t  clist_rend(const list_t* _this);
+list_r_iterator_t  clist_rbegin(const list_t* _this);
+list_r_iterator_t  clist_rnext(const list_t* _this, const list_r_iterator_t r_iterator);
+list_r_iterator_t  clist_rprev(const list_t* _this, const list_r_iterator_t r_iterator);
 list_data_t        clist_first(const list_t* _this, list_data_t default_data);
 list_data_t        clist_last(const list_t* _this, list_data_t default_data);
-list_iterator_t*   clist_find(const list_t* _this, list_data_t data);
-list_iterator_t*   clist_push_back(list_t* _this, list_data_t data);
-list_iterator_t*   clist_push_front(list_t* _this, list_data_t data);
-list_iterator_t*   clist_insert(list_t* _this, list_iterator_t* iterator, list_data_t data);
-list_iterator_t*   clist_erase(list_t* _this, list_iterator_t* iterator);
-list_iterator_t*   clist_erase_range(list_t* _this, list_iterator_t* iterator_begin, list_iterator_t* iterator_end);
+list_iterator_t    clist_find(const list_t* _this, list_data_t data);
+list_iterator_t    clist_push_back(list_t* _this, list_data_t data);
+list_iterator_t    clist_push_front(list_t* _this, list_data_t data);
+list_iterator_t    clist_insert(list_t* _this, list_iterator_t iterator, list_data_t data);
+list_iterator_t    clist_erase(list_t* _this, list_iterator_t iterator);
+list_iterator_t    clist_erase_range(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end);
 void               clist_pop_back(list_t* _this);
 void               clist_pop_front(list_t* _this);
 list_size_t        clist_remove(list_t* _this, list_data_t data);
@@ -68,22 +69,22 @@ list_size_t        clist_clear(list_t* _this);
 typedef struct class_list {
     list_size_t (*size)(const list_t* _this);
     list_count_t (*count)(const list_t* _this, list_data_t data);
-    list_iterator_t* (*end)(const list_t* _this);
-    list_iterator_t* (*begin)(const list_t* _this);
-    list_iterator_t* (*next)(const list_t* _this, const list_iterator_t* iterator);
-    list_iterator_t* (*prev)(const list_t* _this, const list_iterator_t* iterator);
-    list_r_iterator_t* (*rend)(const list_t* _this);
-    list_r_iterator_t* (*rbegin)(const list_t* _this);
-    list_r_iterator_t* (*rnext)(const list_t* _this, const list_r_iterator_t* r_iterator);
-    list_r_iterator_t* (*rprev)(const list_t* _this, const list_r_iterator_t* r_iterator);
+    list_iterator_t (*end)(const list_t* _this);
+    list_iterator_t (*begin)(const list_t* _this);
+    list_iterator_t (*next)(const list_t* _this, const list_iterator_t iterator);
+    list_iterator_t (*prev)(const list_t* _this, const list_iterator_t iterator);
+    list_r_iterator_t (*rend)(const list_t* _this);
+    list_r_iterator_t (*rbegin)(const list_t* _this);
+    list_r_iterator_t (*rnext)(const list_t* _this, const list_r_iterator_t r_iterator);
+    list_r_iterator_t (*rprev)(const list_t* _this, const list_r_iterator_t r_iterator);
     list_data_t (*first)(const list_t* _this, list_data_t default_data);
     list_data_t (*last)(const list_t* _this, list_data_t default_data);
-    list_iterator_t* (*find)(const list_t* _this, list_data_t data);
-    list_iterator_t* (*push_back)(list_t* _this, list_data_t data);
-    list_iterator_t* (*push_front)(list_t* _this, list_data_t data);
-    list_iterator_t* (*insert)(list_t* _this, list_iterator_t* iterator, list_data_t data);                         /* insert data before `iterator` */
-    list_iterator_t* (*erase)(list_t* _this, list_iterator_t* iterator);
-    list_iterator_t* (*erase_range)(list_t* _this, list_iterator_t* iterator_begin, list_iterator_t* iterator_end); /* [iterator_begin, iterator_end) */
+    list_iterator_t (*find)(const list_t* _this, list_data_t data);
+    list_iterator_t (*push_back)(list_t* _this, list_data_t data);
+    list_iterator_t (*push_front)(list_t* _this, list_data_t data);
+    list_iterator_t (*insert)(list_t* _this, list_iterator_t iterator, list_data_t data);                         /* insert data before `iterator` */
+    list_iterator_t (*erase)(list_t* _this, list_iterator_t iterator);
+    list_iterator_t (*erase_range)(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end); /* [iterator_begin, iterator_end) */
     void (*pop_back)(list_t* _this);
     void (*pop_front)(list_t* _this);
     list_size_t (*remove)(list_t* _this, list_data_t data);

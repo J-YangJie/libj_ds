@@ -19,16 +19,22 @@
 
 #include <multiset/multiset.h>
 
+#include <_log.h>
 #include <_memory.h>
+#include <_compiler.h>
 #include <linux/_types.h>
 #include <linux/rbtree.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator.h>
+#include <iterator/iterator_inter.h>
 
 typedef struct multiset_node {
     multiset_key_t key;
     struct rb_node node;
 } multiset_node_t;
+
+JDSC_STATIC_ASSERT(offsetof(multiset_node_t, key) == 0,               "multiset node key vs iterator data offset mismatch");
+JDSC_STATIC_ASSERT(sizeof(multiset_key_t) == sizeof(multiset_data_t), "multiset node key width vs iterator data width mismatch");
+JDSC_STATIC_ASSERT(sizeof(multiset_data_t) == sizeof(char*),          "iterator data/sdata union width mismatch");
 
 struct multiset {
     const class_multiset_ops_t* ops;
@@ -36,25 +42,30 @@ struct multiset {
     multiset_size_t size;
 };
 
+#define TAG "[multiset]"
+
 #define multiset_entry(ptr) rb_entry((ptr), struct multiset_node, node)
 
-static /* __always_inline */ inline multiset_node_t* multiset_find(const multiset_t* _this, multiset_key_t key);
-static /* __always_inline */ inline multiset_node_t* __multiset_end(const multiset_t* _this);
-static /* __always_inline */ inline multiset_node_t* __multiset_next(const multiset_t* _this, const multiset_node_t* node);
+static JDSC_INLINE_FORCE_POLICY multiset_node_t* multiset_find(const multiset_t* _this, multiset_key_t key);
+static JDSC_INLINE_FORCE multiset_node_t* __multiset_end(const multiset_t* _this);
+static JDSC_INLINE_FORCE multiset_node_t* __multiset_next(const multiset_t* _this, const multiset_node_t* node);
 
-static /* __always_inline */ inline multiset_size_t __multiset_size(const multiset_t* _this)
+static JDSC_INLINE_FORCE
+multiset_size_t __multiset_size(const multiset_t* _this)
 {
     return _this->size;
 }
 
-static /* __always_inline */ inline multiset_size_t _multiset_size(const multiset_t* _this)
+static JDSC_INLINE_FORCE
+multiset_size_t _multiset_size(const multiset_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __multiset_size(_this);
 }
 
-static multiset_count_t multiset_count(const multiset_t* _this, multiset_key_t key)
+static
+multiset_count_t multiset_count(const multiset_t* _this, multiset_key_t key)
 {
     multiset_count_t ret = 0;
     multiset_node_t* t = multiset_find(_this, key);
@@ -85,164 +96,199 @@ static multiset_count_t multiset_count(const multiset_t* _this, multiset_key_t k
     return ret;
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_first(const multiset_t* _this)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multiset_node_t* ___multiset_first(const multiset_t* _this)
 {
     struct rb_node* t = rb_first(&_this->root);
     return is_null(t) ? NULL : multiset_entry(t);
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_last(const multiset_t* _this)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multiset_node_t* ___multiset_last(const multiset_t* _this)
 {
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : multiset_entry(t);
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_end(const multiset_t* _this)
+static JDSC_INLINE_FORCE
+multiset_node_t* __multiset_end(const multiset_t* _this)
 {
     return (multiset_node_t*)iterator_end();
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_begin(const multiset_t* _this)
+static JDSC_INLINE_FORCE
+multiset_node_t* __multiset_begin(const multiset_t* _this)
 {
-    multiset_node_t* t = __multiset_first(_this);
+    multiset_node_t* t = ___multiset_first(_this);
     return is_null(t) ? __multiset_end(_this) : t;
 }
 
-static /* __always_inline */ inline multiset_node_t* _multiset_begin(const multiset_t* _this)
+static JDSC_INLINE_FORCE
+multiset_node_t* _multiset_begin(const multiset_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __multiset_begin(_this);
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_next(const multiset_t* _this, const multiset_node_t* node)
+static JDSC_INLINE_FORCE
+multiset_node_t* __multiset_next(const multiset_t* _this, const multiset_node_t* node)
 {
-    struct rb_node* t = NULL;
+    struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->root) || __multiset_end(_this) == node)
-        return __multiset_end(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
+    JDSC_ASSERT(__multiset_end(_this) != node);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(__multiset_end(_this) == node))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    if (unlikely(RB_EMPTY_NODE(&node->node)))
-        return NULL;
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_next(&node->node);
     return is_null(t) ? __multiset_end(_this) : multiset_entry(t);
 }
 
-static /* __always_inline */ inline multiset_node_t* _multiset_next(const multiset_t* _this, const multiset_node_t* node)
+static JDSC_INLINE_FORCE
+multiset_node_t* _multiset_next(const multiset_t* _this, const multiset_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multiset_next(_this, node);
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_prev(const multiset_t* _this, const multiset_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+multiset_node_t* __multiset_prev(const multiset_t* _this, const multiset_node_t* node)
 {
-    struct rb_node* t = NULL;
+    struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->root))
-        return __multiset_end(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
 
-    if (__multiset_end(_this) == node)
-        return __multiset_last(_this); /* Err: since the `ds` is non-empty, 
-                                               the return value includes the error case of `NULL` */
+    if (unlikely(__multiset_end(_this) == node))
+        return ___multiset_last(_this); /* Err: since the `ds` is non-empty, 
+                                                the return value includes the error case of `NULL` */
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    if (unlikely(RB_EMPTY_NODE(&node->node)))
-        return NULL;
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_prev(&node->node);
-    return is_null(t) ? __multiset_end(_this) : multiset_entry(t);
+    JDSC_ASSERT(!is_null(t));
+
+#if JDSC_ITERATOR_ERR_NULL
+    return is_null(t) ? NULL : multiset_entry(t);
+#else
+    return multiset_entry(t);
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
 }
 
-static /* __always_inline */ inline multiset_node_t* _multiset_prev(const multiset_t* _this, const multiset_node_t* node)
+static JDSC_INLINE_FORCE
+multiset_node_t* _multiset_prev(const multiset_t* _this, const multiset_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multiset_prev(_this, node);
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_rend(const multiset_t* _this)
+static JDSC_INLINE_FORCE
+multiset_node_t* __multiset_rend(const multiset_t* _this)
 {
     return (multiset_node_t*)iterator_rend();
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_rbegin(const multiset_t* _this)
+static JDSC_INLINE_FORCE
+multiset_node_t* __multiset_rbegin(const multiset_t* _this)
 {
-    multiset_node_t* t = __multiset_last(_this);
+    multiset_node_t* t = ___multiset_last(_this);
     return is_null(t) ? __multiset_rend(_this) : t;
 }
 
-static /* __always_inline */ inline multiset_node_t* _multiset_rbegin(const multiset_t* _this)
+static JDSC_INLINE_FORCE
+multiset_node_t* _multiset_rbegin(const multiset_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __multiset_rbegin(_this);
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_rnext(const multiset_t* _this, const multiset_node_t* node)
+static JDSC_INLINE_FORCE
+multiset_node_t* __multiset_rnext(const multiset_t* _this, const multiset_node_t* node)
 {
-    struct rb_node* t = NULL;
+    struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->root) || __multiset_rend(_this) == node)
-        return __multiset_rend(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
+    JDSC_ASSERT(__multiset_rend(_this) != node);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(__multiset_rend(_this) == node))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     /* The input parameter is `reverse_iterator`, and there's no need 
        to check whether it equals `end` */
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    if (unlikely(RB_EMPTY_NODE(&node->node)))
-        return NULL;
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_prev(&node->node);
     return is_null(t) ? __multiset_rend(_this) : multiset_entry(t);
 }
 
-static /* __always_inline */ inline multiset_node_t* _multiset_rnext(const multiset_t* _this, const multiset_node_t* node)
+static JDSC_INLINE_FORCE
+multiset_node_t* _multiset_rnext(const multiset_t* _this, const multiset_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multiset_rnext(_this, node);
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_rprev(const multiset_t* _this, const multiset_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+multiset_node_t* __multiset_rprev(const multiset_t* _this, const multiset_node_t* node)
 {
-    struct rb_node* t = NULL;
+    struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->root))
-        return __multiset_rend(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
 
-    if (__multiset_rend(_this) == node)
-        return __multiset_first(_this); /* Err: since the `ds` is non-empty, 
+    if (unlikely(__multiset_rend(_this) == node))
+        return ___multiset_first(_this); /* Err: since the `ds` is non-empty,
                                                 the return value includes the error case of `NULL` */
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    if (unlikely(RB_EMPTY_NODE(&node->node)))
-        return NULL;
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_next(&node->node);
-    return is_null(t) ? __multiset_rend(_this) : multiset_entry(t);
+    JDSC_ASSERT(!is_null(t));
+
+#if JDSC_ITERATOR_ERR_NULL
+    return is_null(t) ? NULL : multiset_entry(t);
+#else
+    return multiset_entry(t);
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
 }
 
-static /* __always_inline */ inline multiset_node_t* _multiset_rprev(const multiset_t* _this, const multiset_node_t* node)
+static JDSC_INLINE_FORCE
+multiset_node_t* _multiset_rprev(const multiset_t* _this, const multiset_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multiset_rprev(_this, node);
 }
 
-static multiset_node_t* __multiset_find(const multiset_t* _this, multiset_key_t key)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multiset_node_t* ___multiset_find(const multiset_t* _this, multiset_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
     multiset_node_t* ret = NULL;
 
     if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
@@ -276,24 +322,26 @@ static multiset_node_t* __multiset_find(const multiset_t* _this, multiset_key_t 
     return ret;
 }
 
-static /* __always_inline */ inline multiset_node_t* multiset_find(const multiset_t* _this, multiset_key_t key)
+static JDSC_INLINE_FORCE_POLICY
+multiset_node_t* multiset_find(const multiset_t* _this, multiset_key_t key)
 {
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
         return NULL;
 
-    t = __multiset_find(_this, key);
+    t = ___multiset_find(_this, key);
     return is_null(t) ? __multiset_end(_this) : t;
 }
 
-static multiset_node_t* __multiset_lower_bound(const multiset_t* _this, multiset_key_t key)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multiset_node_t* ___multiset_lower_bound(const multiset_t* _this, multiset_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
     multiset_node_t* eq = NULL;
     multiset_node_t* gt = NULL;
 
@@ -330,24 +378,26 @@ static multiset_node_t* __multiset_lower_bound(const multiset_t* _this, multiset
     return is_null(eq) ? gt : eq;
 }
 
-static /* __always_inline */ inline multiset_node_t* multiset_lower_bound(const multiset_t* _this, multiset_key_t key)
+static JDSC_INLINE_FORCE_POLICY
+multiset_node_t* multiset_lower_bound(const multiset_t* _this, multiset_key_t key)
 {
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
         return NULL;
 
-    t = __multiset_lower_bound(_this, key);
+    t = ___multiset_lower_bound(_this, key);
     return is_null(t) ? __multiset_end(_this) : t;
 }
 
-static multiset_node_t* __multiset_upper_bound(const multiset_t* _this, multiset_key_t key)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multiset_node_t* ___multiset_upper_bound(const multiset_t* _this, multiset_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
     multiset_node_t* ret = NULL;
 
     if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
@@ -381,25 +431,27 @@ static multiset_node_t* __multiset_upper_bound(const multiset_t* _this, multiset
     return ret;
 }
 
-static /* __always_inline */ inline multiset_node_t* multiset_upper_bound(const multiset_t* _this, multiset_key_t key)
+static JDSC_INLINE_FORCE_POLICY
+multiset_node_t* multiset_upper_bound(const multiset_t* _this, multiset_key_t key)
 {
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
         return NULL;
 
-    t = __multiset_upper_bound(_this, key);
+    t = ___multiset_upper_bound(_this, key);
     return is_null(t) ? __multiset_end(_this) : t;
 }
 
-static multiset_node_t* __multiset_insert(multiset_t* _this, multiset_node_t* node)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multiset_node_t* ___multiset_insert(multiset_t* _this, multiset_node_t* node)
 {
     struct rb_node** n = &_this->root.rb_node;
     struct rb_node* parent = NULL;
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
 
     if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(*n)) {
@@ -433,15 +485,16 @@ static multiset_node_t* __multiset_insert(multiset_t* _this, multiset_node_t* no
     return node;
 }
 
-static inline multiset_node_t* multiset_insert(multiset_t* _this, multiset_key_t key)
+static
+multiset_node_t* multiset_insert(multiset_t* _this, multiset_key_t key)
 {
-    multiset_node_t* t = NULL;
-    multiset_node_t* ret = NULL;
+    multiset_node_t* t;
+    multiset_node_t* ret;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
         return NULL;
 
     t = (multiset_node_t*)p_calloc(1, sizeof(multiset_node_t));
@@ -451,11 +504,11 @@ static inline multiset_node_t* multiset_insert(multiset_t* _this, multiset_key_t
     if (is_null(_this->ops) || is_null(_this->ops->copy_key)) {
         t->key = key;
     } else {
-        if (!_this->ops->copy_key(key, &t->key))
-            goto err;
+        if (unlikely(!_this->ops->copy_key(key, &t->key)))
+            goto err_key;
     }
 
-    ret = __multiset_insert(_this, t);
+    ret = ___multiset_insert(_this, t);
     if (t != ret)
         goto err;
     return t;
@@ -463,35 +516,37 @@ static inline multiset_node_t* multiset_insert(multiset_t* _this, multiset_key_t
 err:
     if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
         _this->ops->free_key(&t->key);
-
+err_key:
     p_free(t);
     return NULL;
 }
 
-static /* __always_inline */ inline multiset_node_t* __multiset_erase(multiset_t* _this, multiset_node_t* pos)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multiset_node_t* ___multiset_erase(multiset_t* _this, multiset_node_t* pos)
 {
     rb_erase(&pos->node, &_this->root);
     _this->size--;
     return pos;
 }
 
-static inline multiset_node_t* multiset_erase(multiset_t* _this, multiset_node_t* pos)
+static
+multiset_node_t* multiset_erase(multiset_t* _this, multiset_node_t* pos)
 {
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
 
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
-    if (__multiset_size(_this) <= 0 || __multiset_end(_this) == pos/* || __multiset_rend(_this) == pos*/)
+    if (unlikely(RB_EMPTY_ROOT(&_this->root) || __multiset_end(_this) == pos)/* || __multiset_rend(_this) == pos*/)
         return NULL;
 
     t = __multiset_next(_this, pos);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return NULL;
 
-    __multiset_erase(_this, pos);
+    ___multiset_erase(_this, pos);
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
         _this->ops->free_key(&pos->key);
@@ -501,16 +556,17 @@ static inline multiset_node_t* multiset_erase(multiset_t* _this, multiset_node_t
     return t;
 }
 
-static multiset_size_t multiset_remove(multiset_t* _this, multiset_key_t key)
+static
+multiset_size_t multiset_remove(multiset_t* _this, multiset_key_t key)
 {
     multiset_size_t ret = 0;
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
 
     if (unlikely(is_null(_this)))
         return -1;
 
     t = multiset_find(_this, key);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return -1;
 
     if (__multiset_end(_this) == t)
@@ -537,10 +593,11 @@ static multiset_size_t multiset_remove(multiset_t* _this, multiset_key_t key)
     return ret;
 }
 
-static multiset_size_t multiset_remove_if(multiset_t* _this, remove_if_condition_k cond)
+static
+multiset_size_t multiset_remove_if(multiset_t* _this, remove_if_condition_k cond)
 {
     multiset_size_t ret = 0;
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
 
     if (unlikely(is_null(_this) || is_null(cond)))
         return -1;
@@ -558,10 +615,11 @@ static multiset_size_t multiset_remove_if(multiset_t* _this, remove_if_condition
     return ret;
 }
 
-static multiset_size_t multiset_clear(multiset_t* _this)
+static
+multiset_size_t multiset_clear(multiset_t* _this)
 {
     multiset_size_t ret = 0;
-    multiset_node_t* t = NULL;
+    multiset_node_t* t;
 
     if (unlikely(is_null(_this)))
         return -1;
@@ -580,9 +638,21 @@ multiset_t* __multiset_new(const class_multiset_ops_t* ops)
     if (is_null(multiset))
         return NULL;
 
+    if (!is_null(ops) && !is_null(ops->copy_key)) {
+        JDSC_ASSERT(!is_null(ops->free_key));
+        if (is_null(ops->free_key)) {
+            pr_err("%s: ops->copy_key provided but ops->free_key is null!", __func__);
+            goto err;
+        }
+    }
+
     multiset->ops  = ops;
     multiset->root = RB_ROOT;
     return multiset;
+
+err:
+    p_free(multiset);
+    return NULL;
 }
 
 void __multiset_delete(multiset_t** _this)
@@ -594,6 +664,7 @@ void __multiset_delete(multiset_t** _this)
     p_free(*_this);
 }
 
+#if 0
 typedef multiset_iterator_t* (*fp_end)(const multiset_t* _this);
 typedef multiset_iterator_t* (*fp_begin)(const multiset_t* _this);
 typedef multiset_iterator_t* (*fp_next)(const multiset_t* _this, const multiset_iterator_t* iterator);
@@ -633,6 +704,34 @@ const class_multiset_t* class_multiset_ins(void)
     return &ins;
 }
 
+#else
+
+const class_multiset_t* class_multiset_ins(void)
+{
+    static const class_multiset_t ins = {
+        .size        = cmultiset_size,
+        .count       = cmultiset_count,
+        .end         = cmultiset_end,
+        .begin       = cmultiset_begin,
+        .next        = cmultiset_next,
+        .prev        = cmultiset_prev,
+        .rend        = cmultiset_rend,
+        .rbegin      = cmultiset_rbegin,
+        .rnext       = cmultiset_rnext,
+        .rprev       = cmultiset_rprev,
+        .find        = cmultiset_find,
+        .lower_bound = cmultiset_lower_bound,
+        .upper_bound = cmultiset_upper_bound,
+        .insert      = cmultiset_insert,
+        .erase       = cmultiset_erase,
+        .remove      = cmultiset_remove,
+        .remove_if   = cmultiset_remove_if,
+        .clear       = cmultiset_clear,
+    };
+    return &ins;
+}
+#endif /* 0 */
+
 
 
 
@@ -647,69 +746,95 @@ multiset_count_t cmultiset_count(const multiset_t* _this, multiset_key_t key)
     return multiset_count(_this, key);
 }
 
-multiset_iterator_t* cmultiset_end(const multiset_t* _this)
+multiset_iterator_t cmultiset_end(const multiset_t* _this)
 {
-    return (multiset_iterator_t*)__multiset_end(_this);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)__multiset_end(_this);
+    return it;
 }
 
-multiset_iterator_t* cmultiset_begin(const multiset_t* _this)
+multiset_iterator_t cmultiset_begin(const multiset_t* _this)
 {
-    return (multiset_iterator_t*)_multiset_begin(_this);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)_multiset_begin(_this);
+    return it;
 }
 
-multiset_iterator_t* cmultiset_next(const multiset_t* _this, const multiset_iterator_t* iterator)
+multiset_iterator_t cmultiset_next(const multiset_t* _this, const multiset_iterator_t iterator)
 {
-    return (multiset_iterator_t*)_multiset_next(_this, (const multiset_node_t*)iterator);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)_multiset_next(_this, (const multiset_node_t*)iterator.d);
+    return it;
 }
 
-multiset_iterator_t* cmultiset_prev(const multiset_t* _this, const multiset_iterator_t* iterator)
+multiset_iterator_t cmultiset_prev(const multiset_t* _this, const multiset_iterator_t iterator)
 {
-    return (multiset_iterator_t*)_multiset_prev(_this, (const multiset_node_t*)iterator);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)_multiset_prev(_this, (const multiset_node_t*)iterator.d);
+    return it;
 }
 
-multiset_r_iterator_t* cmultiset_rend(const multiset_t* _this)
+multiset_r_iterator_t cmultiset_rend(const multiset_t* _this)
 {
-    return (multiset_r_iterator_t*)__multiset_rend(_this);
+    multiset_r_iterator_t it;
+    it.d = (multiset_data_t*)__multiset_rend(_this);
+    return it;
 }
 
-multiset_r_iterator_t* cmultiset_rbegin(const multiset_t* _this)
+multiset_r_iterator_t cmultiset_rbegin(const multiset_t* _this)
 {
-    return (multiset_r_iterator_t*)_multiset_rbegin(_this);
+    multiset_r_iterator_t it;
+    it.d = (multiset_data_t*)_multiset_rbegin(_this);
+    return it;
 }
 
-multiset_r_iterator_t* cmultiset_rnext(const multiset_t* _this, const multiset_r_iterator_t* r_iterator)
+multiset_r_iterator_t cmultiset_rnext(const multiset_t* _this, const multiset_r_iterator_t r_iterator)
 {
-    return (multiset_r_iterator_t*)_multiset_rnext(_this, (const multiset_node_t*)r_iterator);
+    multiset_r_iterator_t it;
+    it.d = (multiset_data_t*)_multiset_rnext(_this, (const multiset_node_t*)r_iterator.d);
+    return it;
 }
 
-multiset_r_iterator_t* cmultiset_rprev(const multiset_t* _this, const multiset_r_iterator_t* r_iterator)
+multiset_r_iterator_t cmultiset_rprev(const multiset_t* _this, const multiset_r_iterator_t r_iterator)
 {
-    return (multiset_r_iterator_t*)_multiset_rprev(_this, (const multiset_node_t*)r_iterator);
+    multiset_r_iterator_t it;
+    it.d = (multiset_data_t*)_multiset_rprev(_this, (const multiset_node_t*)r_iterator.d);
+    return it;
 }
 
-multiset_iterator_t* cmultiset_find(const multiset_t* _this, multiset_key_t key)
+multiset_iterator_t cmultiset_find(const multiset_t* _this, multiset_key_t key)
 {
-    return (multiset_iterator_t*)multiset_find(_this, key);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)multiset_find(_this, key);
+    return it;
 }
 
-multiset_iterator_t* cmultiset_lower_bound(const multiset_t* _this, multiset_key_t key)
+multiset_iterator_t cmultiset_lower_bound(const multiset_t* _this, multiset_key_t key)
 {
-    return (multiset_iterator_t*)multiset_lower_bound(_this, key);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)multiset_lower_bound(_this, key);
+    return it;
 }
 
-multiset_iterator_t* cmultiset_upper_bound(const multiset_t* _this, multiset_key_t key)
+multiset_iterator_t cmultiset_upper_bound(const multiset_t* _this, multiset_key_t key)
 {
-    return (multiset_iterator_t*)multiset_upper_bound(_this, key);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)multiset_upper_bound(_this, key);
+    return it;
 }
 
-multiset_iterator_t* cmultiset_insert(multiset_t* _this, multiset_key_t key)
+multiset_iterator_t cmultiset_insert(multiset_t* _this, multiset_key_t key)
 {
-    return (multiset_iterator_t*)multiset_insert(_this, key);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)multiset_insert(_this, key);
+    return it;
 }
 
-multiset_iterator_t* cmultiset_erase(multiset_t* _this, multiset_iterator_t* iterator)
+multiset_iterator_t cmultiset_erase(multiset_t* _this, multiset_iterator_t iterator)
 {
-    return (multiset_iterator_t*)multiset_erase(_this, (multiset_node_t*)iterator);
+    multiset_iterator_t it;
+    it.d = (multiset_data_t*)multiset_erase(_this, (multiset_node_t*)iterator.d);
+    return it;
 }
 
 multiset_size_t cmultiset_remove(multiset_t* _this, multiset_key_t key)
@@ -726,3 +851,4 @@ multiset_size_t cmultiset_clear(multiset_t* _this)
 {
     return multiset_clear(_this);
 }
+

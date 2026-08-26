@@ -23,7 +23,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <iterator/iterator.h>
+#include <iterator/iterator_inter.h>
 #include <hashmap/hashmap.h>
 #include <list/list.h>
 #include <vector/vector.h>
@@ -77,6 +77,48 @@
 #define HASHMAP_CAPACITY_INIT 2 * TIMES_INSERT
 #endif /* HASHMAP_CAPACITY_INIT */
 
+#ifdef TEST_HASHMAP
+#define DS_NAME      "hashmap"
+#define TIME_DS      time_hashmap
+#elif defined(TEST_MAP)
+#define DS_NAME      "map"
+#define TIME_DS      time_map
+#elif defined(TEST_SET)
+#define DS_NAME      "set"
+#define TIME_DS      time_set
+#elif defined(TEST_MULTIMAP)
+#define DS_NAME      "multimap"
+#define TIME_DS      time_multimap
+#elif defined(TEST_MULTISET)
+#define DS_NAME      "multiset"
+#define TIME_DS      time_multiset
+#elif defined(TEST_LIST)
+#define DS_NAME      "list"
+#define TIME_DS      time_list
+#elif defined(TEST_VECTOR)
+#define DS_NAME      "vector"
+#define TIME_DS      time_vector
+#elif defined(TEST_PQUEUE)
+#define DS_NAME      "priority_queue"
+#define TIME_DS      time_pqueue
+#else
+#define DS_NAME      "unknown"
+#define TIME_DS      time_vector
+#endif
+
+#if defined(TEST_LIST) || defined(TEST_VECTOR) || defined(TEST_DEQUE)
+#define FIND_OPS   TIMES_FIND_V_L
+#define REMOVE_OPS TIMES_REMOVE_V_L
+#else
+#define FIND_OPS   TIMES_FIND
+#define REMOVE_OPS TIMES_REMOVE
+#endif
+
+#define TOUCH_TIMERS() do { (void)time_hashmap; (void)time_map; (void)time_set; \
+                            (void)time_multimap; (void)time_multiset; (void)time_list; \
+                            (void)time_vector; (void)time_vector_s; (void)time_pqueue; \
+                            ; } while (0)
+
 static void test_i_for(void)
 {
     struct timeval time_begin, time_end;
@@ -89,6 +131,7 @@ static void test_i_for(void)
     clock_t time_vector   = 0;
     clock_t time_vector_s = 0;
     clock_t time_pqueue   = 0;
+    TOUCH_TIMERS();
 
 #ifdef TEST_HASHMAP
     hashmap_t*        ds_hashmap_i  = HASHMAP_NEW_3(HASHMAP_CAPACITY_INIT, 0, 0.0);
@@ -141,17 +184,7 @@ static void test_i_for(void)
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cpqueue, push)(ds_pqueue_i, i);          }, time_pqueue);
 #endif
 
-        printf("Insert  [ %.0f*10^%d elements ] [ hashmap | map | set | multimap | multiset | list | vector(push_back) | pqueue ] \t\t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld ] ms\n", 
-                TIMES_INSERT / pow(10, (int)log10(TIMES_INSERT)),
-                (int)log10(TIMES_INSERT),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_pqueue   / 1000);
+        printf("RESULT %s insert %s %ld %ld ms\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(TIME_DS / 1000));
     }
 
     if (1) // if (0)
@@ -167,73 +200,57 @@ static void test_i_for(void)
         time_pqueue   = 0;
 
         size_t times_succ = 0;
-        void* it;
         ds_size_t ds_size;
 #ifdef TEST_HASHMAP
         ds_size = DSL(chashmap, size)(ds_hashmap_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(chashmap, find)(ds_hashmap_i, i);
-            if (it && iterator_end() != it) times_succ++;
+            hashmap_iterator_t it = DSL(chashmap, find)(ds_hashmap_i, i);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_hashmap);
 #elif TEST_MAP
         ds_size = DSL(cmap, size)(ds_map_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(cmap, find)(ds_map_i, i);
-            if (it && iterator_end() != it) times_succ++;
+            map_iterator_t it = DSL(cmap, find)(ds_map_i, i);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_map);
 #elif TEST_SET
         ds_size = DSL(cset, size)(ds_set_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(cset, find)(ds_set_i, i);
-            if (it && iterator_end() != it) times_succ++;
+            set_iterator_t it = DSL(cset, find)(ds_set_i, i);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_set);
 #elif TEST_MULTIMAP
         ds_size = DSL(cmultimap, size)(ds_multimap_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(cmultimap, find)(ds_multimap_i, i);
-            if (it && iterator_end() != it) times_succ++;
+            multimap_iterator_t it = DSL(cmultimap, find)(ds_multimap_i, i);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_multimap);
 #elif TEST_MULTISET
         ds_size = DSL(cmultiset, size)(ds_multiset_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(cmultiset, find)(ds_multiset_i, i);
-            if (it && iterator_end() != it) times_succ++;
+            multiset_iterator_t it = DSL(cmultiset, find)(ds_multiset_i, i);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_multiset);
 #elif TEST_LIST
         ds_size = DSL(clist, size)(ds_list_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
-            it = DSL(clist, find)(ds_list_i, i);
-            if (it && iterator_end() != it) times_succ++;
+            list_iterator_t it = DSL(clist, find)(ds_list_i, i);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_list);
 #elif TEST_VECTOR
         ds_size = DSL(cvector, size)(ds_vector_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
-            it = DSL(cvector, find)(ds_vector_i, i);
-            if (it && iterator_end() != it) times_succ++;
+            vector_iterator_t it = DSL(cvector, find)(ds_vector_i, i);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_vector);
         GET_DURATION({ DSL(cvector, sort)(ds_vector_i, NULL); }, time_vector_s);
+        printf("RESULT %s sort %s %ld %ld ms\n", __func__, DS_NAME, (long)TIMES_FIND_V_L, (long)(time_vector_s / 1000));
 #elif TEST_PQUEUE
         ds_size = DSL(cpqueue, size)(ds_pqueue_i);
-        (void)it;
         /* unsupport */
 #endif
 
-        printf("Find    [ %.0f*10^%d times    ] [ hashmap | map | set | multimap | multiset | list(%.0f*10^%d) | vector(%.0f*10^%d) | vector_sort | pqueue ] \t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld | unsupport ] ms\n\tsucc [ %zu ], ds_size [ %zd ]\n", 
-                TIMES_FIND / pow(10, (int)log10(TIMES_FIND)),
-                (int)log10(TIMES_FIND),
-                TIMES_FIND_V_L / pow(10, (int)log10(TIMES_FIND_V_L)),
-                (int)log10(TIMES_FIND_V_L),
-                TIMES_FIND_V_L / pow(10, (int)log10(TIMES_FIND_V_L)),
-                (int)log10(TIMES_FIND_V_L),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_vector_s / 1000,
-                times_succ, ds_size);
+        printf("RESULT %s find %s %ld %ld ms succ=%zu ds_size=%zd\n", __func__, DS_NAME, (long)FIND_OPS, (long)(TIME_DS / 1000), times_succ, ds_size);
     }
 
     if (1) // if (0)
@@ -281,21 +298,7 @@ static void test_i_for(void)
         /* unsupport */
 #endif
 
-        printf("Remove  [ %.0f*10^%d times    ] [ hashmap | map | set | multimap | multiset | list(%.0f*10^%d) | vector(%.0f*10^%d) | pqueue ] \t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | unsupport ] ms\n\tremoved [ %zd ]\n", 
-                TIMES_REMOVE / pow(10, (int)log10(TIMES_REMOVE)),
-                (int)log10(TIMES_REMOVE),
-                TIMES_REMOVE_V_L / pow(10, (int)log10(TIMES_REMOVE_V_L)),
-                (int)log10(TIMES_REMOVE_V_L),
-                TIMES_REMOVE_V_L / pow(10, (int)log10(TIMES_REMOVE_V_L)),
-                (int)log10(TIMES_REMOVE_V_L),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                removed);
+        printf("RESULT %s remove %s %ld %ld ms removed=%zd\n", __func__, DS_NAME, (long)REMOVE_OPS, (long)(TIME_DS / 1000), removed);
     }
 
     if (1)
@@ -337,18 +340,7 @@ static void test_i_for(void)
         PRIORITY_QUEUE_DELETE(&ds_pqueue_i);
 #endif
 
-        printf("Deinit  [ %.0f*10^%d elements ] [ hashmap | map | set | multimap | multiset | list | vector | pqueue ] \t\t\t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld ] ms\n\tremoved [ %zd ]\n", 
-                TIMES_INSERT / pow(10, (int)log10(TIMES_INSERT)),
-                (int)log10(TIMES_INSERT),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_pqueue   / 1000,
-                removed);
+        printf("RESULT %s deinit %s %ld %ld ms removed=%zd\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(TIME_DS / 1000), removed);
     }
 
 }
@@ -365,6 +357,7 @@ static void test_i_rand(void)
     clock_t time_vector   = 0;
     clock_t time_vector_s = 0;
     clock_t time_pqueue   = 0;
+    TOUCH_TIMERS();
 
 #ifdef TEST_HASHMAP
     hashmap_t*        ds_hashmap_i  = HASHMAP_NEW_3(HASHMAP_CAPACITY_INIT, 0, 0.0);
@@ -434,17 +427,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("Insert  [ %.0f*10^%d elements ] [ hashmap | map | set | multimap | multiset | list | vector(push_back) | pqueue ] \t\t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld ] ms\n", 
-                TIMES_INSERT / pow(10, (int)log10(TIMES_INSERT)),
-                (int)log10(TIMES_INSERT),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_pqueue   / 1000);
+        printf("RESULT %s insert %s %ld %ld ms\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(TIME_DS / 1000));
     }
 
     if (1) // if (0)
@@ -460,73 +443,57 @@ static void test_i_rand(void)
         time_pqueue   = 0;
 
         size_t times_succ = 0;
-        void* it;
         ds_size_t ds_size;
 #ifdef TEST_HASHMAP
         ds_size = DSL(chashmap, size)(ds_hashmap_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(chashmap, find)(ds_hashmap_i, rand() % TIMES_FIND);
-            if (it && iterator_end() != it) times_succ++;
+            hashmap_iterator_t it = DSL(chashmap, find)(ds_hashmap_i, rand() % TIMES_FIND);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_hashmap);
 #elif TEST_MAP
         ds_size = DSL(cmap, size)(ds_map_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(cmap, find)(ds_map_i, rand() % TIMES_FIND);
-            if (it && iterator_end() != it) times_succ++;
+            map_iterator_t it = DSL(cmap, find)(ds_map_i, rand() % TIMES_FIND);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_map);
 #elif TEST_SET
         ds_size = DSL(cset, size)(ds_set_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(cset, find)(ds_set_i, rand() % TIMES_FIND);
-            if (it && iterator_end() != it) times_succ++;
+            set_iterator_t it = DSL(cset, find)(ds_set_i, rand() % TIMES_FIND);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_set);
 #elif TEST_MULTIMAP
         ds_size = DSL(cmultimap, size)(ds_multimap_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(cmultimap, find)(ds_multimap_i, rand() % TIMES_FIND);
-            if (it && iterator_end() != it) times_succ++;
+            multimap_iterator_t it = DSL(cmultimap, find)(ds_multimap_i, rand() % TIMES_FIND);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_multimap);
 #elif TEST_MULTISET
         ds_size = DSL(cmultiset, size)(ds_multiset_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-            it = DSL(cmultiset, find)(ds_multiset_i, rand() % TIMES_FIND);
-            if (it && iterator_end() != it) times_succ++;
+            multiset_iterator_t it = DSL(cmultiset, find)(ds_multiset_i, rand() % TIMES_FIND);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_multiset);
 #elif TEST_LIST
         ds_size = DSL(clist, size)(ds_list_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
-            it = DSL(clist, find)(ds_list_i, rand() % TIMES_FIND);
-            if (it && iterator_end() != it) times_succ++;
+            list_iterator_t it = DSL(clist, find)(ds_list_i, rand() % TIMES_FIND);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_list);
 #elif TEST_VECTOR
         ds_size = DSL(cvector, size)(ds_vector_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
-            it = DSL(cvector, find)(ds_vector_i, rand() % TIMES_FIND);
-            if (it && iterator_end() != it) times_succ++;
+            vector_iterator_t it = DSL(cvector, find)(ds_vector_i, rand() % TIMES_FIND);
+            if (it.d && iterator_end() != it.d) times_succ++;
         }, time_vector);
         GET_DURATION({ DSL(cvector, sort)(ds_vector_i, NULL); }, time_vector_s);
+        printf("RESULT %s sort %s %ld %ld ms\n", __func__, DS_NAME, (long)TIMES_FIND_V_L, (long)(time_vector_s / 1000));
 #elif TEST_PQUEUE
         ds_size = DSL(cpqueue, size)(ds_pqueue_i);
-        (void)it;
         /* unsupport */
 #endif
 
-        printf("Find    [ %.0f*10^%d times    ] [ hashmap | map | set | multimap | multiset | list(%.0f*10^%d) | vector(%.0f*10^%d) | vector_sort | pqueue ] \t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld | unsupport ] ms\n\tsucc [ %zu ], ds_size [ %zd ]\n", 
-                TIMES_FIND / pow(10, (int)log10(TIMES_FIND)),
-                (int)log10(TIMES_FIND),
-                TIMES_FIND_V_L / pow(10, (int)log10(TIMES_FIND_V_L)),
-                (int)log10(TIMES_FIND_V_L),
-                TIMES_FIND_V_L / pow(10, (int)log10(TIMES_FIND_V_L)),
-                (int)log10(TIMES_FIND_V_L),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_vector_s / 1000,
-                times_succ, ds_size);
+        printf("RESULT %s find %s %ld %ld ms succ=%zu ds_size=%zd\n", __func__, DS_NAME, (long)FIND_OPS, (long)(TIME_DS / 1000), times_succ, ds_size);
     }
 
     if (1) // if (0)
@@ -574,21 +541,7 @@ static void test_i_rand(void)
         /* unsupport */
 #endif
 
-        printf("Remove  [ %.0f*10^%d times    ] [ hashmap | map | set | multimap | multiset | list(%.0f*10^%d) | vector(%.0f*10^%d) | pqueue ] \t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | unsupport ] ms\n\tremoved [ %zd ]\n", 
-                TIMES_REMOVE / pow(10, (int)log10(TIMES_REMOVE)),
-                (int)log10(TIMES_REMOVE),
-                TIMES_REMOVE_V_L / pow(10, (int)log10(TIMES_REMOVE_V_L)),
-                (int)log10(TIMES_REMOVE_V_L),
-                TIMES_REMOVE_V_L / pow(10, (int)log10(TIMES_REMOVE_V_L)),
-                (int)log10(TIMES_REMOVE_V_L),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                removed);
+        printf("RESULT %s remove %s %ld %ld ms removed=%zd\n", __func__, DS_NAME, (long)REMOVE_OPS, (long)(TIME_DS / 1000), removed);
     }
 
     if (1)
@@ -630,18 +583,7 @@ static void test_i_rand(void)
         PRIORITY_QUEUE_DELETE(&ds_pqueue_i);
 #endif
 
-        printf("Deinit  [ %.0f*10^%d elements ] [ hashmap | map | set | multimap | multiset | list | vector | pqueue ] \t\t\t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld ] ms\n\tremoved [ %zd ]\n", 
-                TIMES_INSERT / pow(10, (int)log10(TIMES_INSERT)),
-                (int)log10(TIMES_INSERT),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_pqueue   / 1000,
-                removed);
+        printf("RESULT %s deinit %s %ld %ld ms removed=%zd\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(TIME_DS / 1000), removed);
     }
 }
 
@@ -671,6 +613,7 @@ static void test_s_rand(void)
     clock_t time_vector   = 0;
     clock_t time_vector_s = 0;
     clock_t time_pqueue   = 0;
+    TOUCH_TIMERS();
 
 #ifdef TEST_HASHMAP
     class_hashmap_ops_t tops_hashmap = {
@@ -781,17 +724,7 @@ static void test_s_rand(void)
 #endif
         }
 
-        printf("SInsert [ %.0f*10^%d elements ] [ hashmap | map | set | multimap | multiset | list | vector(push_back) | pqueue ] \t\t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld ] ms\n", 
-                TIMES_INSERT / pow(10, (int)log10(TIMES_INSERT)),
-                (int)log10(TIMES_INSERT),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_pqueue   / 1000);
+        printf("RESULT %s insert %s %ld %ld ms\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(TIME_DS / 1000));
     }
 
     if (1) // if (0)
@@ -807,7 +740,6 @@ static void test_s_rand(void)
         time_pqueue   = 0;
 
         size_t times_succ = 0;
-        void* it;
         ds_size_t ds_size;
 
 #if defined(TEST_LIST) || defined(TEST_VECTOR)
@@ -828,69 +760,54 @@ static void test_s_rand(void)
 #ifdef TEST_HASHMAP
             ds_size = DSL(chashmap, size)(ds_hashmap_s);
             GET_DURATION(for (int i = 0; i < NUM_BUF; ++i) {
-                it = DSL(chashmap, find)(ds_hashmap_s, (hashmap_key_t)(buffer[rand() % NUM_BUF]));
-                if (it && iterator_end() != it) times_succ++;
+                hashmap_iterator_t it = DSL(chashmap, find)(ds_hashmap_s, (hashmap_key_t)(buffer[rand() % NUM_BUF]));
+                if (it.d && iterator_end() != it.d) times_succ++;
             }, time_hashmap);
 #elif TEST_MAP
             ds_size = DSL(cmap, size)(ds_map_s);
             GET_DURATION(for (int i = 0; i < NUM_BUF; ++i) {
-                it = DSL(cmap, find)(ds_map_s, (map_key_t)(buffer[rand() % NUM_BUF]));
-                if (it && iterator_end() != it) times_succ++;
+                map_iterator_t it = DSL(cmap, find)(ds_map_s, (map_key_t)(buffer[rand() % NUM_BUF]));
+                if (it.d && iterator_end() != it.d) times_succ++;
             }, time_map);
 #elif TEST_SET
             ds_size = DSL(cset, size)(ds_set_s);
             GET_DURATION(for (int i = 0; i < NUM_BUF; ++i) {
-                it = DSL(cset, find)(ds_set_s, (set_key_t)(buffer[rand() % NUM_BUF]));
-                if (it && iterator_end() != it) times_succ++;
+                set_iterator_t it = DSL(cset, find)(ds_set_s, (set_key_t)(buffer[rand() % NUM_BUF]));
+                if (it.d && iterator_end() != it.d) times_succ++;
             }, time_set);
 #elif TEST_MULTIMAP
             ds_size = DSL(cmultimap, size)(ds_multimap_s);
             GET_DURATION(for (int i = 0; i < NUM_BUF; ++i) {
-                it = DSL(cmultimap, find)(ds_multimap_s, (multimap_key_t)(buffer[rand() % NUM_BUF]));
-                if (it && iterator_end() != it) times_succ++;
+                multimap_iterator_t it = DSL(cmultimap, find)(ds_multimap_s, (multimap_key_t)(buffer[rand() % NUM_BUF]));
+                if (it.d && iterator_end() != it.d) times_succ++;
             }, time_multimap);
 #elif TEST_MULTISET
             ds_size = DSL(cmultiset, size)(ds_multiset_s);
             GET_DURATION(for (int i = 0; i < NUM_BUF; ++i) {
-                it = DSL(cmultiset, find)(ds_multiset_s, (multiset_key_t)(buffer[rand() % NUM_BUF]));
-                if (it && iterator_end() != it) times_succ++;
+                multiset_iterator_t it = DSL(cmultiset, find)(ds_multiset_s, (multiset_key_t)(buffer[rand() % NUM_BUF]));
+                if (it.d && iterator_end() != it.d) times_succ++;
             }, time_multiset);
 #elif TEST_LIST
             ds_size = DSL(clist, size)(ds_list_s);
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
-                it = DSL(clist, find)(ds_list_s, (list_data_t)(buffer[rand() % NUM_BUF]));
-                if (it && iterator_end() != it) times_succ++;
+                list_iterator_t it = DSL(clist, find)(ds_list_s, (list_data_t)(buffer[rand() % NUM_BUF]));
+                if (it.d && iterator_end() != it.d) times_succ++;
             }, time_list);
 #elif TEST_VECTOR
             ds_size = DSL(cvector, size)(ds_vector_s);
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
-                it = DSL(cvector, find)(ds_vector_s, (vector_data_t)(buffer[rand() % NUM_BUF]));
-                if (it && iterator_end() != it) times_succ++;
+                vector_iterator_t it = DSL(cvector, find)(ds_vector_s, (vector_data_t)(buffer[rand() % NUM_BUF]));
+                if (it.d && iterator_end() != it.d) times_succ++;
             }, time_vector);
             GET_DURATION({ DSL(cvector, sort)(ds_vector_s, __ds_ops_lt_default_string); }, time_vector_s);
+            printf("RESULT %s sort %s %ld %ld ms\n", __func__, DS_NAME, (long)TIMES_FIND_V_L, (long)(time_vector_s / 1000));
 #elif TEST_PQUEUE
             ds_size = DSL(cpqueue, size)(ds_pqueue_s);
-            (void)it;
             /* unsupport */
 #endif
         }
 
-        printf("SFind   [ %.0f*10^%d times    ] [ hashmap | map | set | multimap | multiset | list(%.0f*10^%d) | vector(%.0f*10^%d) | vector_sort | pqueue ] \t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld | unsupport ] ms\n\tsucc [ %zu ], ds_size [ %zd ]\n", 
-                TIMES_FIND / pow(10, (int)log10(TIMES_FIND)),
-                (int)log10(TIMES_FIND),
-                TIMES_FIND_V_L / pow(10, (int)log10(TIMES_FIND_V_L)),
-                (int)log10(TIMES_FIND_V_L),
-                TIMES_FIND_V_L / pow(10, (int)log10(TIMES_FIND_V_L)),
-                (int)log10(TIMES_FIND_V_L),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_vector_s / 1000,
-                times_succ, ds_size);
+        printf("RESULT %s find %s %ld %ld ms succ=%zu ds_size=%zd\n", __func__, DS_NAME, (long)FIND_OPS, (long)(TIME_DS / 1000), times_succ, ds_size);
     }
 
     if (1) // if (0)
@@ -955,21 +872,7 @@ static void test_s_rand(void)
 #endif
         }
 
-        printf("SRemove [ %.0f*10^%d times    ] [ hashmap | map | set | multimap | multiset | list(%.0f*10^%d) | vector(%.0f*10^%d) | pqueue ] \t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | unsupport ] ms\n\tremoved [ %zd ]\n", 
-                TIMES_REMOVE / pow(10, (int)log10(TIMES_REMOVE)),
-                (int)log10(TIMES_REMOVE),
-                TIMES_REMOVE_V_L / pow(10, (int)log10(TIMES_REMOVE_V_L)),
-                (int)log10(TIMES_REMOVE_V_L),
-                TIMES_REMOVE_V_L / pow(10, (int)log10(TIMES_REMOVE_V_L)),
-                (int)log10(TIMES_REMOVE_V_L),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                removed);
+        printf("RESULT %s remove %s %ld %ld ms removed=%zd\n", __func__, DS_NAME, (long)REMOVE_OPS, (long)(TIME_DS / 1000), removed);
     }
 
     if (1)
@@ -1012,18 +915,7 @@ static void test_s_rand(void)
         PRIORITY_QUEUE_DELETE(&ds_pqueue_s);
 #endif
 
-        printf("SDeinit [ %.0f*10^%d elements ] [ hashmap | map | set | multimap | multiset | list | vector | pqueue ] \t\t\t\t\t= [ %ld | %ld | %ld | %ld | %ld | %ld | %ld | %ld ] ms\n\tremoved [ %zd ]\n", 
-                TIMES_INSERT / pow(10, (int)log10(TIMES_INSERT)),
-                (int)log10(TIMES_INSERT),
-                time_hashmap  / 1000,
-                time_map      / 1000,
-                time_set      / 1000,
-                time_multimap / 1000,
-                time_multiset / 1000,
-                time_list     / 1000,
-                time_vector   / 1000,
-                time_pqueue   / 1000,
-                removed);
+        printf("RESULT %s deinit %s %ld %ld ms removed=%zd\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(TIME_DS / 1000), removed);
     }
 }
 

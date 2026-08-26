@@ -1,5 +1,5 @@
 /*
-  Iterator Implementations
+  Iterator
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -17,16 +17,11 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <iterator/iterator_inter.h>
+#ifndef __J_ITERATOR_INTER_H
+#define __J_ITERATOR_INTER_H
 
-#if 0
-void* const iterator_end(void)
-{
-    return (void*)1;
-}
+#include <_compiler.h>
+static JDSC_INLINE_FORCE void* const iterator_end(void)  { return (void*)1; }
+static JDSC_INLINE_FORCE void* const iterator_rend(void) { return (void*)2; }
 
-void* const iterator_rend(void)
-{
-    return (void*)2;
-}
-#endif
+#endif /* __J_ITERATOR_INTER_H */

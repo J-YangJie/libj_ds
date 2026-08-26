@@ -29,10 +29,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/types.h>
-__attribute__((weak))   void* _p_malloc(size_t size)                { return malloc(size); }
-__attribute__((weak))   void* _p_calloc(size_t nmemb, size_t size)  { return calloc(nmemb, size); }
-__attribute__((weak))   void* _p_realloc(void* ptr, size_t size)    { return realloc(ptr, size); }
-__attribute__((weak))   void  _p_free(void** ptr)                   { if (NULL != ptr && NULL != *ptr) { free(*ptr); *ptr = NULL; } }
+#include <_compiler.h>
+JDSC_MEMFUNC_PREFIX     void* _p_malloc(size_t size)                { return malloc(size); }
+JDSC_MEMFUNC_PREFIX     void* _p_calloc(size_t nmemb, size_t size)  { return calloc(nmemb, size); }
+JDSC_MEMFUNC_PREFIX     void* _p_realloc(void* ptr, size_t size)    { return realloc(ptr, size); }
+JDSC_MEMFUNC_PREFIX     void  _p_free(void** ptr)                   { if (NULL != ptr && NULL != *ptr) { free(*ptr); *ptr = NULL; } }
 #define p_malloc(size)        _p_malloc((size))
 #define p_calloc(nmemb, size) _p_calloc((nmemb), (size))
 #define p_realloc(pold, size) _p_realloc((void*)(pold), (size))

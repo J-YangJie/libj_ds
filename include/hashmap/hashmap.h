@@ -21,9 +21,28 @@
 #define __J_HASH_MAP_H
 
 #include <hashmap/hashmap_ops.h>
+#include <iterator/iterator.h>
+
+typedef struct hashmap_iterator_kv {
+    union {
+        hashmap_key_t key;
+        char* skey;
+    };
+    union {
+        hashmap_value_t value;
+        char* svalue;
+    };
+    hashmap_hash_t hash;
+} hashmap_iterator_kv_t;
 
 typedef struct hashmap_iterator {
     union {
+        hashmap_iterator_kv_t* d;
+    };
+} hashmap_iterator_t;
+
+typedef struct hashmap_reverse_iterator_kv {
+    union {
         hashmap_key_t key;
         char* skey;
     };
@@ -32,18 +51,13 @@ typedef struct hashmap_iterator {
         char* svalue;
     };
     hashmap_hash_t hash;
-} hashmap_iterator_t;
+} hashmap_reverse_iterator_kv_t;
+typedef hashmap_reverse_iterator_kv_t hashmap_r_iterator_kv_t;
 
 typedef struct hashmap_reverse_iterator {
     union {
-        hashmap_key_t key;
-        char* skey;
+        hashmap_reverse_iterator_kv_t* d;
     };
-    union {
-        hashmap_value_t value;
-        char* svalue;
-    };
-    hashmap_hash_t hash;
 } hashmap_reverse_iterator_t;
 typedef hashmap_reverse_iterator_t hashmap_r_iterator_t;
 
@@ -63,18 +77,18 @@ hashmap_size_t        chashmap_size(const hashmap_t* _this);
 hashmap_bcount_t      chashmap_bucket_count(const hashmap_t* _this);
 hashmap_bcount_t      chashmap_bucket_valid_count(const hashmap_t* _this);
 hashmap_count_t       chashmap_count(const hashmap_t* _this, hashmap_key_t key);
-hashmap_iterator_t*   chashmap_end(const hashmap_t* _this);
-hashmap_iterator_t*   chashmap_begin(const hashmap_t* _this);
-hashmap_iterator_t*   chashmap_next(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-hashmap_iterator_t*   chashmap_prev(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-hashmap_r_iterator_t* chashmap_rend(const hashmap_t* _this);
-hashmap_r_iterator_t* chashmap_rbegin(const hashmap_t* _this);
-hashmap_r_iterator_t* chashmap_rnext(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-hashmap_r_iterator_t* chashmap_rprev(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-hashmap_iterator_t*   chashmap_find(const hashmap_t* _this, hashmap_key_t key);
-hashmap_iterator_t*   chashmap_insert(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
-hashmap_iterator_t*   chashmap_insert_replace(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
-hashmap_iterator_t*   chashmap_erase(hashmap_t* _this, hashmap_iterator_t* iterator);
+hashmap_iterator_t    chashmap_end(const hashmap_t* _this);
+hashmap_iterator_t    chashmap_begin(const hashmap_t* _this);
+hashmap_iterator_t    chashmap_next(const hashmap_t* _this, const hashmap_iterator_t iterator);
+hashmap_iterator_t    chashmap_prev(const hashmap_t* _this, const hashmap_iterator_t iterator);
+hashmap_r_iterator_t  chashmap_rend(const hashmap_t* _this);
+hashmap_r_iterator_t  chashmap_rbegin(const hashmap_t* _this);
+hashmap_r_iterator_t  chashmap_rnext(const hashmap_t* _this, const hashmap_r_iterator_t r_iterator);
+hashmap_r_iterator_t  chashmap_rprev(const hashmap_t* _this, const hashmap_r_iterator_t r_iterator);
+hashmap_iterator_t    chashmap_find(const hashmap_t* _this, hashmap_key_t key);
+hashmap_iterator_t    chashmap_insert(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
+hashmap_iterator_t    chashmap_insert_replace(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
+hashmap_iterator_t    chashmap_erase(hashmap_t* _this, hashmap_iterator_t iterator);
 hashmap_size_t        chashmap_remove(hashmap_t* _this, hashmap_key_t key);
 hashmap_size_t        chashmap_clear(hashmap_t* _this);
 
@@ -84,18 +98,18 @@ typedef struct class_hashmap {
     hashmap_bcount_t (*bucket_count)(const hashmap_t* _this);
     hashmap_bcount_t (*bucket_valid_count)(const hashmap_t* _this);
     hashmap_count_t (*count)(const hashmap_t* _this, hashmap_key_t key);
-    hashmap_iterator_t* (*end)(const hashmap_t* _this);
-    hashmap_iterator_t* (*begin)(const hashmap_t* _this);
-    hashmap_iterator_t* (*next)(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-    hashmap_iterator_t* (*prev)(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-    hashmap_r_iterator_t* (*rend)(const hashmap_t* _this);
-    hashmap_r_iterator_t* (*rbegin)(const hashmap_t* _this);
-    hashmap_r_iterator_t* (*rnext)(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-    hashmap_r_iterator_t* (*rprev)(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-    hashmap_iterator_t* (*find)(const hashmap_t* _this, hashmap_key_t key);
-    hashmap_iterator_t* (*insert)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);         /* if input key doesn't match -> insert | if input key match -> return NULL */
-    hashmap_iterator_t* (*insert_replace)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value); /* if input key doesn't match -> insert | if input key match -> replace value (Refer to C++11 a[key] = value) */
-    hashmap_iterator_t* (*erase)(hashmap_t* _this, hashmap_iterator_t* iterator);
+    hashmap_iterator_t (*end)(const hashmap_t* _this);
+    hashmap_iterator_t (*begin)(const hashmap_t* _this);
+    hashmap_iterator_t (*next)(const hashmap_t* _this, const hashmap_iterator_t iterator);
+    hashmap_iterator_t (*prev)(const hashmap_t* _this, const hashmap_iterator_t iterator);
+    hashmap_r_iterator_t (*rend)(const hashmap_t* _this);
+    hashmap_r_iterator_t (*rbegin)(const hashmap_t* _this);
+    hashmap_r_iterator_t (*rnext)(const hashmap_t* _this, const hashmap_r_iterator_t r_iterator);
+    hashmap_r_iterator_t (*rprev)(const hashmap_t* _this, const hashmap_r_iterator_t r_iterator);
+    hashmap_iterator_t (*find)(const hashmap_t* _this, hashmap_key_t key);
+    hashmap_iterator_t (*insert)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);         /* if input key doesn't match -> insert | if input key match -> return NULL */
+    hashmap_iterator_t (*insert_replace)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value); /* if input key doesn't match -> insert | if input key match -> replace value (Refer to C++11 a[key] = value) */
+    hashmap_iterator_t (*erase)(hashmap_t* _this, hashmap_iterator_t iterator);
     hashmap_size_t (*remove)(hashmap_t* _this, hashmap_key_t key);
     hashmap_size_t (*clear)(hashmap_t* _this);
 } class_hashmap_t;

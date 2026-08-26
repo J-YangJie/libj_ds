@@ -22,11 +22,12 @@
 #include <string.h>
 #include <_log.h>
 #include <_memory.h>
+#include <_compiler.h>
 #include <linux/_types.h>
 #include <linux/list.h>
 #include <linux/rbtree.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator.h>
+#include <iterator/iterator_inter.h>
 
 typedef struct bucket_node {
     bucket_key_t key;
@@ -63,12 +64,14 @@ typedef enum bucket_ds {
 #define bucket_hl_entry(ptr) hlist_entry((ptr), struct bucket_node, ds_node.hl_node)
 
 /* Size */
-static __always_inline bucket_size_t __bucket_size(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_size_t __bucket_size(const bucket_t* _this)
 {
     return _this->size;
 }
 
-static __always_inline bucket_size_t _bucket_size(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_size_t _bucket_size(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
@@ -78,12 +81,14 @@ static __always_inline bucket_size_t _bucket_size(const bucket_t* _this)
 
 
 /* End */
-static __always_inline bucket_node_t* __bucket_end(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_end(const bucket_t* _this)
 {
     return (bucket_node_t*)iterator_end();
 }
 
-static __always_inline bucket_node_t* __bucket_rend(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_rend(const bucket_t* _this)
 {
     return (bucket_node_t*)iterator_rend();
 }
@@ -91,43 +96,53 @@ static __always_inline bucket_node_t* __bucket_rend(const bucket_t* _this)
 
 
 /* iterator */
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_first(const bucket_t* _this)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_rb_first(const bucket_t* _this)
 {
     struct rb_node* t = rb_first(&_this->ds.rb);
     return is_null(t) ? NULL : bucket_rb_entry(t);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_last(const bucket_t* _this)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_rb_last(const bucket_t* _this)
 {
     struct rb_node* t = rb_last(&_this->ds.rb);
     return is_null(t) ? NULL : bucket_rb_entry(t);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_begin(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_rb_begin(const bucket_t* _this)
 {
-    bucket_node_t* t = __bucket_rb_first(_this);
+    bucket_node_t* t = ___bucket_rb_first(_this);
     return is_null(t) ? __bucket_end(_this) : t;
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_rb_begin(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_rb_begin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_rb_begin(_this);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_next(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_rb_next(const bucket_t* _this, const bucket_node_t* node)
 {
     struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->ds.rb) || __bucket_end(_this) == node)
-        return __bucket_end(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->ds.rb));
+    JDSC_ASSERT(__bucket_end(_this) != node);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(__bucket_end(_this) == node))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
 
-    if (unlikely(RB_EMPTY_NODE(&node->ds_node.rb_node)))
-        return NULL; /* Err: node(empty node) doesn't belong to current tree */
+    /* Err: node(empty node) doesn't belong to current tree */
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->ds_node.rb_node));
 
     /* The checking of parameter errors in `rb_next` has been replaced by `RB_EMPTY_NODE`.
        Therefore, when `rb_next` returns `NULL`, it means there are no next node. */
@@ -135,65 +150,82 @@ static /* __always_inline */ inline bucket_node_t* __bucket_rb_next(const bucket
     return is_null(t) ? __bucket_end(_this) : bucket_rb_entry(t);
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_rb_next(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_rb_next(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_rb_next(_this, node);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* __bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->ds.rb))
-        return __bucket_end(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->ds.rb));
 
-    if (__bucket_end(_this) == node)
-        return __bucket_rb_last(_this); /* Err: since the `ds` is non-empty, the return value 
+    if (unlikely(__bucket_end(_this) == node))
+        return ___bucket_rb_last(_this); /* Err: since the `ds` is non-empty, the return value 
                                                 includes the error case of `NULL` */
 
-    if (unlikely(RB_EMPTY_NODE(&node->ds_node.rb_node)))
-        return NULL; /* Err: node(empty node) doesn't belong to current tree */
+    /* Err: node(empty node) doesn't belong to current tree */
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->ds_node.rb_node));
 
     /* The checking of parameter errors in `rb_prev` has been replaced by `RB_EMPTY_NODE`.
        Therefore, when `rb_prev` returns `NULL`, it means there are no prev node. */
     t = rb_prev(&node->ds_node.rb_node);
-    return is_null(t) ? __bucket_end(_this) : bucket_rb_entry(t);
+    JDSC_ASSERT(!is_null(t));
+
+#if JDSC_ITERATOR_ERR_NULL
+    return is_null(t) ? NULL : bucket_rb_entry(t);
+#else
+    return bucket_rb_entry(t);
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_rb_prev(_this, node);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_rbegin(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_rb_rbegin(const bucket_t* _this)
 {
-    bucket_node_t* t = __bucket_rb_last(_this);
+    bucket_node_t* t = ___bucket_rb_last(_this);
     return is_null(t) ? __bucket_rend(_this) : t;
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_rb_rbegin(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_rb_rbegin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_rb_rbegin(_this);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->ds.rb) || __bucket_rend(_this) == node)
-        return __bucket_rend(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->ds.rb));
+    JDSC_ASSERT(__bucket_rend(_this) != node);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(__bucket_rend(_this) == node))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     /* The input parameter is `reverse_iterator`, and there's no need 
        to check whether it equals `end` */
 
-    if (unlikely(RB_EMPTY_NODE(&node->ds_node.rb_node)))
-        return NULL; /* Err: node(empty node) doesn't belong to current tree */
+    /* Err: node(empty node) doesn't belong to current tree */
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->ds_node.rb_node));
 
     /* The checking of parameter errors in `rb_prev` has been replaced by `RB_EMPTY_NODE`.
        Therefore, when `rb_prev` returns `NULL`, it means there are no next node. */
@@ -201,34 +233,43 @@ static /* __always_inline */ inline bucket_node_t* __bucket_rb_rnext(const bucke
     return is_null(t) ? __bucket_rend(_this) : bucket_rb_entry(t);
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_rb_rnext(_this, node);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* __bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->ds.rb))
-        return __bucket_rend(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->ds.rb));
 
-    if (__bucket_rend(_this) == node)
-        return __bucket_rb_first(_this); /* Err: since the `ds` is non-empty, the return value 
+    if (unlikely(__bucket_rend(_this) == node))
+        return ___bucket_rb_first(_this); /* Err: since the `ds` is non-empty, the return value 
                                                  includes the error case of `NULL` */
 
-    if (unlikely(RB_EMPTY_NODE(&node->ds_node.rb_node)))
-        return NULL; /* Err: node(empty node) doesn't belong to current tree */
+    /* Err: node(empty node) doesn't belong to current tree */
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->ds_node.rb_node));
 
     /* The checking of parameter errors in `rb_next` has been replaced by `RB_EMPTY_NODE`.
        Therefore, when `rb_next` returns `NULL`, it means there are no prev node. */
     t = rb_next(&node->ds_node.rb_node);
-    return is_null(t) ? __bucket_rend(_this) : bucket_rb_entry(t);
+    JDSC_ASSERT(!is_null(t));
+
+#if JDSC_ITERATOR_ERR_NULL
+    return is_null(t) ? NULL : bucket_rb_entry(t);
+#else
+    return bucket_rb_entry(t);
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
@@ -236,7 +277,8 @@ static /* __always_inline */ inline bucket_node_t* _bucket_rb_rprev(const bucket
 }
 
 
-static /* __always_inline */ inline bucket_node_t* __bucket_hl_first(const bucket_t* _this)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_hl_first(const bucket_t* _this)
 {
     struct hlist_node* t = _this->ds.hl.first;
 
@@ -245,7 +287,8 @@ static /* __always_inline */ inline bucket_node_t* __bucket_hl_first(const bucke
     return bucket_hl_entry(t);
 }
 
-static bucket_node_t* __bucket_hl_last(const bucket_t* _this)
+static JDSC_INLINE_POLICY JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_hl_last(const bucket_t* _this)
 {
     struct hlist_node* t = _this->ds.hl.first;
 
@@ -257,7 +300,8 @@ static bucket_node_t* __bucket_hl_last(const bucket_t* _this)
     return bucket_hl_entry(t);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_hl_begin(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_hl_begin(const bucket_t* _this)
 {
     struct hlist_node* t = _this->ds.hl.first;
 
@@ -266,19 +310,26 @@ static /* __always_inline */ inline bucket_node_t* __bucket_hl_begin(const bucke
     return bucket_hl_entry(t);
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_hl_begin(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_hl_begin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_hl_begin(_this);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_hl_next(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_hl_next(const bucket_t* _this, const bucket_node_t* node)
 {
     struct hlist_node* t;
 
-    if (hlist_empty(&_this->ds.hl) || __bucket_end(_this) == node)
-        return __bucket_end(_this);
+    JDSC_ASSERT(!hlist_empty(&_this->ds.hl));
+    JDSC_ASSERT(__bucket_end(_this) != node);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(__bucket_end(_this) == node))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
@@ -287,101 +338,131 @@ static /* __always_inline */ inline bucket_node_t* __bucket_hl_next(const bucket
     return is_null(t) ? __bucket_end(_this) : bucket_hl_entry(t);
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_hl_next(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_hl_next(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_hl_next(_this, node);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_hl_prev(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* __bucket_hl_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct hlist_node** t;
 
-    if (hlist_empty(&_this->ds.hl))
-        return __bucket_end(_this);
+    JDSC_ASSERT(!hlist_empty(&_this->ds.hl));
 
-    if (__bucket_end(_this) == node)
-        return __bucket_hl_last(_this); /* Err: since the `ds` is non-empty, the return value 
+    if (unlikely(__bucket_end(_this) == node))
+        return ___bucket_hl_last(_this); /* Err: since the `ds` is non-empty, the return value 
                                                 includes the error case of `NULL` */
 
     t = node->ds_node.hl_node.pprev;
-    if (unlikely(is_null(t) || &node->ds_node.hl_node != *t))
-        return NULL; /* Err: `node` doesn't belong to current list or memory has been modified illegally */
 
-    if (&_this->ds.hl.first == t)
-        return __bucket_end(_this);
+    /* Err: `node` doesn't belong to current list or memory has been modified illegally */
+    JDSC_ASSERT(!is_null(t) && &node->ds_node.hl_node == *t);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(is_null(t) || &node->ds_node.hl_node != *t))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
+    JDSC_ASSERT(&_this->ds.hl.first != t);
+
+#if JDSC_ITERATOR_ERR_NULL
+    return &_this->ds.hl.first == t ? NULL : bucket_hl_entry(((struct hlist_node*)t));
+#else
     return bucket_hl_entry(((struct hlist_node*)t));
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_hl_prev(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_hl_prev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_hl_prev(_this, node);
 }
 
-static bucket_node_t* __bucket_hl_rbegin(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_hl_rbegin(const bucket_t* _this)
 {
-    struct hlist_node* t = _this->ds.hl.first;
-
-    if (hlist_empty(&_this->ds.hl))
-        return __bucket_rend(_this);
-
-    /* TODO: it is not recommended to use this data structure to get rbegin when there are many nodes */
-    while (!is_null(t->next)) t = t->next;
-    return bucket_hl_entry(t);
+    bucket_node_t* t = ___bucket_hl_last(_this);
+    return is_null(t) ? __bucket_rend(_this) : t;
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_hl_rbegin(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_hl_rbegin(const bucket_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __bucket_hl_rbegin(_this);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* __bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     struct hlist_node** t;
 
-    if (hlist_empty(&_this->ds.hl) || __bucket_rend(_this) == node)
-        return __bucket_rend(_this);
+    JDSC_ASSERT(!hlist_empty(&_this->ds.hl));
+    JDSC_ASSERT(__bucket_rend(_this) != node);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(__bucket_rend(_this) == node))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     /* The input parameter is `reverse_iterator`, and there's no need 
        to check whether it equals `end` */
 
     t = node->ds_node.hl_node.pprev;
+
+    /* Err: `node` doesn't belong to current list or memory has been modified illegally */
+    JDSC_ASSERT(!is_null(t) && &node->ds_node.hl_node == *t);
+
+#if JDSC_ITERATOR_ERR_NULL
     if (unlikely(is_null(t) || &node->ds_node.hl_node != *t))
-        return NULL; /* Err: `node` doesn't belong to current list or memory has been modified illegally */
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     if (&_this->ds.hl.first == t)
         return __bucket_rend(_this);
     return bucket_hl_entry(((struct hlist_node*)t));
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __bucket_hl_rnext(_this, node);
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_hl_rprev(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* __bucket_hl_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     struct hlist_node* t;
 
-    if (hlist_empty(&_this->ds.hl))
-        return __bucket_rend(_this);
+    JDSC_ASSERT(!hlist_empty(&_this->ds.hl));
 
-    if (__bucket_rend(_this) == node)
-        return __bucket_hl_first(_this); /* Err: since the `ds` is non-empty, the return value 
+    if (unlikely(__bucket_rend(_this) == node))
+        return ___bucket_hl_first(_this); /* Err: since the `ds` is non-empty, the return value 
                                                  includes the error case of `NULL` */
 
     t = node->ds_node.hl_node.next;
-    return is_null(t) ? __bucket_rend(_this) : bucket_hl_entry(t);
+    JDSC_ASSERT(!is_null(t));
+
+#if JDSC_ITERATOR_ERR_NULL
+    return is_null(t) ? NULL : bucket_hl_entry(t);
+#else
+    return bucket_hl_entry(t);
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_hl_rprev(const bucket_t* _this, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_hl_rprev(const bucket_t* _this, const bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
@@ -389,119 +470,108 @@ static /* __always_inline */ inline bucket_node_t* _bucket_hl_rprev(const bucket
 }
 
 
-static /* __always_inline */ inline bucket_node_t* _bucket_first(const bucket_t* _this, bucket_ds_t type)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_first(const bucket_t* _this, bucket_ds_t type)
 {
     if (unlikely(is_null(_this)))
         return NULL;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
-        return __bucket_hl_first(_this);
-    case BKT_DS_RBTREE:
-        return __bucket_rb_first(_this);
-    default:
+    if (likely(BKT_DS_HLIST == type))
+        return ___bucket_hl_first(_this);
+    else if (BKT_DS_RBTREE == type)
+        return ___bucket_rb_first(_this);
+    else
         return NULL;
-    }
 }
 
-static /* __always_inline */ inline bucket_node_t* _bucket_last(const bucket_t* _this, bucket_ds_t type)
+static JDSC_INLINE_FORCE
+bucket_node_t* _bucket_last(const bucket_t* _this, bucket_ds_t type)
 {
     if (unlikely(is_null(_this)))
         return NULL;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
-        return __bucket_hl_last(_this);
-    case BKT_DS_RBTREE:
-        return __bucket_rb_last(_this);
-    default:
+    if (likely(BKT_DS_HLIST == type))
+        return ___bucket_hl_last(_this);
+    else if (BKT_DS_RBTREE == type)
+        return ___bucket_rb_last(_this);
+    else
         return NULL;
-    }
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_begin(const bucket_t* _this, bucket_ds_t type)
+static JDSC_INLINE_FORCE
+bucket_node_t* bucket_begin(const bucket_t* _this, bucket_ds_t type)
 {
-    if (likely(BKT_DS_HLIST == type)) {
+    if (likely(BKT_DS_HLIST == type))
         return _bucket_hl_begin(_this);
-    } else if (BKT_DS_RBTREE == type) {
+    else if (BKT_DS_RBTREE == type)
         return _bucket_rb_begin(_this);
-    } else {
+    else
         return NULL;
-    }
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_next(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* bucket_next(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
-    if (likely(BKT_DS_HLIST == type)) {
+    if (likely(BKT_DS_HLIST == type))
         return _bucket_hl_next(_this, node);
-    } else if (BKT_DS_RBTREE == type) {
+    else if (BKT_DS_RBTREE == type)
         return _bucket_rb_next(_this, node);
-    } else {
+    else
         return NULL;
-    }
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_prev(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* bucket_prev(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type))
         return _bucket_hl_prev(_this, node);
-    case BKT_DS_RBTREE:
+    else if (BKT_DS_RBTREE == type)
         return _bucket_rb_prev(_this, node);
-    default:
+    else
         return NULL;
-    }
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_rbegin(const bucket_t* _this, bucket_ds_t type)
+static JDSC_INLINE_FORCE
+bucket_node_t* bucket_rbegin(const bucket_t* _this, bucket_ds_t type)
 {
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type))
         return _bucket_hl_rbegin(_this);
-    case BKT_DS_RBTREE:
+    else if (BKT_DS_RBTREE == type)
         return _bucket_rb_rbegin(_this);
-    default:
+    else
         return NULL;
-    }
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_rnext(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* bucket_rnext(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type))
         return _bucket_hl_rnext(_this, node);
-    case BKT_DS_RBTREE:
+    else if (BKT_DS_RBTREE == type)
         return _bucket_rb_rnext(_this, node);
-    default:
+    else
         return NULL;
-    }
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_rprev(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* bucket_rprev(const bucket_t* _this, bucket_ds_t type, const bucket_node_t* node)
 {
-    switch (type)
-    {
-    case BKT_DS_HLIST:
+    if (likely(BKT_DS_HLIST == type))
         return _bucket_hl_rprev(_this, node);
-    case BKT_DS_RBTREE:
+    else if (BKT_DS_RBTREE == type)
         return _bucket_rb_rprev(_this, node);
-    default:
+    else
         return NULL;
-    }
 }
 
 
 
 /* Find */
-static bucket_node_t* __bucket_rb_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_rb_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     struct rb_node* n = _this->ds.rb.rb_node;
-    bucket_node_t* t = NULL;
+    bucket_node_t* t;
 
     if (is_null(ops) || is_null(ops->__lt)) {
         while (!is_null(n)) {
@@ -530,7 +600,8 @@ static bucket_node_t* __bucket_rb_find(const bucket_t* _this, const class_bucket
     return NULL;
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_hl_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
+static JDSC_INLINE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_hl_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     bucket_node_t* t = NULL;
     struct hlist_node* thl = NULL;
@@ -554,31 +625,29 @@ static /* __always_inline */ inline bucket_node_t* __bucket_hl_find(const bucket
     return NULL;
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* bucket_find(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
 {
     bucket_node_t* t = NULL;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(ops) && !is_null(ops->valid_key) && !ops->valid_key(key))
+    if (unlikely(!is_null(ops) && !is_null(ops->valid_key) && !ops->valid_key(key)))
         return NULL;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
-        t = __bucket_hl_find(_this, ops, key);
-        break;
-    case BKT_DS_RBTREE:
-        t = __bucket_rb_find(_this, ops, key);
-        break;
-    default:
+    if (likely(BKT_DS_HLIST == type)) {
+        t = ___bucket_hl_find(_this, ops, key);
+    } else if (BKT_DS_RBTREE == type) {
+        t = ___bucket_rb_find(_this, ops, key);
+    } else {
         return NULL;
     }
     return is_null(t) ? __bucket_end(_this) : t;
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_find_has_checked_valid(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* bucket_find_has_checked_valid(const bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
 {
     bucket_node_t* t = NULL;
 
@@ -586,9 +655,9 @@ static /* __always_inline */ inline bucket_node_t* bucket_find_has_checked_valid
         return NULL;
 
     if (likely(BKT_DS_HLIST == type)) {
-        t = __bucket_hl_find(_this, ops, key);
+        t = ___bucket_hl_find(_this, ops, key);
     } else if (BKT_DS_RBTREE == type) {
-        t = __bucket_rb_find(_this, ops, key);
+        t = ___bucket_rb_find(_this, ops, key);
     } else {
         return NULL;
     }
@@ -598,11 +667,12 @@ static /* __always_inline */ inline bucket_node_t* bucket_find_has_checked_valid
 
 
 /* Add */
-static bucket_node_t* __bucket_rb_insert(bucket_t* _this, const class_bucket_ops_t* ops, bucket_node_t* node)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_rb_insert(bucket_t* _this, const class_bucket_ops_t* ops, bucket_node_t* node)
 {
     struct rb_node** n = &_this->ds.rb.rb_node;
     struct rb_node* parent = NULL;
-    bucket_node_t* t = NULL;
+    bucket_node_t* t;
 
     if (is_null(ops) || is_null(ops->__lt)) {
         while (!is_null(*n)) {
@@ -636,28 +706,31 @@ static bucket_node_t* __bucket_rb_insert(bucket_t* _this, const class_bucket_ops
     return node;
 }
 
-static /* __always_inline */ inline bucket_node_t* __bucket_hl_push_front(bucket_t* _this, bucket_node_t* node)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_hl_push_front(bucket_t* _this, bucket_node_t* node)
 {
     hlist_add_head(&node->ds_node.hl_node, &_this->ds.hl);
     _this->size++;
     return node;
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_insert_has_checked_same(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* bucket_insert_has_checked_same(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
 
     if (likely(BKT_DS_HLIST == type)) {
-        return __bucket_hl_push_front(_this, node);
+        return ___bucket_hl_push_front(_this, node);
     } else if (BKT_DS_RBTREE == type) {
-        return __bucket_rb_insert(_this, ops, node);
+        return ___bucket_rb_insert(_this, ops, node);
     } else {
         return NULL;
     }
 }
 
-static inline bucket_node_t* bucket_insert(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
+static
+bucket_node_t* bucket_insert(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
     bucket_node_t* t = NULL;
     bucket_node_t* ret = NULL;
@@ -665,15 +738,15 @@ static inline bucket_node_t* bucket_insert(bucket_t* _this, const class_bucket_o
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(ops) && !is_null(ops->valid_value) && !ops->valid_value(value))
+    if (unlikely(!is_null(ops) && !is_null(ops->valid_value) && !ops->valid_value(value)))
         return NULL;
 
-    if (BKT_DS_RBTREE != type) {
+    if (likely(BKT_DS_RBTREE != type)) {
         t = bucket_find(_this, ops, type, key);
         if (is_null(t) || __bucket_end(_this) != t)
             return NULL;
     } else {
-        if (!is_null(ops) && !is_null(ops->valid_key) && !ops->valid_key(key))
+        if (unlikely(!is_null(ops) && !is_null(ops->valid_key) && !ops->valid_key(key)))
             return NULL;
     }
 
@@ -684,47 +757,43 @@ static inline bucket_node_t* bucket_insert(bucket_t* _this, const class_bucket_o
     if (is_null(ops) || is_null(ops->copy_key)) {
         t->key = key;
     } else {
-        if (!ops->copy_key(key, &t->key))
-            goto err;
+        if (unlikely(!ops->copy_key(key, &t->key)))
+            goto err_key;
     }
 
     if (is_null(ops) || is_null(ops->copy_value)) {
         t->value = value;
     } else {
-        if (!ops->copy_value(value, &t->value))
-            goto err;
+        if (unlikely(!ops->copy_value(value, &t->value)))
+            goto err_value;
     }
 
     t->hash = hash;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
-        ret = __bucket_hl_push_front(_this, t);
-        break;
-    case BKT_DS_RBTREE:
-        ret = __bucket_rb_insert(_this, ops, t);
-        break;
-    default:
+    if (likely(BKT_DS_HLIST == type)) {
+        ret = ___bucket_hl_push_front(_this, t);
+    } else if (BKT_DS_RBTREE == type) {
+        ret = ___bucket_rb_insert(_this, ops, t);
+    } else {
         ret = NULL;
-        break;
     }
-    if (t != ret)
+    if (unlikely(t != ret))
         goto err;
     return t;
 
 err:
     if (!is_null(ops) && !is_null(ops->free_value))
         ops->free_value(&t->value);
-
+err_value:
     if (!is_null(ops) && !is_null(ops->free_key))
         ops->free_key(&t->key);
-
+err_key:
     p_free(t);
     return NULL;
 }
 
-static inline bucket_node_t* bucket_insert_has_checked_valid(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
+static JDSC_INLINE_POLICY
+bucket_node_t* bucket_insert_has_checked_valid(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
     bucket_node_t* t = NULL;
     bucket_node_t* ret = NULL;
@@ -746,22 +815,22 @@ static inline bucket_node_t* bucket_insert_has_checked_valid(bucket_t* _this, co
         t->key = key;
     } else {
         if (unlikely(!ops->copy_key(key, &t->key)))
-            goto err;
+            goto err_key;
     }
 
     if (is_null(ops) || is_null(ops->copy_value)) {
         t->value = value;
     } else {
         if (unlikely(!ops->copy_value(value, &t->value)))
-            goto err;
+            goto err_value;
     }
 
     t->hash = hash;
 
     if (likely(BKT_DS_HLIST == type)) {
-        ret = __bucket_hl_push_front(_this, t);
+        ret = ___bucket_hl_push_front(_this, t);
     } else if (BKT_DS_RBTREE == type) {
-        ret = __bucket_rb_insert(_this, ops, t);
+        ret = ___bucket_rb_insert(_this, ops, t);
     } else {
         ret = NULL;
     }
@@ -772,15 +841,16 @@ static inline bucket_node_t* bucket_insert_has_checked_valid(bucket_t* _this, co
 err:
     if (!is_null(ops) && !is_null(ops->free_value))
         ops->free_value(&t->value);
-
+err_value:
     if (!is_null(ops) && !is_null(ops->free_key))
         ops->free_key(&t->key);
-
+err_key:
     p_free(t);
     return NULL;
 }
 
-static inline bucket_node_t* bucket_insert_replace(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
+static
+bucket_node_t* bucket_insert_replace(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
     bucket_node_t* t = NULL;
     bucket_node_t* ret = NULL;
@@ -788,11 +858,11 @@ static inline bucket_node_t* bucket_insert_replace(bucket_t* _this, const class_
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(ops) && !is_null(ops->valid_value) && !ops->valid_value(value))
+    if (unlikely(!is_null(ops) && !is_null(ops->valid_value) && !ops->valid_value(value)))
         return NULL;
 
     t = bucket_find(_this, ops, type, key);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return NULL;
 
     if (__bucket_end(_this) != t) {
@@ -801,12 +871,12 @@ static inline bucket_node_t* bucket_insert_replace(bucket_t* _this, const class_
         if (is_null(ops) || is_null(ops->copy_value)) {
             t->value = value;
         } else {
-            if (!ops->copy_value(value, &t->value)) {
+            if (unlikely(!ops->copy_value(value, &t->value))) {
                 t->value = tvalue;
                 return NULL;
             }
 
-            if (!is_null(ops->free_value))
+            if (likely(!is_null(ops->free_value)))
                 ops->free_value(&tvalue);
         }
 
@@ -820,47 +890,43 @@ static inline bucket_node_t* bucket_insert_replace(bucket_t* _this, const class_
     if (is_null(ops) || is_null(ops->copy_key)) {
         t->key = key;
     } else {
-        if (!ops->copy_key(key, &t->key))
-            goto err;
+        if (unlikely(!ops->copy_key(key, &t->key)))
+            goto err_key;
     }
 
     if (is_null(ops) || is_null(ops->copy_value)) {
         t->value = value;
     } else {
-        if (!ops->copy_value(value, &t->value))
-            goto err;
+        if (unlikely(!ops->copy_value(value, &t->value)))
+            goto err_value;
     }
 
     t->hash = hash;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
-        ret = __bucket_hl_push_front(_this, t);
-        break;
-    case BKT_DS_RBTREE:
-        ret = __bucket_rb_insert(_this, ops, t);
-        break;
-    default:
+    if (likely(BKT_DS_HLIST == type)) {
+        ret = ___bucket_hl_push_front(_this, t);
+    } else if (BKT_DS_RBTREE == type) {
+        ret = ___bucket_rb_insert(_this, ops, t);
+    } else {
         ret = NULL;
-        break;
     }
-    if (t != ret)
+    if (unlikely(t != ret))
         goto err;
     return t;
 
 err:
     if (!is_null(ops) && !is_null(ops->free_value))
         ops->free_value(&t->value);
-
+err_value:
     if (!is_null(ops) && !is_null(ops->free_key))
         ops->free_key(&t->key);
-
+err_key:
     p_free(t);
     return NULL;
 }
 
-static inline bucket_node_t* bucket_insert_replace_has_checked_valid(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
+static JDSC_INLINE_POLICY
+bucket_node_t* bucket_insert_replace_has_checked_valid(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
     bucket_node_t* t = NULL;
     bucket_node_t* ret = NULL;
@@ -898,22 +964,22 @@ static inline bucket_node_t* bucket_insert_replace_has_checked_valid(bucket_t* _
         t->key = key;
     } else {
         if (unlikely(!ops->copy_key(key, &t->key)))
-            goto err;
+            goto err_key;
     }
 
     if (is_null(ops) || is_null(ops->copy_value)) {
         t->value = value;
     } else {
         if (unlikely(!ops->copy_value(value, &t->value)))
-            goto err;
+            goto err_value;
     }
 
     t->hash = hash;
 
     if (likely(BKT_DS_HLIST == type)) {
-        ret = __bucket_hl_push_front(_this, t);
+        ret = ___bucket_hl_push_front(_this, t);
     } else if (BKT_DS_RBTREE == type) {
-        ret = __bucket_rb_insert(_this, ops, t);
+        ret = ___bucket_rb_insert(_this, ops, t);
     } else {
         ret = NULL;
     }
@@ -924,10 +990,10 @@ static inline bucket_node_t* bucket_insert_replace_has_checked_valid(bucket_t* _
 err:
     if (!is_null(ops) && !is_null(ops->free_value))
         ops->free_value(&t->value);
-
+err_value:
     if (!is_null(ops) && !is_null(ops->free_key))
         ops->free_key(&t->key);
-
+err_key:
     p_free(t);
     return NULL;
 }
@@ -935,7 +1001,8 @@ err:
 
 
 /* Remove */
-static /* __always_inline */ inline bucket_node_t* __bucket_rb_erase(bucket_t* _this, bucket_node_t* pos)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+bucket_node_t* ___bucket_rb_erase(bucket_t* _this, bucket_node_t* pos)
 {
     rb_erase(&pos->ds_node.rb_node, &_this->ds.rb);
     rb_init_node(&pos->ds_node.rb_node);
@@ -943,7 +1010,8 @@ static /* __always_inline */ inline bucket_node_t* __bucket_rb_erase(bucket_t* _
     return pos;
 }
 
-static inline bucket_node_t* bucket_rb_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_node_t* pos)
+static JDSC_INLINE_POLICY
+bucket_node_t* bucket_rb_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_node_t* pos)
 {
     bucket_node_t* t;
 
@@ -959,7 +1027,7 @@ static inline bucket_node_t* bucket_rb_erase(bucket_t* _this, const class_bucket
     if (unlikely(is_null(t)))
         return NULL;
 
-    __bucket_rb_erase(_this, pos);
+    ___bucket_rb_erase(_this, pos);
 
     if (!is_null(ops) && !is_null(ops->free_key))
         ops->free_key(&pos->key);
@@ -972,13 +1040,15 @@ static inline bucket_node_t* bucket_rb_erase(bucket_t* _this, const class_bucket
     return t;
 }
 
-static /* __always_inline */ inline void __bucket_hl_erase(bucket_t* _this, bucket_node_t* pos)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+void ___bucket_hl_erase(bucket_t* _this, bucket_node_t* pos)
 {
     hlist_del_init(&pos->ds_node.hl_node);
     _this->size--;
 }
 
-static inline bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_node_t* pos)
+static JDSC_INLINE_POLICY
+bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_node_t* pos)
 {
     bucket_node_t* t;
 
@@ -992,7 +1062,7 @@ static inline bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket
 
     t = __bucket_hl_next(_this, pos); /* Never return `NULL` */
 
-    __bucket_hl_erase(_this, pos);
+    ___bucket_hl_erase(_this, pos);
 
     if (!is_null(ops) && !is_null(ops->free_key))
         ops->free_key(&pos->key);
@@ -1005,7 +1075,8 @@ static inline bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket
     return t;
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* pos)
+static JDSC_INLINE_FORCE
+bucket_node_t* bucket_erase(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_node_t* pos)
 {
     if (likely(BKT_DS_HLIST == type)) {
         return bucket_hl_erase(_this, ops, pos);
@@ -1016,7 +1087,8 @@ static /* __always_inline */ inline bucket_node_t* bucket_erase(bucket_t* _this,
     }
 }
 
-static inline bucket_size_t bucket_remove(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
+static
+bucket_size_t bucket_remove(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
 {
     bucket_node_t* t;
 
@@ -1024,21 +1096,17 @@ static inline bucket_size_t bucket_remove(bucket_t* _this, const class_bucket_op
         return -1;
 
     t = bucket_find(_this, ops, type, key);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return -1;
 
     if (__bucket_end(_this) == t)
         return 0;
 
-    switch (type)
-    {
-    case BKT_DS_HLIST:
-        __bucket_hl_erase(_this, t); /* Always right */
-        break;
-    case BKT_DS_RBTREE:
-        __bucket_rb_erase(_this, t); /* Always right */
-        break;
-    default:
+    if (likely(BKT_DS_HLIST == type)) {
+        ___bucket_hl_erase(_this, t); /* Always right */
+    } else if (BKT_DS_RBTREE == type) {
+        ___bucket_rb_erase(_this, t); /* Always right */
+    } else {
         return -1;
     }
 
@@ -1053,7 +1121,8 @@ static inline bucket_size_t bucket_remove(bucket_t* _this, const class_bucket_op
     return 1;
 }
 
-static inline bucket_size_t bucket_remove_has_checked_valid(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
+static JDSC_INLINE_POLICY
+bucket_size_t bucket_remove_has_checked_valid(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
 {
     bucket_node_t* t;
 
@@ -1068,9 +1137,9 @@ static inline bucket_size_t bucket_remove_has_checked_valid(bucket_t* _this, con
         return 0;
 
     if (likely(BKT_DS_HLIST == type)) {
-        __bucket_hl_erase(_this, t); /* Always right */
+        ___bucket_hl_erase(_this, t); /* Always right */
     } else if (BKT_DS_RBTREE == type) {
-        __bucket_rb_erase(_this, t); /* Always right */
+        ___bucket_rb_erase(_this, t); /* Always right */
     } else {
         return -1;
     }
@@ -1089,7 +1158,8 @@ static inline bucket_size_t bucket_remove_has_checked_valid(bucket_t* _this, con
 
 
 /* Pop */
-static /* __always_inline */ inline bucket_node_t* bucket_rb_pop(bucket_t* _this, bucket_node_t* pos)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* bucket_rb_pop(bucket_t* _this, bucket_node_t* pos)
 {
     bucket_node_t* t;
 
@@ -1098,19 +1168,20 @@ static /* __always_inline */ inline bucket_node_t* bucket_rb_pop(bucket_t* _this
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
-    if (RB_EMPTY_ROOT(&_this->ds.rb) || __bucket_end(_this) == pos/* || __bucket_rend(_this) == pos*/)
+    if (unlikely(RB_EMPTY_ROOT(&_this->ds.rb) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
     t = __bucket_rb_next(_this, pos);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return NULL;
 
-    __bucket_rb_erase(_this, pos);
+    ___bucket_rb_erase(_this, pos);
 
     return t;
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_hl_pop(bucket_t* _this, bucket_node_t* pos)
+static JDSC_INLINE_FORCE_POLICY
+bucket_node_t* bucket_hl_pop(bucket_t* _this, bucket_node_t* pos)
 {
     bucket_node_t* t;
 
@@ -1119,17 +1190,18 @@ static /* __always_inline */ inline bucket_node_t* bucket_hl_pop(bucket_t* _this
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
-    if (hlist_empty(&_this->ds.hl) || __bucket_end(_this) == pos/* || __bucket_rend(_this) == pos*/)
+    if (unlikely(hlist_empty(&_this->ds.hl) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
     t = __bucket_hl_next(_this, pos); /* Never return `NULL` */
 
-    __bucket_hl_erase(_this, pos);
+    ___bucket_hl_erase(_this, pos);
 
     return t;
 }
 
-static /* __always_inline */ inline bucket_node_t* bucket_pop(bucket_t* _this, bucket_ds_t type, bucket_node_t* pos)
+static JDSC_INLINE_FORCE
+bucket_node_t* bucket_pop(bucket_t* _this, bucket_ds_t type, bucket_node_t* pos)
 {
     if (likely(BKT_DS_HLIST == type)) {
         return bucket_hl_pop(_this, pos);
@@ -1143,10 +1215,11 @@ static /* __always_inline */ inline bucket_node_t* bucket_pop(bucket_t* _this, b
 
 
 /* Clear */
-static bucket_size_t bucket_rb_clear(bucket_t* _this, const class_bucket_ops_t* ops)
+static
+bucket_size_t bucket_rb_clear(bucket_t* _this, const class_bucket_ops_t* ops)
 {
     bucket_size_t ret = 0;
-    bucket_node_t* t = NULL;
+    bucket_node_t* t;
 
     if (unlikely(is_null(_this)))
         return -1;
@@ -1159,7 +1232,8 @@ static bucket_size_t bucket_rb_clear(bucket_t* _this, const class_bucket_ops_t* 
     return ret;
 }
 
-static bucket_size_t bucket_hl_clear(bucket_t* _this, const class_bucket_ops_t* ops)
+static
+bucket_size_t bucket_hl_clear(bucket_t* _this, const class_bucket_ops_t* ops)
 {
     bucket_size_t ret = 0;
     bucket_node_t* t = NULL;
@@ -1170,7 +1244,7 @@ static bucket_size_t bucket_hl_clear(bucket_t* _this, const class_bucket_ops_t* 
         return -1;
 
     hlist_for_each_entry_safe(t, p, n, &_this->ds.hl, ds_node.hl_node) {
-        __bucket_hl_erase(_this, t);
+        ___bucket_hl_erase(_this, t);
 
         if (!is_null(ops) && !is_null(ops->free_key))
             ops->free_key(&t->key);
@@ -1185,7 +1259,8 @@ static bucket_size_t bucket_hl_clear(bucket_t* _this, const class_bucket_ops_t* 
     return ret;
 }
 
-static /* __always_inline */ inline bucket_size_t bucket_clear(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type)
+static JDSC_INLINE_FORCE_POLICY
+bucket_size_t bucket_clear(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type)
 {
     bucket_size_t ret;
     bucket_size_t size = _bucket_size(_this);
@@ -1198,6 +1273,7 @@ static /* __always_inline */ inline bucket_size_t bucket_clear(bucket_t* _this, 
         ret = -1;
     }
 
+    JDSC_ASSERT(size == ret);
     if (unlikely(size != ret))
         pr_err("After clearing bucket, errors were discovered [ %zd | %zd ]", ret, size);
     return ret;
@@ -1206,7 +1282,8 @@ static /* __always_inline */ inline bucket_size_t bucket_clear(bucket_t* _this, 
 
 
 /* Init */
-static __always_inline void __bucket_init(bucket_t* bucket, bucket_ds_t type)
+static JDSC_INLINE_FORCE
+void __bucket_init(bucket_t* bucket, bucket_ds_t type)
 {
     bucket->size = 0;
 
@@ -1221,12 +1298,14 @@ static __always_inline void __bucket_init(bucket_t* bucket, bucket_ds_t type)
 #endif
 }
 
-static __always_inline void __bucket_deinit_without_clear(bucket_t* bucket, bucket_ds_t type)
+static JDSC_INLINE_FORCE
+void __bucket_deinit_without_clear(bucket_t* bucket, bucket_ds_t type)
 {
     __bucket_init(bucket, type);
 }
 
-static __always_inline void __bucket_deinit(bucket_t* bucket, const class_bucket_ops_t* ops, bucket_ds_t type)
+static JDSC_INLINE_FORCE
+void __bucket_deinit(bucket_t* bucket, const class_bucket_ops_t* ops, bucket_ds_t type)
 {
     bucket_clear(bucket, ops, type);
     __bucket_deinit_without_clear(bucket, type);
@@ -1235,19 +1314,23 @@ static __always_inline void __bucket_deinit(bucket_t* bucket, const class_bucket
 
 
 /* For hashmap */
-static __always_inline bool __bucket_empty(const bucket_t* _this)
+static JDSC_INLINE_FORCE
+bool __bucket_empty(const bucket_t* _this)
 {
     return is_null(_this->ds.p); /* TODO: Current approach is for performance, only works in this version */
 }
 
-static inline void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type_from, bucket_ds_t type_to)
+static
+void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type_from, bucket_ds_t type_to)
 {
     bucket_t tmp; __bucket_init(&tmp, type_to);
     bucket_size_t size = __bucket_size(_this);
     bucket_node_t* bkt_node;
+    const bool t2l = BKT_DS_RBTREE == type_from && BKT_DS_HLIST == type_to;
 
     while (!__bucket_empty(_this)) {
-        bkt_node = bucket_begin(_this, type_from);
+        bkt_node = t2l ? bucket_rbegin(_this, type_from)
+                       : bucket_begin(_this, type_from);
         bucket_pop(_this, type_from, bkt_node);
         bucket_insert_has_checked_same(&tmp, ops, type_to, bkt_node);
     }
@@ -1266,13 +1349,15 @@ static inline void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* op
         return ; /* Segment fault: may occur */
     }
 
+    JDSC_ASSERT(size == tmp.size);
     if (unlikely(size != tmp.size))
         pr_err("After switching bucket, errors were discovered [ %zd | %zd ] and forcibly corrected!", tmp.size, size);
 
     _this->size = tmp.size;
 }
 
-static __always_inline void __bucket_resume(bucket_t* _this, bucket_ds_t type)
+static JDSC_INLINE_FORCE
+void __bucket_resume(bucket_t* _this, bucket_ds_t type)
 {
     struct hlist_head* hh = &_this->ds.hl;
     if (likely(BKT_DS_HLIST == type)/* && hh->first */) { /* TODO: Current approach is for performance, only works in this version */
@@ -1401,17 +1486,20 @@ const class_bucket_priv_t* class_bucket_priv_ins(void);
 /* Macros */ /* TODO: Current approach is for performance, only works in this version */
 #define ___hmbucket_type(p_bsh) ((p_bsh)->ds.p ? ((p_bsh)->ds.rb.rb_node->rb_parent_color & 1) : BKT_DS_HLIST)
 
-static __always_inline bool ___hmbucket_is_tree(const bucket_shell_t* p)
+static JDSC_INLINE_FORCE
+bool ___hmbucket_is_tree(const bucket_shell_t* p)
 {
     return p->ds.p && (p->ds.rb.rb_node->rb_parent_color & 1); /* TODO: Current approach is for performance, only works in this version */
 }
 
-static __always_inline bool ___hmbucket_valid(const bucket_shell_t* p)
+static JDSC_INLINE_FORCE
+bool ___hmbucket_valid(const bucket_shell_t* p)
 {
     return p->ds.p;
 }
 
-static __always_inline bool ___hmbucket_invalid(const bucket_shell_t* p)
+static JDSC_INLINE_FORCE
+bool ___hmbucket_invalid(const bucket_shell_t* p)
 {
     return !p->ds.p;
 }
@@ -1421,77 +1509,92 @@ static __always_inline bool ___hmbucket_invalid(const bucket_shell_t* p)
 #define __hmbucket_invalid(sh) ___hmbucket_invalid(&(sh))
 
 /* Interface: bucket shell */
-static __always_inline bucket_size_t _shbucket_size(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_size_t _shbucket_size(const bucket_shell_t* bucket_sh)
 {
     return _bucket_size(bucket_sh);
 }
 
-static __always_inline bucket_node_t* __shbucket_end(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* __shbucket_end(const bucket_shell_t* bucket_sh)
 {
     return __bucket_end(bucket_sh);
 }
 
-static __always_inline bucket_node_t* shbucket_begin(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_begin(const bucket_shell_t* bucket_sh)
 {
     return bucket_begin(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
-static __always_inline bucket_node_t* shbucket_next(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_next(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
     return bucket_next(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* shbucket_prev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_prev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
     return bucket_prev(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* __shbucket_rend(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* __shbucket_rend(const bucket_shell_t* bucket_sh)
 {
     return __bucket_rend(bucket_sh);
 }
 
-static __always_inline bucket_node_t* shbucket_rbegin(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_rbegin(const bucket_shell_t* bucket_sh)
 {
     return bucket_rbegin(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
-static __always_inline bucket_node_t* shbucket_rnext(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_rnext(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
     return bucket_rnext(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* shbucket_rprev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_rprev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
     return bucket_rprev(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* shbucket_find(const bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_find(const bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     return bucket_find(bucket_sh, ops, ___hmbucket_type(bucket_sh), key);
 }
 
-static __always_inline bucket_node_t* shbucket_insert(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_insert(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
     return bucket_insert(bucket_sh, ops, ___hmbucket_type(bucket_sh), hash, key, value);
 }
 
-static __always_inline bucket_node_t* shbucket_insert_replace(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_insert_replace(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
     return bucket_insert_replace(bucket_sh, ops, ___hmbucket_type(bucket_sh), hash, key, value);
 }
 
-static __always_inline bucket_node_t* shbucket_erase(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* pos)
+static JDSC_INLINE_FORCE
+bucket_node_t* shbucket_erase(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* pos)
 {
     return bucket_erase(bucket_sh, ops, ___hmbucket_type(bucket_sh), pos);
 }
 
-static __always_inline bucket_size_t shbucket_remove(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
+static JDSC_INLINE_FORCE
+bucket_size_t shbucket_remove(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     return bucket_remove(bucket_sh, ops, ___hmbucket_type(bucket_sh), key);
 }
 
-static __always_inline bucket_size_t shbucket_clear(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops)
+static JDSC_INLINE_FORCE
+bucket_size_t shbucket_clear(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops)
 {
     return bucket_clear(bucket_sh, ops, ___hmbucket_type(bucket_sh));
 }
@@ -1509,7 +1612,7 @@ typedef bucket_iterator_t* (*shfp_insert)(bucket_shell_t* bucket_sh, const class
 typedef bucket_iterator_t* (*shfp_insert_replace)(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value);
 typedef bucket_iterator_t* (*shfp_erase)(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_iterator_t* iterator);
 
-/* __always_inline */ inline const class_bucket_t* class_bucket_ins(void)
+const class_bucket_t* class_bucket_ins(void)
 {
     static const class_bucket_t ins = {
         .size           = _shbucket_size,
@@ -1534,103 +1637,124 @@ typedef bucket_iterator_t* (*shfp_erase)(bucket_shell_t* bucket_sh, const class_
 
 
 /* Interface: hashmap */
-static __always_inline bool __hmbucket_empty(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bool __hmbucket_empty(const bucket_shell_t* bucket_sh)
 {
     return !bucket_sh->ds.p; /* TODO: Current approach is for performance, only works in this version */
 }
 
-static __always_inline bucket_size_t __hmbucket_size(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_size_t __hmbucket_size(const bucket_shell_t* bucket_sh)
 {
     return __bucket_size(bucket_sh);
 }
 
-static __always_inline bucket_node_t* __hmbucket_end(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* __hmbucket_end(const bucket_shell_t* bucket_sh)
 {
     return __bucket_end(bucket_sh);
 }
 
-static __always_inline bucket_node_t* __hmbucket_rend(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* __hmbucket_rend(const bucket_shell_t* bucket_sh)
 {
     return __bucket_rend(bucket_sh);
 }
 
-static __always_inline bucket_node_t* _hmbucket_first(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* _hmbucket_first(const bucket_shell_t* bucket_sh)
 {
     return _bucket_first(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
-static __always_inline bucket_node_t* _hmbucket_last(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* _hmbucket_last(const bucket_shell_t* bucket_sh)
 {
     return _bucket_last(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
-static __always_inline bucket_node_t* hmbucket_begin(const bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_begin(const bucket_shell_t* bucket_sh)
 {
     return bucket_begin(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 
-static __always_inline bucket_node_t* hmbucket_next(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_next(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
     return bucket_next(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* hmbucket_prev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_prev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
     return bucket_prev(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* hmbucket_rnext(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_rnext(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
     return bucket_rnext(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* hmbucket_rprev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_rprev(const bucket_shell_t* bucket_sh, const bucket_node_t* node)
 {
     return bucket_rprev(bucket_sh, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* hmbucket_find_hc_valid(const bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_find_hc_valid(const bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     return bucket_find_has_checked_valid(bucket_sh, ops, ___hmbucket_type(bucket_sh), key);
 }
 
-static __always_inline bucket_node_t* hmbucket_insert_hc_same(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* node)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_insert_hc_same(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* node)
 {
     return bucket_insert_has_checked_same(bucket_sh, ops, ___hmbucket_type(bucket_sh), node);
 }
 
-static __always_inline bucket_node_t* hmbucket_insert_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_insert_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
     return bucket_insert_has_checked_valid(bucket_sh, ops, ___hmbucket_type(bucket_sh), hash, key, value);
 }
 
-static __always_inline bucket_node_t* hmbucket_insert_replace_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_insert_replace_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_hash_t hash, bucket_key_t key, bucket_value_t value)
 {
     return bucket_insert_replace_has_checked_valid(bucket_sh, ops, ___hmbucket_type(bucket_sh), hash, key, value);
 }
 
-static __always_inline bucket_node_t* hmbucket_erase(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* pos)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_erase(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_node_t* pos)
 {
     return bucket_erase(bucket_sh, ops, ___hmbucket_type(bucket_sh), pos);
 }
 
-static __always_inline bucket_size_t hmbucket_remove_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
+static JDSC_INLINE_FORCE
+bucket_size_t hmbucket_remove_hc_valid(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops, bucket_key_t key)
 {
     return bucket_remove_has_checked_valid(bucket_sh, ops, ___hmbucket_type(bucket_sh), key);
 }
 
-static __always_inline bucket_node_t* hmbucket_pop(bucket_shell_t* bucket_sh, bucket_node_t* pos)
+static JDSC_INLINE_FORCE
+bucket_node_t* hmbucket_pop(bucket_shell_t* bucket_sh, bucket_node_t* pos)
 {
     return bucket_pop(bucket_sh, ___hmbucket_type(bucket_sh), pos);
 }
 
-static __always_inline bucket_size_t hmbucket_clear(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops)
+static JDSC_INLINE_FORCE
+bucket_size_t hmbucket_clear(bucket_shell_t* bucket_sh, const class_bucket_ops_t* ops)
 {
     return bucket_clear(bucket_sh, ops, ___hmbucket_type(bucket_sh));
 }
 
-static __always_inline void __hmbucket_resume(bucket_shell_t* bucket_sh)
+static JDSC_INLINE_FORCE
+void __hmbucket_resume(bucket_shell_t* bucket_sh)
 {
     __bucket_resume(bucket_sh, ___hmbucket_type(bucket_sh));
 }
 #endif
+

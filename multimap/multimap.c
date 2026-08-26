@@ -19,11 +19,13 @@
 
 #include <multimap/multimap.h>
 
+#include <_log.h>
 #include <_memory.h>
+#include <_compiler.h>
 #include <linux/_types.h>
 #include <linux/rbtree.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator.h>
+#include <iterator/iterator_inter.h>
 
 typedef struct multimap_node {
     multimap_key_t key;
@@ -31,31 +33,44 @@ typedef struct multimap_node {
     struct rb_node node;
 } multimap_node_t;
 
+JDSC_STATIC_ASSERT(offsetof(multimap_node_t, key)   == offsetof(multimap_iterator_kv_t, key),     "multimap node key vs iterator kv key offset mismatch");
+JDSC_STATIC_ASSERT(offsetof(multimap_node_t, value) == offsetof(multimap_iterator_kv_t, value),   "multimap node value vs iterator kv value offset mismatch");
+JDSC_STATIC_ASSERT(sizeof(multimap_iterator_kv_t)   <= sizeof(multimap_node_t),                   "iterator kv larger than multimap node");
+
+JDSC_STATIC_ASSERT(offsetof(multimap_node_t, key)   == offsetof(multimap_r_iterator_kv_t, key),   "multimap node key vs reverse iterator kv key offset mismatch");
+JDSC_STATIC_ASSERT(offsetof(multimap_node_t, value) == offsetof(multimap_r_iterator_kv_t, value), "multimap node value vs reverse iterator kv value offset mismatch");
+JDSC_STATIC_ASSERT(sizeof(multimap_r_iterator_kv_t) <= sizeof(multimap_node_t),                   "reverse iterator kv larger than multimap node");
+
 struct multimap {
     const class_multimap_ops_t* ops;
     struct rb_root root;
     multimap_size_t size;
 };
 
+#define TAG "[multimap]"
+
 #define multimap_entry(ptr) rb_entry((ptr), struct multimap_node, node)
 
-static /* __always_inline */ inline multimap_node_t* multimap_find(const multimap_t* _this, multimap_key_t key);
-static /* __always_inline */ inline multimap_node_t* __multimap_end(const multimap_t* _this);
-static /* __always_inline */ inline multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t* node);
+static JDSC_INLINE_FORCE_POLICY multimap_node_t* multimap_find(const multimap_t* _this, multimap_key_t key);
+static JDSC_INLINE_FORCE multimap_node_t* __multimap_end(const multimap_t* _this);
+static JDSC_INLINE_FORCE multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t* node);
 
-static /* __always_inline */ inline multimap_size_t __multimap_size(const multimap_t* _this)
+static JDSC_INLINE_FORCE
+multimap_size_t __multimap_size(const multimap_t* _this)
 {
     return _this->size;
 }
 
-static /* __always_inline */ inline multimap_size_t _multimap_size(const multimap_t* _this)
+static JDSC_INLINE_FORCE
+multimap_size_t _multimap_size(const multimap_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
     return __multimap_size(_this);
 }
 
-static multimap_count_t multimap_count(const multimap_t* _this, multimap_key_t key)
+static
+multimap_count_t multimap_count(const multimap_t* _this, multimap_key_t key)
 {
     multimap_count_t ret = 0;
     multimap_node_t* t = multimap_find(_this, key);
@@ -86,164 +101,199 @@ static multimap_count_t multimap_count(const multimap_t* _this, multimap_key_t k
     return ret;
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_first(const multimap_t* _this)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multimap_node_t* ___multimap_first(const multimap_t* _this)
 {
     struct rb_node* t = rb_first(&_this->root);
     return is_null(t) ? NULL : multimap_entry(t);
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_last(const multimap_t* _this)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multimap_node_t* ___multimap_last(const multimap_t* _this)
 {
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : multimap_entry(t);
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_end(const multimap_t* _this)
+static JDSC_INLINE_FORCE
+multimap_node_t* __multimap_end(const multimap_t* _this)
 {
     return (multimap_node_t*)iterator_end();
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_begin(const multimap_t* _this)
+static JDSC_INLINE_FORCE
+multimap_node_t* __multimap_begin(const multimap_t* _this)
 {
-    multimap_node_t* t = __multimap_first(_this);
+    multimap_node_t* t = ___multimap_first(_this);
     return is_null(t) ? __multimap_end(_this) : t;
 }
 
-static /* __always_inline */ inline multimap_node_t* _multimap_begin(const multimap_t* _this)
+static JDSC_INLINE_FORCE
+multimap_node_t* _multimap_begin(const multimap_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __multimap_begin(_this);
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t* node)
+static JDSC_INLINE_FORCE
+multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t* node)
 {
-    struct rb_node* t = NULL;
+    struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->root) || __multimap_end(_this) == node)
-        return __multimap_end(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
+    JDSC_ASSERT(__multimap_end(_this) != node);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(__multimap_end(_this) == node))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    if (unlikely(RB_EMPTY_NODE(&node->node)))
-        return NULL;
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_next(&node->node);
     return is_null(t) ? __multimap_end(_this) : multimap_entry(t);
 }
 
-static /* __always_inline */ inline multimap_node_t* _multimap_next(const multimap_t* _this, const multimap_node_t* node)
+static JDSC_INLINE_FORCE
+multimap_node_t* _multimap_next(const multimap_t* _this, const multimap_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multimap_next(_this, node);
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_prev(const multimap_t* _this, const multimap_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+multimap_node_t* __multimap_prev(const multimap_t* _this, const multimap_node_t* node)
 {
-    struct rb_node* t = NULL;
+    struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->root))
-        return __multimap_end(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
 
-    if (__multimap_end(_this) == node)
-        return __multimap_last(_this); /* Err: since the `ds` is non-empty, 
-                                               the return value includes the error case of `NULL` */
+    if (unlikely(__multimap_end(_this) == node))
+        return ___multimap_last(_this); /* Err: since the `ds` is non-empty, 
+                                                the return value includes the error case of `NULL` */
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    if (unlikely(RB_EMPTY_NODE(&node->node)))
-        return NULL;
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_prev(&node->node);
-    return is_null(t) ? __multimap_end(_this) : multimap_entry(t);
+    JDSC_ASSERT(!is_null(t));
+
+#if JDSC_ITERATOR_ERR_NULL
+    return is_null(t) ? NULL : multimap_entry(t);
+#else
+    return multimap_entry(t);
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
 }
 
-static /* __always_inline */ inline multimap_node_t* _multimap_prev(const multimap_t* _this, const multimap_node_t* node)
+static JDSC_INLINE_FORCE
+multimap_node_t* _multimap_prev(const multimap_t* _this, const multimap_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multimap_prev(_this, node);
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_rend(const multimap_t* _this)
+static JDSC_INLINE_FORCE
+multimap_node_t* __multimap_rend(const multimap_t* _this)
 {
     return (multimap_node_t*)iterator_rend();
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_rbegin(const multimap_t* _this)
+static JDSC_INLINE_FORCE
+multimap_node_t* __multimap_rbegin(const multimap_t* _this)
 {
-    multimap_node_t* t = __multimap_last(_this);
+    multimap_node_t* t = ___multimap_last(_this);
     return is_null(t) ? __multimap_rend(_this) : t;
 }
 
-static /* __always_inline */ inline multimap_node_t* _multimap_rbegin(const multimap_t* _this)
+static JDSC_INLINE_FORCE
+multimap_node_t* _multimap_rbegin(const multimap_t* _this)
 {
     if (unlikely(is_null(_this)))
         return NULL;
     return __multimap_rbegin(_this);
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_rnext(const multimap_t* _this, const multimap_node_t* node)
+static JDSC_INLINE_FORCE
+multimap_node_t* __multimap_rnext(const multimap_t* _this, const multimap_node_t* node)
 {
-    struct rb_node* t = NULL;
+    struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->root) || __multimap_rend(_this) == node)
-        return __multimap_rend(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
+    JDSC_ASSERT(__multimap_rend(_this) != node);
+
+#if JDSC_ITERATOR_ERR_NULL
+    if (unlikely(__multimap_rend(_this) == node))
+        return NULL;
+#endif /* JDSC_ITERATOR_ERR_NULL */
 
     /* The input parameter is `reverse_iterator`, and there's no need 
        to check whether it equals `end` */
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    if (unlikely(RB_EMPTY_NODE(&node->node)))
-        return NULL;
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_prev(&node->node);
     return is_null(t) ? __multimap_rend(_this) : multimap_entry(t);
 }
 
-static /* __always_inline */ inline multimap_node_t* _multimap_rnext(const multimap_t* _this, const multimap_node_t* node)
+static JDSC_INLINE_FORCE
+multimap_node_t* _multimap_rnext(const multimap_t* _this, const multimap_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multimap_rnext(_this, node);
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_rprev(const multimap_t* _this, const multimap_node_t* node)
+static JDSC_INLINE_FORCE_POLICY
+multimap_node_t* __multimap_rprev(const multimap_t* _this, const multimap_node_t* node)
 {
-    struct rb_node* t = NULL;
+    struct rb_node* t;
 
-    if (RB_EMPTY_ROOT(&_this->root))
-        return __multimap_rend(_this);
+    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
 
-    if (__multimap_rend(_this) == node)
-        return __multimap_first(_this); /* Err: since the `ds` is non-empty, 
+    if (unlikely(__multimap_rend(_this) == node))
+        return ___multimap_first(_this); /* Err: since the `ds` is non-empty, 
                                                 the return value includes the error case of `NULL` */
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    if (unlikely(RB_EMPTY_NODE(&node->node)))
-        return NULL;
+    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_next(&node->node);
-    return is_null(t) ? __multimap_rend(_this) : multimap_entry(t);
+    JDSC_ASSERT(!is_null(t));
+
+#if JDSC_ITERATOR_ERR_NULL
+    return is_null(t) ? NULL : multimap_entry(t);
+#else
+    return multimap_entry(t);
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
 }
 
-static /* __always_inline */ inline multimap_node_t* _multimap_rprev(const multimap_t* _this, const multimap_node_t* node)
+static JDSC_INLINE_FORCE
+multimap_node_t* _multimap_rprev(const multimap_t* _this, const multimap_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
         return NULL;
     return __multimap_rprev(_this, node);
 }
 
-static multimap_node_t* __multimap_find(const multimap_t* _this, multimap_key_t key)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multimap_node_t* ___multimap_find(const multimap_t* _this, multimap_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
     multimap_node_t* ret = NULL;
 
     if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
@@ -277,24 +327,26 @@ static multimap_node_t* __multimap_find(const multimap_t* _this, multimap_key_t 
     return ret;
 }
 
-static /* __always_inline */ inline multimap_node_t* multimap_find(const multimap_t* _this, multimap_key_t key)
+static JDSC_INLINE_FORCE_POLICY
+multimap_node_t* multimap_find(const multimap_t* _this, multimap_key_t key)
 {
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
         return NULL;
 
-    t = __multimap_find(_this, key);
+    t = ___multimap_find(_this, key);
     return is_null(t) ? __multimap_end(_this) : t;
 }
 
-static multimap_node_t* __multimap_lower_bound(const multimap_t* _this, multimap_key_t key)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multimap_node_t* ___multimap_lower_bound(const multimap_t* _this, multimap_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
     multimap_node_t* eq = NULL;
     multimap_node_t* gt = NULL;
 
@@ -331,24 +383,26 @@ static multimap_node_t* __multimap_lower_bound(const multimap_t* _this, multimap
     return is_null(eq) ? gt : eq;
 }
 
-static /* __always_inline */ inline multimap_node_t* multimap_lower_bound(const multimap_t* _this, multimap_key_t key)
+static JDSC_INLINE_FORCE_POLICY
+multimap_node_t* multimap_lower_bound(const multimap_t* _this, multimap_key_t key)
 {
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
         return NULL;
 
-    t = __multimap_lower_bound(_this, key);
+    t = ___multimap_lower_bound(_this, key);
     return is_null(t) ? __multimap_end(_this) : t;
 }
 
-static multimap_node_t* __multimap_upper_bound(const multimap_t* _this, multimap_key_t key)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multimap_node_t* ___multimap_upper_bound(const multimap_t* _this, multimap_key_t key)
 {
     struct rb_node* n = _this->root.rb_node;
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
     multimap_node_t* ret = NULL;
 
     if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
@@ -382,25 +436,27 @@ static multimap_node_t* __multimap_upper_bound(const multimap_t* _this, multimap
     return ret;
 }
 
-static /* __always_inline */ inline multimap_node_t* multimap_upper_bound(const multimap_t* _this, multimap_key_t key)
+static JDSC_INLINE_FORCE_POLICY
+multimap_node_t* multimap_upper_bound(const multimap_t* _this, multimap_key_t key)
 {
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
         return NULL;
 
-    t = __multimap_upper_bound(_this, key);
+    t = ___multimap_upper_bound(_this, key);
     return is_null(t) ? __multimap_end(_this) : t;
 }
 
-static multimap_node_t* __multimap_insert(multimap_t* _this, multimap_node_t* node)
+static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multimap_node_t* ___multimap_insert(multimap_t* _this, multimap_node_t* node)
 {
     struct rb_node** n = &_this->root.rb_node;
     struct rb_node* parent = NULL;
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
 
     if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         while (!is_null(*n)) {
@@ -434,18 +490,19 @@ static multimap_node_t* __multimap_insert(multimap_t* _this, multimap_node_t* no
     return node;
 }
 
-static inline multimap_node_t* multimap_insert(multimap_t* _this, multimap_key_t key, multimap_value_t value)
+static
+multimap_node_t* multimap_insert(multimap_t* _this, multimap_key_t key, multimap_value_t value)
 {
-    multimap_node_t* t = NULL;
-    multimap_node_t* ret = NULL;
+    multimap_node_t* t;
+    multimap_node_t* ret;
 
     if (unlikely(is_null(_this)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_value) && !_this->ops->valid_value(value)))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_key) && !_this->ops->valid_key(key)))
         return NULL;
 
     t = (multimap_node_t*)p_calloc(1, sizeof(multimap_node_t));
@@ -455,18 +512,18 @@ static inline multimap_node_t* multimap_insert(multimap_t* _this, multimap_key_t
     if (is_null(_this->ops) || is_null(_this->ops->copy_key)) {
         t->key = key;
     } else {
-        if (!_this->ops->copy_key(key, &t->key))
-            goto err;
+        if (unlikely(!_this->ops->copy_key(key, &t->key)))
+            goto err_key;
     }
 
     if (is_null(_this->ops) || is_null(_this->ops->copy_value)) {
         t->value = value;
     } else {
-        if (!_this->ops->copy_value(value, &t->value))
-            goto err;
+        if (unlikely(!_this->ops->copy_value(value, &t->value)))
+            goto err_value;
     }
 
-    ret = __multimap_insert(_this, t);
+    ret = ___multimap_insert(_this, t);
     if (t != ret)
         goto err;
     return t;
@@ -474,38 +531,40 @@ static inline multimap_node_t* multimap_insert(multimap_t* _this, multimap_key_t
 err:
     if (!is_null(_this->ops) && !is_null(_this->ops->free_value))
         _this->ops->free_value(&t->value);
-
+err_value:
     if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
         _this->ops->free_key(&t->key);
-
+err_key:
     p_free(t);
     return NULL;
 }
 
-static /* __always_inline */ inline multimap_node_t* __multimap_erase(multimap_t* _this, multimap_node_t* pos)
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
+multimap_node_t* ___multimap_erase(multimap_t* _this, multimap_node_t* pos)
 {
     rb_erase(&pos->node, &_this->root);
     _this->size--;
     return pos;
 }
 
-static inline multimap_node_t* multimap_erase(multimap_t* _this, multimap_node_t* pos)
+static
+multimap_node_t* multimap_erase(multimap_t* _this, multimap_node_t* pos)
 {
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
 
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
     /* The input parameter is `iterator`, and there's no need 
        to check whether it equals `rend` */
-    if (__multimap_size(_this) <= 0 || __multimap_end(_this) == pos/* || __multimap_rend(_this) == pos*/)
+    if (unlikely(RB_EMPTY_ROOT(&_this->root) || __multimap_end(_this) == pos)/* || __multimap_rend(_this) == pos*/)
         return NULL;
 
     t = __multimap_next(_this, pos);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return NULL;
 
-    __multimap_erase(_this, pos);
+    ___multimap_erase(_this, pos);
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
         _this->ops->free_key(&pos->key);
@@ -518,16 +577,17 @@ static inline multimap_node_t* multimap_erase(multimap_t* _this, multimap_node_t
     return t;
 }
 
-static multimap_size_t multimap_remove(multimap_t* _this, multimap_key_t key)
+static
+multimap_size_t multimap_remove(multimap_t* _this, multimap_key_t key)
 {
     multimap_size_t ret = 0;
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
 
     if (unlikely(is_null(_this)))
         return -1;
 
     t = multimap_find(_this, key);
-    if (is_null(t))
+    if (unlikely(is_null(t)))
         return -1;
 
     if (__multimap_end(_this) == t)
@@ -554,10 +614,11 @@ static multimap_size_t multimap_remove(multimap_t* _this, multimap_key_t key)
     return ret;
 }
 
-static multimap_size_t multimap_remove_if(multimap_t* _this, remove_if_condition_kv cond)
+static
+multimap_size_t multimap_remove_if(multimap_t* _this, remove_if_condition_kv cond)
 {
     multimap_size_t ret = 0;
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
 
     if (unlikely(is_null(_this) || is_null(cond)))
         return -1;
@@ -575,10 +636,11 @@ static multimap_size_t multimap_remove_if(multimap_t* _this, remove_if_condition
     return ret;
 }
 
-static multimap_size_t multimap_clear(multimap_t* _this)
+static
+multimap_size_t multimap_clear(multimap_t* _this)
 {
     multimap_size_t ret = 0;
-    multimap_node_t* t = NULL;
+    multimap_node_t* t;
 
     if (unlikely(is_null(_this)))
         return -1;
@@ -597,9 +659,29 @@ multimap_t* __multimap_new(const class_multimap_ops_t* ops)
     if (is_null(multimap))
         return NULL;
 
+    if (!is_null(ops) && !is_null(ops->copy_key)) {
+        JDSC_ASSERT(!is_null(ops->free_key));
+        if (is_null(ops->free_key)) {
+            pr_err("%s: ops->copy_key provided but ops->free_key is null!", __func__);
+            goto err;
+        }
+    }
+
+    if (!is_null(ops) && !is_null(ops->copy_value)) {
+        JDSC_ASSERT(!is_null(ops->free_value));
+        if (is_null(ops->free_value)) {
+            pr_err("%s: ops->copy_value provided but ops->free_value is null!", __func__);
+            goto err;
+        }
+    }
+
     multimap->ops  = ops;
     multimap->root = RB_ROOT;
     return multimap;
+
+err:
+    p_free(multimap);
+    return NULL;
 }
 
 void __multimap_delete(multimap_t** _this)
@@ -611,6 +693,7 @@ void __multimap_delete(multimap_t** _this)
     p_free(*_this);
 }
 
+#if 0
 typedef multimap_iterator_t* (*fp_end)(const multimap_t* _this);
 typedef multimap_iterator_t* (*fp_begin)(const multimap_t* _this);
 typedef multimap_iterator_t* (*fp_next)(const multimap_t* _this, const multimap_iterator_t* iterator);
@@ -650,6 +733,34 @@ const class_multimap_t* class_multimap_ins(void)
     return &ins;
 }
 
+#else
+
+const class_multimap_t* class_multimap_ins(void)
+{
+    static const class_multimap_t ins = {
+        .size        = cmultimap_size,
+        .count       = cmultimap_count,
+        .end         = cmultimap_end,
+        .begin       = cmultimap_begin,
+        .next        = cmultimap_next,
+        .prev        = cmultimap_prev,
+        .rend        = cmultimap_rend,
+        .rbegin      = cmultimap_rbegin,
+        .rnext       = cmultimap_rnext,
+        .rprev       = cmultimap_rprev,
+        .find        = cmultimap_find,
+        .lower_bound = cmultimap_lower_bound,
+        .upper_bound = cmultimap_upper_bound,
+        .insert      = cmultimap_insert,
+        .erase       = cmultimap_erase,
+        .remove      = cmultimap_remove,
+        .remove_if   = cmultimap_remove_if,
+        .clear       = cmultimap_clear,
+    };
+    return &ins;
+}
+#endif /* 0 */
+
 
 
 
@@ -664,69 +775,95 @@ multimap_count_t cmultimap_count(const multimap_t* _this, multimap_key_t key)
     return multimap_count(_this, key);
 }
 
-multimap_iterator_t* cmultimap_end(const multimap_t* _this)
+multimap_iterator_t cmultimap_end(const multimap_t* _this)
 {
-    return (multimap_iterator_t*)__multimap_end(_this);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)__multimap_end(_this);
+    return it;
 }
 
-multimap_iterator_t* cmultimap_begin(const multimap_t* _this)
+multimap_iterator_t cmultimap_begin(const multimap_t* _this)
 {
-    return (multimap_iterator_t*)_multimap_begin(_this);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)_multimap_begin(_this);
+    return it;
 }
 
-multimap_iterator_t* cmultimap_next(const multimap_t* _this, const multimap_iterator_t* iterator)
+multimap_iterator_t cmultimap_next(const multimap_t* _this, const multimap_iterator_t iterator)
 {
-    return (multimap_iterator_t*)_multimap_next(_this, (const multimap_node_t*)iterator);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)_multimap_next(_this, (const multimap_node_t*)iterator.d);
+    return it;
 }
 
-multimap_iterator_t* cmultimap_prev(const multimap_t* _this, const multimap_iterator_t* iterator)
+multimap_iterator_t cmultimap_prev(const multimap_t* _this, const multimap_iterator_t iterator)
 {
-    return (multimap_iterator_t*)_multimap_prev(_this, (const multimap_node_t*)iterator);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)_multimap_prev(_this, (const multimap_node_t*)iterator.d);
+    return it;
 }
 
-multimap_r_iterator_t* cmultimap_rend(const multimap_t* _this)
+multimap_r_iterator_t cmultimap_rend(const multimap_t* _this)
 {
-    return (multimap_r_iterator_t*)__multimap_rend(_this);
+    multimap_r_iterator_t it;
+    it.d = (multimap_r_iterator_kv_t*)__multimap_rend(_this);
+    return it;
 }
 
-multimap_r_iterator_t* cmultimap_rbegin(const multimap_t* _this)
+multimap_r_iterator_t cmultimap_rbegin(const multimap_t* _this)
 {
-    return (multimap_r_iterator_t*)_multimap_rbegin(_this);
+    multimap_r_iterator_t it;
+    it.d = (multimap_r_iterator_kv_t*)_multimap_rbegin(_this);
+    return it;
 }
 
-multimap_r_iterator_t* cmultimap_rnext(const multimap_t* _this, const multimap_r_iterator_t* r_iterator)
+multimap_r_iterator_t cmultimap_rnext(const multimap_t* _this, const multimap_r_iterator_t r_iterator)
 {
-    return (multimap_r_iterator_t*)_multimap_rnext(_this, (const multimap_node_t*)r_iterator);
+    multimap_r_iterator_t it;
+    it.d = (multimap_r_iterator_kv_t*)_multimap_rnext(_this, (const multimap_node_t*)r_iterator.d);
+    return it;
 }
 
-multimap_r_iterator_t* cmultimap_rprev(const multimap_t* _this, const multimap_r_iterator_t* r_iterator)
+multimap_r_iterator_t cmultimap_rprev(const multimap_t* _this, const multimap_r_iterator_t r_iterator)
 {
-    return (multimap_r_iterator_t*)_multimap_rprev(_this, (const multimap_node_t*)r_iterator);
+    multimap_r_iterator_t it;
+    it.d = (multimap_r_iterator_kv_t*)_multimap_rprev(_this, (const multimap_node_t*)r_iterator.d);
+    return it;
 }
 
-multimap_iterator_t* cmultimap_find(const multimap_t* _this, multimap_key_t key)
+multimap_iterator_t cmultimap_find(const multimap_t* _this, multimap_key_t key)
 {
-    return (multimap_iterator_t*)multimap_find(_this, key);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)multimap_find(_this, key);
+    return it;
 }
 
-multimap_iterator_t* cmultimap_lower_bound(const multimap_t* _this, multimap_key_t key)
+multimap_iterator_t cmultimap_lower_bound(const multimap_t* _this, multimap_key_t key)
 {
-    return (multimap_iterator_t*)multimap_lower_bound(_this, key);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)multimap_lower_bound(_this, key);
+    return it;
 }
 
-multimap_iterator_t* cmultimap_upper_bound(const multimap_t* _this, multimap_key_t key)
+multimap_iterator_t cmultimap_upper_bound(const multimap_t* _this, multimap_key_t key)
 {
-    return (multimap_iterator_t*)multimap_upper_bound(_this, key);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)multimap_upper_bound(_this, key);
+    return it;
 }
 
-multimap_iterator_t* cmultimap_insert(multimap_t* _this, multimap_key_t key, multimap_value_t value)
+multimap_iterator_t cmultimap_insert(multimap_t* _this, multimap_key_t key, multimap_value_t value)
 {
-    return (multimap_iterator_t*)multimap_insert(_this, key, value);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)multimap_insert(_this, key, value);
+    return it;
 }
 
-multimap_iterator_t* cmultimap_erase(multimap_t* _this, multimap_iterator_t* iterator)
+multimap_iterator_t cmultimap_erase(multimap_t* _this, multimap_iterator_t iterator)
 {
-    return (multimap_iterator_t*)multimap_erase(_this, (multimap_node_t*)iterator);
+    multimap_iterator_t it;
+    it.d = (multimap_iterator_kv_t*)multimap_erase(_this, (multimap_node_t*)iterator.d);
+    return it;
 }
 
 multimap_size_t cmultimap_remove(multimap_t* _this, multimap_key_t key)
@@ -743,3 +880,4 @@ multimap_size_t cmultimap_clear(multimap_t* _this)
 {
     return multimap_clear(_this);
 }
+

@@ -21,22 +21,19 @@
 #define __J_MULTISET_H
 
 #include <multiset/multiset_ops.h>
+#include <iterator/iterator.h>
 
 typedef struct multiset_iterator {
     union {
-        multiset_key_t key;
-        char* skey;
-        multiset_data_t data;
-        char* sdata;
+        multiset_data_t* d;
+        char** sd;
     };
 } multiset_iterator_t;
 
 typedef struct multiset_reverse_iterator {
     union {
-        multiset_key_t key;
-        char* skey;
-        multiset_data_t data;
-        char* sdata;
+        multiset_data_t* d;
+        char** sd;
     };
 } multiset_reverse_iterator_t;
 typedef multiset_reverse_iterator_t multiset_r_iterator_t;
@@ -46,19 +43,19 @@ typedef struct multiset multiset_t;
 /* Method 1 */
 multiset_size_t        cmultiset_size(const multiset_t* _this);
 multiset_count_t       cmultiset_count(const multiset_t* _this, multiset_key_t key);
-multiset_iterator_t*   cmultiset_end(const multiset_t* _this);
-multiset_iterator_t*   cmultiset_begin(const multiset_t* _this);
-multiset_iterator_t*   cmultiset_next(const multiset_t* _this, const multiset_iterator_t* iterator);
-multiset_iterator_t*   cmultiset_prev(const multiset_t* _this, const multiset_iterator_t* iterator);
-multiset_r_iterator_t* cmultiset_rend(const multiset_t* _this);
-multiset_r_iterator_t* cmultiset_rbegin(const multiset_t* _this);
-multiset_r_iterator_t* cmultiset_rnext(const multiset_t* _this, const multiset_r_iterator_t* r_iterator);
-multiset_r_iterator_t* cmultiset_rprev(const multiset_t* _this, const multiset_r_iterator_t* r_iterator);
-multiset_iterator_t*   cmultiset_find(const multiset_t* _this, multiset_key_t key);
-multiset_iterator_t*   cmultiset_lower_bound(const multiset_t* _this, multiset_key_t key);
-multiset_iterator_t*   cmultiset_upper_bound(const multiset_t* _this, multiset_key_t key);
-multiset_iterator_t*   cmultiset_insert(multiset_t* _this, multiset_key_t key);
-multiset_iterator_t*   cmultiset_erase(multiset_t* _this, multiset_iterator_t* iterator);
+multiset_iterator_t    cmultiset_end(const multiset_t* _this);
+multiset_iterator_t    cmultiset_begin(const multiset_t* _this);
+multiset_iterator_t    cmultiset_next(const multiset_t* _this, const multiset_iterator_t iterator);
+multiset_iterator_t    cmultiset_prev(const multiset_t* _this, const multiset_iterator_t iterator);
+multiset_r_iterator_t  cmultiset_rend(const multiset_t* _this);
+multiset_r_iterator_t  cmultiset_rbegin(const multiset_t* _this);
+multiset_r_iterator_t  cmultiset_rnext(const multiset_t* _this, const multiset_r_iterator_t r_iterator);
+multiset_r_iterator_t  cmultiset_rprev(const multiset_t* _this, const multiset_r_iterator_t r_iterator);
+multiset_iterator_t    cmultiset_find(const multiset_t* _this, multiset_key_t key);
+multiset_iterator_t    cmultiset_lower_bound(const multiset_t* _this, multiset_key_t key);
+multiset_iterator_t    cmultiset_upper_bound(const multiset_t* _this, multiset_key_t key);
+multiset_iterator_t    cmultiset_insert(multiset_t* _this, multiset_key_t key);
+multiset_iterator_t    cmultiset_erase(multiset_t* _this, multiset_iterator_t iterator);
 multiset_size_t        cmultiset_remove(multiset_t* _this, multiset_key_t key);
 multiset_size_t        cmultiset_remove_if(multiset_t* _this, remove_if_condition_k cond);
 multiset_size_t        cmultiset_clear(multiset_t* _this);
@@ -67,19 +64,19 @@ multiset_size_t        cmultiset_clear(multiset_t* _this);
 typedef struct class_multiset {
     multiset_size_t (*size)(const multiset_t* _this);
     multiset_count_t (*count)(const multiset_t* _this, multiset_key_t key);
-    multiset_iterator_t* (*end)(const multiset_t* _this);
-    multiset_iterator_t* (*begin)(const multiset_t* _this);
-    multiset_iterator_t* (*next)(const multiset_t* _this, const multiset_iterator_t* iterator);
-    multiset_iterator_t* (*prev)(const multiset_t* _this, const multiset_iterator_t* iterator);
-    multiset_r_iterator_t* (*rend)(const multiset_t* _this);
-    multiset_r_iterator_t* (*rbegin)(const multiset_t* _this);
-    multiset_r_iterator_t* (*rnext)(const multiset_t* _this, const multiset_r_iterator_t* r_iterator);
-    multiset_r_iterator_t* (*rprev)(const multiset_t* _this, const multiset_r_iterator_t* r_iterator);
-    multiset_iterator_t* (*find)(const multiset_t* _this, multiset_key_t key);
-    multiset_iterator_t* (*lower_bound)(const multiset_t* _this, multiset_key_t key); /* >= key */
-    multiset_iterator_t* (*upper_bound)(const multiset_t* _this, multiset_key_t key); /*  > key */
-    multiset_iterator_t* (*insert)(multiset_t* _this, multiset_key_t key);            /* if input key doesn't match -> insert | if input key match -> return NULL */
-    multiset_iterator_t* (*erase)(multiset_t* _this, multiset_iterator_t* iterator);
+    multiset_iterator_t (*end)(const multiset_t* _this);
+    multiset_iterator_t (*begin)(const multiset_t* _this);
+    multiset_iterator_t (*next)(const multiset_t* _this, const multiset_iterator_t iterator);
+    multiset_iterator_t (*prev)(const multiset_t* _this, const multiset_iterator_t iterator);
+    multiset_r_iterator_t (*rend)(const multiset_t* _this);
+    multiset_r_iterator_t (*rbegin)(const multiset_t* _this);
+    multiset_r_iterator_t (*rnext)(const multiset_t* _this, const multiset_r_iterator_t r_iterator);
+    multiset_r_iterator_t (*rprev)(const multiset_t* _this, const multiset_r_iterator_t r_iterator);
+    multiset_iterator_t (*find)(const multiset_t* _this, multiset_key_t key);
+    multiset_iterator_t (*lower_bound)(const multiset_t* _this, multiset_key_t key); /* >= key */
+    multiset_iterator_t (*upper_bound)(const multiset_t* _this, multiset_key_t key); /*  > key */
+    multiset_iterator_t (*insert)(multiset_t* _this, multiset_key_t key);            /* if input key doesn't match -> insert | if input key match -> return NULL */
+    multiset_iterator_t (*erase)(multiset_t* _this, multiset_iterator_t iterator);
     multiset_size_t (*remove)(multiset_t* _this, multiset_key_t key);
     multiset_size_t (*remove_if)(multiset_t* _this, remove_if_condition_k cond);
     multiset_size_t (*clear)(multiset_t* _this);
