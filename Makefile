@@ -6,6 +6,7 @@ SLIB_NAME := libj_ds.a
 
 WITH_LIST=y
 WITH_VECTOR=y
+WITH_DEQUE=y
 WITH_PRIORITY_QUEUE=y
 WITH_HASHMAP=y
 WITH_MAP=y
@@ -13,7 +14,7 @@ WITH_MULTIMAP=y
 WITH_SET=y
 WITH_MULTISET=y
 WITH_PERFORMANCE=y
-WITH_PERFORMANCE_STL=n
+WITH_PERFORMANCE_STL=y
 WITH_DEMO=y
 
 
@@ -30,6 +31,10 @@ endif
 
 ifeq ($(WITH_VECTOR), y)
 OBJS += vector/vector.o vector/vector_ops.o
+endif
+
+ifeq ($(WITH_DEQUE), y)
+OBJS += deque/deque.o deque/deque_ops.o
 endif
 
 ifeq ($(WITH_PRIORITY_QUEUE), y)
@@ -93,6 +98,9 @@ endif
 ifeq ($(WITH_PRIORITY_QUEUE), y)
 PERFORMANCE_BINS += performance_pqueue
 endif
+ifeq ($(WITH_DEQUE), y)
+PERFORMANCE_BINS += performance_deque
+endif
 ifeq ($(WITH_HASHMAP), y)
 PERFORMANCE_BINS += performance_hashmap
 PERFORMANCE_BINS += performance_hashmap_reserve
@@ -120,6 +128,9 @@ PERFORMANCE_STL_BINS += performance_stl_list
 endif
 ifeq ($(WITH_PRIORITY_QUEUE), y)
 PERFORMANCE_STL_BINS += performance_stl_pqueue
+endif
+ifeq ($(WITH_DEQUE), y)
+PERFORMANCE_STL_BINS += performance_stl_deque
 endif
 ifeq ($(WITH_HASHMAP), y)
 PERFORMANCE_STL_BINS += performance_stl_hashmap
@@ -191,6 +202,8 @@ performance_jds_vector.o : main.c
 
 performance_jds_list.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_LIST
+performance_jds_deque.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_DEQUE
 
 performance_jds_pqueue.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_PQUEUE
@@ -242,6 +255,8 @@ performance_stl_vector.o : main_stl.cpp
 
 performance_stl_list.o : main_stl.cpp
 	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_LIST
+performance_stl_deque.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_DEQUE
 
 performance_stl_pqueue.o : main_stl.cpp
 	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_PQUEUE

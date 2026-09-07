@@ -44,6 +44,8 @@
 
 
 #define JDSC_ITERATOR_ERR_NULL  0
+#define JDSC_ITERATOR_END       1
+#define JDSC_ITERATOR_REND      2
 
 
 #if defined(JDSC_MEMPOOL)

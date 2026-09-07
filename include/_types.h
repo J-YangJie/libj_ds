@@ -47,6 +47,12 @@ typedef ds_data_t  vector_data_t;
 typedef ds_size_t  vector_size_t;
 typedef ds_count_t vector_count_t;
 
+/* deque */
+typedef ds_data_t  deque_data_t;
+typedef ds_size_t  deque_size_t;
+typedef ds_count_t deque_count_t;
+typedef ds_count_t deque_bcount_t;
+
 /* map */
 typedef ds_key_t   map_key_t;
 typedef ds_value_t map_value_t;
