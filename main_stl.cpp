@@ -189,7 +189,9 @@ static void test_i_for(void)
 #elif TEST_VECTOR
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_i.push_back(i);     }, time_vector);
 #elif TEST_DEQUE
-        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.push_back(i);      }, time_deque);
+        ds_deque_i.push_back(TIMES_INSERT + 1);
+        ds_deque_i.push_back(TIMES_INSERT + 2);
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.insert(--ds_deque_i.end(), i);      }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_pqueue_i.push(i);          }, time_pqueue);
 #endif
@@ -533,8 +535,10 @@ static void test_i_rand(void)
             ds_vector_i.push_back(rand() % TIMES_FIND);
         }, time_vector);
 #elif TEST_DEQUE
+        ds_deque_i.push_back(TIMES_FIND + 1);
+        ds_deque_i.push_back(TIMES_FIND + 2);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
-            ds_deque_i.push_back(rand() % TIMES_FIND);
+            ds_deque_i.insert(--ds_deque_i.end(), rand() % TIMES_FIND);
         }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
@@ -923,9 +927,11 @@ static void test_s_rand(void)
             ds_vector_s.push_back(key);
         }, time_vector);
 #elif TEST_DEQUE
+        pool_assign(key); ds_deque_s.push_back(key);
+        pool_assign(key); ds_deque_s.push_back(key);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             pool_assign(key);
-            ds_deque_s.push_back(key);
+            ds_deque_s.insert(--ds_deque_s.end(), key);
         }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {

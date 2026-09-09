@@ -606,7 +606,7 @@ bucket_node_t* ___bucket_hl_find(const bucket_t* _this, const class_bucket_ops_t
     bucket_node_t* t = NULL;
     struct hlist_node* thl = NULL;
 
-    if (is_null(ops) || is_null(ops->__lt)) {
+    if (is_null(ops) || (is_null(ops->__eq) && is_null(ops->__lt))) {
         hlist_for_each_entry(t, thl, &_this->ds.hl, ds_node.hl_node) {
             if (key == t->key)
                 return t;
