@@ -129,6 +129,202 @@ deque_data_t __i_deque_pop_front_free(deque_t* _this)
     return ret;
 }
 
+/* checked */
+static JDSC_INLINE
+deque_iterator_t __i_deque_advance(deque_iterator_t it, deque_size_t n)
+{
+    deque_size_t noff, off = n + (it.cur - it.begin);
+    deque_size_t s = _I_DEQUE_BKT_SIZE;
+
+    if (off >= 0 && off < s) {
+        it.cur += n;
+        return it;
+    }
+
+    noff = off > 0 ? off / s : -((-off - 1) / s) - 1;
+    __i_deque_set_bkt(&it, it.bkt + noff);
+    it.cur = it.begin + (off - noff * s);
+    return it;
+}
+
+/* checked */
+static JDSC_INLINE
+void __i_deque_memmove_forward(deque_iterator_t dest, deque_iterator_t src, deque_size_t n)
+{
+    for (deque_size_t i = 0; i < n; ++i) {
+        *dest.cur = *src.cur;
+        dest = __i_deque_next(dest);
+        src  = __i_deque_next(src);
+    }
+}
+
+/* checked */
+static JDSC_INLINE
+void __i_deque_memmove_backward(deque_iterator_t dest, deque_iterator_t src, deque_size_t n)
+{
+    if (n <= 0)
+        return ;
+
+    dest = __i_deque_advance(dest, n - 1);
+    src  = __i_deque_advance(src,  n - 1);
+    for (deque_size_t i = 0; i < n; ++i) {
+        *dest.cur = *src.cur;
+        dest = __i_deque_prev(dest);
+        src  = __i_deque_prev(src);
+    }
+}
+
+/* checked */
+static JDSC_INLINE_FORCE_POLICY
+bool __i_deque_push_back_zero(deque_t* _this)
+{
+    if (_this->end.cur != _this->end.end - 1) {
+        *_this->end.cur++ = 0;
+        return true;
+    }
+    return __i_deque_push_back_alloc(_this, 0);
+}
+
+/* checked */
+static JDSC_INLINE_FORCE_POLICY
+bool __i_deque_push_front_zero(deque_t* _this)
+{
+    if (_this->begin.cur != _this->begin.begin) {
+        *--_this->begin.cur = 0;
+        return true;
+    }
+    return __i_deque_push_front_alloc(_this, 0);
+}
+
+/* checked */
+static inline
+void __i_deque_pop_back_without_free_data(i_deque_t* _this)
+{
+    if (__i_deque_empty(_this))
+        return ;
+
+    if (_this->end.cur != _this->end.begin)
+        --_this->end.cur;
+    else
+        __i_deque_pop_back_free(_this);
+}
+
+/* checked */
+static inline
+void __i_deque_pop_front_without_free_data(i_deque_t* _this)
+{
+    if (__i_deque_empty(_this))
+        return ;
+
+    if (_this->begin.cur != _this->begin.end - 1)
+        _this->begin.cur++;
+    else
+        __i_deque_pop_front_free(_this);
+}
+
+/* checked */
+static JDSC_INLINE
+deque_iterator_t __i_deque_copy_data_from_arr(deque_iterator_t it, const deque_data_t* run, deque_size_t n)
+{
+    while (n-- > 0) {
+        *it.cur = *run++;
+        it = __i_deque_next(it);
+    }
+    return it;
+}
+
+/* checked */
+deque_iterator_t __i_deque_insert_run(i_deque_t* _this, deque_iterator_t pos, const deque_data_t* run, deque_size_t n)
+{
+    deque_size_t i;
+
+    if (n < 0)
+        return i_deque_null_iterator();
+
+    deque_size_t fn = __i_deque_iterator_distance(_this->begin, pos);
+    deque_size_t bn = __i_deque_iterator_distance(pos, _this->end);
+    if (fn < 0 || bn < 0)
+        return i_deque_null_iterator();
+
+    if (fn < bn) {
+        for (i = 0; i < n; ++i) {
+            if (!__i_deque_push_front_zero(_this))
+                goto err;
+        }
+
+        __i_deque_memmove_forward(_this->begin, __i_deque_advance(_this->begin, n), fn);
+        deque_iterator_t ret = __i_deque_advance(_this->begin, fn);
+        __i_deque_copy_data_from_arr(ret, run, n);
+        return ret;
+    } else {
+        for (i = 0; i < n; ++i) {
+            if (!__i_deque_push_back_zero(_this))
+                goto err;
+        }
+
+        deque_iterator_t ret = __i_deque_advance(_this->begin, fn);
+        __i_deque_memmove_backward(__i_deque_advance(ret, n), ret, bn);
+        __i_deque_copy_data_from_arr(ret, run, n);
+        return ret;
+    }
+
+err:
+    if (fn < bn) {
+        for (; i > 0; --i)
+            __i_deque_pop_front_without_free_data(_this);
+    } else {
+        for (; i > 0; --i)
+            __i_deque_pop_back_without_free_data(_this);
+    }
+    return i_deque_null_iterator();
+}
+
+/* checked */
+deque_iterator_t i_deque_insert_n(i_deque_t* _this, deque_iterator_t pos, deque_size_t n, deque_data_t data)
+{
+    deque_data_t* tdata, * idata;
+    deque_size_t i;
+    deque_iterator_t ret;
+
+    if (is_null(_this) || i_deque_is_null_iterator(pos) || n < 0)
+        return i_deque_null_iterator();
+
+    if (0 == n)
+        return pos;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return i_deque_null_iterator();
+
+    idata = tdata = (deque_data_t*)p_malloc(n * sizeof(deque_data_t));
+    if (is_null(tdata))
+        return i_deque_null_iterator();
+
+    if (is_null(_this->ops) || is_null(_this->ops->copy_data)) {
+        for (i = 0; i < n; ++i)
+            *idata++ = data;
+    } else {
+        for (i = 0; i < n; ++i, ++idata) {
+            if (!_this->ops->copy_data(data, idata))
+                goto err;
+        }
+    }
+
+    ret = __i_deque_insert_run(_this, pos, tdata, n);
+    if (i_deque_is_null_iterator(ret))
+        goto err;
+
+    p_free(tdata);
+    return ret;
+
+err:
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
+        while (i-- > 0)
+            _this->ops->free_data(tdata + i);
+    }
+    p_free(tdata);
+    return i_deque_null_iterator();
+}
+
 static
 bool __deque_init(deque_t* deque)
 {
@@ -213,24 +409,11 @@ void _deque_free_data(const deque_t* _this, deque_data_t* slot)
         _this->ops->free_data(slot);
 }
 
-/* 跨缓冲区推进迭代器 n 步（n 可正可负），相当于 STL 迭代器 operator+= */
-static inline
-deque_iterator_t _deque_advance(deque_iterator_t it, long n)
+static JDSC_INLINE
+void _deque_free_run(const deque_t* _this, const deque_data_t* run, deque_size_t n)
 {
-    long off = n + (long)(it.cur - it.begin);
-    long bs  = (long)_I_DEQUE_BKT_SIZE;
-
-    if (off >= 0 && off < bs) {
-        it.cur += n;
-        return it;
-    }
-
-    {
-        long node_off = off > 0 ? off / bs : -((-off - 1) / bs) - 1;
-        __i_deque_set_bkt(&it, it.bkt + node_off);
-        it.cur = it.begin + (off - node_off * bs);
-    }
-    return it;
+    while (n-- > 0)
+        _deque_free_data(_this, (deque_data_t*)run + n);
 }
 
 /* 把"应删除"判据包成统一结构，供单遍压实共用 */
@@ -283,94 +466,22 @@ deque_size_t _deque_compact(deque_t* _this, _deque_match_t* m)
     return org;
 }
 
-/* ---------------- insert：在 pos 前插入，返回新元素迭代器 ---------------- */
-deque_iterator_t i_deque_insert(deque_t* _this, deque_iterator_t pos, deque_data_t data)
+/* 数据校验 / 拷贝助手，语义与 push 系列一致 */
+static inline
+bool _deque_valid_one(const deque_t* _this, deque_data_t data)
 {
-    deque_iterator_t b, e;
-    long n, k;
+    if (is_null(_this->ops) || is_null(_this->ops->valid_data))
+        return true;
+    return _this->ops->valid_data(data);
+}
 
-    if (is_null(_this))
-        return i_deque_null_iterator();
-
-    /* 数据合法性前置检查（与 push 一致） */
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
-        return i_deque_null_iterator();
-
-    b = i_deque_begin(_this);
-    e = i_deque_end(_this);
-    n = (long)__i_deque_iterator_distance(b, e);
-
-    if (0 == n) {                                 /* 空容器：只允许插在 begin==end */
-        if (pos.cur != e.cur)
-            return i_deque_null_iterator();
-        if (!i_deque_push_back(_this, data))
-            return i_deque_null_iterator();
-        return i_deque_begin(_this);
-    }
-
-    if (pos.cur == e.cur) {                       /* 尾插 == push_back */
-        if (!i_deque_push_back(_this, data))
-            return i_deque_null_iterator();
-        return i_deque_prev(i_deque_end(_this));
-    }
-    if (pos.cur == b.cur) {                       /* 头插 == push_front */
-        if (!i_deque_push_front(_this, data))
-            return i_deque_null_iterator();
-        return i_deque_begin(_this);
-    }
-
-    k = (long)__i_deque_iterator_distance(b, pos);
-    if (k <= 0 || k >= n)                         /* 越界迭代器 */
-        return i_deque_null_iterator();
-
-    if (k < n / 2) {                              /* 离头近：头端补副本开槽，前缀左移腾出 slot k */
-        deque_data_t front_v = *b.cur;
-
-        if (!i_deque_push_front(_this, front_v))
-            return i_deque_null_iterator();
-
-        b = i_deque_begin(_this);
-        _deque_free_data(_this, b.cur);           /* 丢弃刚补的无用深拷贝（无 ops 则空操作） */
-
-        {
-            deque_iterator_t d = b;               /* 目标从 slot 0 开始左移一格 */
-            deque_iterator_t s = i_deque_next(d);
-            for (long j = 0; j < k; ++j) {        /* slot[j] = slot[j+1]，源清零 */
-                *d.cur = *s.cur;
-                *s.cur = 0;
-                d = s;
-                s = i_deque_next(s);
-            }
-            deque_data_t tdata = data;            /* d == slot k（已置 0），写入 data 副本 */
-            if (!is_null(_this->ops) && !is_null(_this->ops->copy_data) && !_this->ops->copy_data(data, &tdata))
-                return i_deque_null_iterator();
-            *d.cur = tdata;
-            return d;
-        }
-    } else {                                      /* 离尾近：尾端补副本开槽，尾段右移腾出 slot k */
-        deque_data_t back_v = *i_deque_prev(e).cur;
-
-        if (!i_deque_push_back(_this, back_v))
-            return i_deque_null_iterator();
-
-        e = i_deque_end(_this);
-        {
-            deque_iterator_t d = i_deque_prev(e); /* 尾补副本所在槽（新最后） */
-            _deque_free_data(_this, d.cur);       /* 丢弃该无用深拷贝 */
-
-            for (long j = n; j > k; --j) {        /* slot[j] = slot[j-1]，源清零 */
-                deque_iterator_t s = i_deque_prev(d);
-                *d.cur = *s.cur;
-                *s.cur = 0;
-                d = s;
-            }
-            deque_data_t tdata = data;            /* d == slot k，写入 data 副本 */
-            if (!is_null(_this->ops) && !is_null(_this->ops->copy_data) && !_this->ops->copy_data(data, &tdata))
-                return i_deque_null_iterator();
-            *d.cur = tdata;
-            return d;
-        }
-    }
+static inline
+bool _deque_copy_one(const deque_t* _this, deque_data_t in, deque_data_t* out)
+{
+    *out = in;
+    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
+        return _this->ops->copy_data(in, out);
+    return true;
 }
 
 /* ---------------- erase：删除 pos 处元素，返回其后元素迭代器 ---------------- */
@@ -425,7 +536,7 @@ deque_iterator_t i_deque_erase(deque_t* _this, deque_iterator_t pos)
         i_deque_pop_back(_this);
     }
 
-    return _deque_advance(i_deque_begin(_this), k);
+    return __i_deque_advance(i_deque_begin(_this), k);
 }
 
 /* ---------------- erase_range：删除 [first, last) ---------------- */
@@ -468,7 +579,7 @@ deque_iterator_t i_deque_erase_range(deque_t* _this, deque_iterator_t first, deq
     while (cnt-- > 0)                             /* 裁剪尾部 cnt 个 0 槽 */
         i_deque_pop_back(_this);
 
-    return _deque_advance(i_deque_begin(_this), k1);
+    return __i_deque_advance(i_deque_begin(_this), k1);
 }
 
 /* ---------------- find / count ---------------- */

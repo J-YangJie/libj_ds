@@ -66,6 +66,7 @@ static inline deque_iterator_t   cdeque_find(const deque_t* _this, deque_data_t 
 static inline bool               cdeque_push_back(deque_t* _this, deque_data_t data)   { return i_deque_push_back(_this, data); }
 static inline bool               cdeque_push_front(deque_t* _this, deque_data_t data)  { return i_deque_push_front(_this, data); }
 static inline deque_iterator_t   cdeque_insert(deque_t* _this, deque_iterator_t pos, deque_data_t data) { return i_deque_insert(_this, pos, data); }
+static inline deque_iterator_t   cdeque_insert_n(deque_t* _this, deque_iterator_t pos, deque_size_t n, deque_data_t data) { return i_deque_insert_n(_this, pos, n, data); }
 static inline deque_iterator_t   cdeque_erase(deque_t* _this, deque_iterator_t pos)    { return i_deque_erase(_this, pos); }
 static inline deque_iterator_t   cdeque_erase_range(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end) { return i_deque_erase_range(_this, iterator_begin, iterator_end); }
 static inline void               cdeque_pop_back(deque_t* _this)                       { i_deque_pop_back(_this); }

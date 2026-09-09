@@ -189,7 +189,9 @@ static void test_i_for(void)
 #elif TEST_VECTOR
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, push_back)(ds_vector_i, i);     }, time_vector);
 #elif TEST_DEQUE
-        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, push_back)(ds_deque_i, i);       }, time_deque);
+        DSL(cdeque, push_back)(ds_deque_i, TIMES_INSERT + 1);
+        DSL(cdeque, push_back)(ds_deque_i, TIMES_INSERT + 2);
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, insert)(ds_deque_i, DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_i)), i);       }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cpqueue, push)(ds_pqueue_i, i);          }, time_pqueue);
 #endif
@@ -543,8 +545,10 @@ static void test_i_rand(void)
             DSL(cvector, push_back)(ds_vector_i, rand() % TIMES_FIND);
         }, time_vector);
 #elif TEST_DEQUE
+        DSL(cdeque, push_back)(ds_deque_i, TIMES_FIND + 1);
+        DSL(cdeque, push_back)(ds_deque_i, TIMES_FIND + 2);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
-            DSL(cdeque, push_back)(ds_deque_i, rand() % TIMES_FIND);
+            DSL(cdeque, insert)(ds_deque_i, DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_i)), rand() % TIMES_FIND);
         }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
@@ -961,8 +965,10 @@ static void test_s_rand(void)
             DSL(cvector, push_back)(ds_vector_s, (vector_data_t)s_pool_str(dst));
         }, time_vector);
 #elif TEST_DEQUE
+        DSL(cdeque, push_back)(ds_deque_s, (deque_data_t)s_pool_str(dst));
+        DSL(cdeque, push_back)(ds_deque_s, (deque_data_t)s_pool_str(dst));
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
-            DSL(cdeque, push_back)(ds_deque_s, (deque_data_t)s_pool_str(dst));
+            DSL(cdeque, insert)(ds_deque_s, DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_s)), (deque_data_t)s_pool_str(dst));
         }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
