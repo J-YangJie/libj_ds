@@ -73,6 +73,26 @@ typedef ssize_t  ds_size_t;
 #define TIMES_REMOVE_V_L 100
 #endif /* TIMES_REMOVE_V_L */
 
+/* 中段 insert / insert_n / erase / erase_range 每次都是 O(n)，单独用小次数；
+   位置统一随机。count 是全表扫描，次数再小一档。口径与 main.c 保持一致。 */
+#ifndef TIMES_MID_V_L
+#define TIMES_MID_V_L   100
+#endif /* TIMES_MID_V_L */
+#ifndef TIMES_COUNT_V_L
+#define TIMES_COUNT_V_L 10
+#endif /* TIMES_COUNT_V_L */
+#ifndef TIMES_INSERT_N
+#define TIMES_INSERT_N  16
+#endif /* TIMES_INSERT_N */
+#ifndef TIMES_ERASE_RANGE_LEN
+#define TIMES_ERASE_RANGE_LEN 16
+#endif /* TIMES_ERASE_RANGE_LEN */
+
+/* sort 基准的固定种子：同一份数据要能重放两遍（升序/降序各一遍） */
+#ifndef SORT_SEED
+#define SORT_SEED 12345
+#endif /* SORT_SEED */
+
 #ifndef HASHMAP_CAPACITY_INIT
 #define HASHMAP_CAPACITY_INIT 2 * TIMES_INSERT
 #endif /* HASHMAP_CAPACITY_INIT */
@@ -121,6 +141,78 @@ typedef ssize_t  ds_size_t;
                             (void)time_multimap; (void)time_multiset; (void)time_list; \
                             (void)time_vector; (void)time_vector_s; (void)time_pqueue; \
                             (void)time_deque; } while (0)
+
+
+/* ============================================================================
+ * 中段操作基准：insert / insert_n / erase / erase_range / count
+ *
+ * 与 main.c 的 BENCH_DEQUE_MID_OPS 一一对应：同样的容器尺寸、同样的随机位置、
+ * 同样把定位迭代器放在计时之外（这边 begin() + n 本来就是 O(1)，排在外面只是
+ * 为了让两边的计时口径对齐）。
+ * ========================================================================== */
+#define BENCH_STL_DEQUE_MID_OPS(_ds, _VAL, _CNT_VAL)                                        \
+    do {                                                                                    \
+        int i;                                                                              \
+                                                                                            \
+        for (i = 0; i < TIMES_INSERT; ++i)                                                  \
+            (_ds).push_back(_VAL(i));                                                       \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        for (i = 0; i < TIMES_MID_V_L; ++i) {                                               \
+            auto it = (_ds).begin() + (long)(rand() % (long)(_ds).size());                  \
+            const auto& v = _VAL(i);   /* 造值放到计时之外，与 main.c 的口径对齐 */         \
+                                                                                            \
+            GET_DURATION({ (_ds).insert(it, v); }, time_deque);                             \
+        }                                                                                   \
+        printf("RESULT %s insert_mid %s %ld %ld ms size=%ld\n", __func__, DS_NAME,          \
+               (long)TIMES_MID_V_L, (long)(time_deque / 1000), (long)(_ds).size());         \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        for (i = 0; i < TIMES_MID_V_L; ++i) {                                               \
+            auto it = (_ds).begin() + (long)(rand() % (long)(_ds).size());                  \
+            const auto& v = _VAL(i);                                                        \
+                                                                                            \
+            GET_DURATION({ (_ds).insert(it, (size_t)TIMES_INSERT_N, v); }, time_deque);     \
+        }                                                                                   \
+        printf("RESULT %s insert_n_mid %s %ld %ld ms size=%ld\n", __func__, DS_NAME,        \
+               (long)TIMES_MID_V_L, (long)(time_deque / 1000), (long)(_ds).size());         \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        for (i = 0; i < TIMES_MID_V_L; ++i) {                                               \
+            auto it = (_ds).begin() + (long)(rand() % (long)(_ds).size());                  \
+            GET_DURATION({ (_ds).erase(it); }, time_deque);                                 \
+        }                                                                                   \
+        printf("RESULT %s erase_mid %s %ld %ld ms size=%ld\n", __func__, DS_NAME,           \
+               (long)TIMES_MID_V_L, (long)(time_deque / 1000), (long)(_ds).size());         \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        for (i = 0; i < TIMES_MID_V_L; ++i) {                                               \
+            auto b = (_ds).begin() + (long)(rand() % (long)(_ds).size());                   \
+            auto e = b;                                                                     \
+            int  k;                                                                         \
+            for (k = 0; k < TIMES_ERASE_RANGE_LEN; ++k)                                     \
+                ++e;                                                                        \
+            GET_DURATION({ (_ds).erase(b, e); }, time_deque);                               \
+        }                                                                                   \
+        printf("RESULT %s erase_range_mid %s %ld %ld ms size=%ld\n", __func__, DS_NAME,     \
+               (long)TIMES_MID_V_L, (long)(time_deque / 1000), (long)(_ds).size());         \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        {                                                                                   \
+            long cnt = 0;                                                                   \
+                                                                                            \
+            GET_DURATION(for (i = 0; i < TIMES_COUNT_V_L; ++i) {                            \
+                cnt += (long)count((_ds).begin(), (_ds).end(), _CNT_VAL(i));                \
+            }, time_deque);                                                                 \
+            printf("RESULT %s count %s %ld %ld ms cnt=%ld size=%ld\n", __func__, DS_NAME,   \
+                   (long)TIMES_COUNT_V_L, (long)(time_deque / 1000), cnt,                   \
+                   (long)(_ds).size());                                                     \
+        }                                                                                   \
+    } while (0)
+
+#define MID_VAL_INT(_i)   ((ds_data_t)(_i))
+#define MID_VAL_RAND(_i)  ((ds_data_t)(rand() % TIMES_FIND))
+#define MID_VAL_STR(_i)   ((pool_assign(key), key))
 
 static void test_i_for(void)
 {
@@ -362,6 +454,30 @@ static void test_i_for(void)
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.pop_back(); }, time_deque);
         printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)ds_deque_i.size());
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_STL_DEQUE_MID_OPS(ds_deque_i, MID_VAL_INT, MID_VAL_INT);
+
+        /* sort：清空后灌一批随机值（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向 */
+        srand(SORT_SEED);
+        ds_deque_i.erase(ds_deque_i.begin(), ds_deque_i.end());
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            ds_deque_i.push_back((ds_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort(ds_deque_i.begin(), ds_deque_i.end()); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000), (int)is_sorted(ds_deque_i.begin(), ds_deque_i.end()), (long)ds_deque_i.size());
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        ds_deque_i.erase(ds_deque_i.begin(), ds_deque_i.end());
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            ds_deque_i.push_back((ds_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort(ds_deque_i.begin(), ds_deque_i.end(), greater<ds_data_t>()); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000), (int)is_sorted(ds_deque_i.begin(), ds_deque_i.end(), greater<ds_data_t>()), (long)ds_deque_i.size());
     }
 #endif
 
@@ -712,6 +828,30 @@ static void test_i_rand(void)
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.pop_back(); }, time_deque);
         printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)ds_deque_i.size());
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_STL_DEQUE_MID_OPS(ds_deque_i, MID_VAL_RAND, MID_VAL_RAND);
+
+        /* sort：清空后灌一批随机值（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向 */
+        srand(SORT_SEED);
+        ds_deque_i.erase(ds_deque_i.begin(), ds_deque_i.end());
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            ds_deque_i.push_back((ds_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort(ds_deque_i.begin(), ds_deque_i.end()); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000), (int)is_sorted(ds_deque_i.begin(), ds_deque_i.end()), (long)ds_deque_i.size());
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        ds_deque_i.erase(ds_deque_i.begin(), ds_deque_i.end());
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            ds_deque_i.push_back((ds_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort(ds_deque_i.begin(), ds_deque_i.end(), greater<ds_data_t>()); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000), (int)is_sorted(ds_deque_i.begin(), ds_deque_i.end(), greater<ds_data_t>()), (long)ds_deque_i.size());
     }
 #endif
 
@@ -803,9 +943,15 @@ static void test_i_rand(void)
     }
 }
 
+#ifndef S_POOL_LEN
 #define S_POOL_LEN    10000000
+#endif /* S_POOL_LEN */
+#ifndef S_STR_LEN_MIN
 #define S_STR_LEN_MIN 16
+#endif /* S_STR_LEN_MIN */
+#ifndef S_STR_LEN_MAX
 #define S_STR_LEN_MAX 31
+#endif /* S_STR_LEN_MAX */
 
 static char* g_s_pool = NULL;
 
@@ -1128,6 +1274,34 @@ static void test_s_rand(void)
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.pop_back(); }, time_deque);
         printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)ds_deque_s.size());
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_STL_DEQUE_MID_OPS(ds_deque_s, MID_VAL_STR, MID_VAL_STR);
+
+        /* sort：清空后灌一批池子里的串（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向 */
+        srand(SORT_SEED);
+        ds_deque_s.erase(ds_deque_s.begin(), ds_deque_s.end());
+        for (int k = 0; k < TIMES_INSERT; ++k) {
+            pool_assign(key);
+            ds_deque_s.push_back(key);
+        }
+
+        time_deque = 0;
+        GET_DURATION({ sort(ds_deque_s.begin(), ds_deque_s.end()); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000), (int)is_sorted(ds_deque_s.begin(), ds_deque_s.end()), (long)ds_deque_s.size());
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        ds_deque_s.erase(ds_deque_s.begin(), ds_deque_s.end());
+        for (int k = 0; k < TIMES_INSERT; ++k) {
+            pool_assign(key);
+            ds_deque_s.push_back(key);
+        }
+
+        time_deque = 0;
+        GET_DURATION({ sort(ds_deque_s.begin(), ds_deque_s.end(), greater<string>()); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000), (int)is_sorted(ds_deque_s.begin(), ds_deque_s.end(), greater<string>()), (long)ds_deque_s.size());
     }
 #endif
 

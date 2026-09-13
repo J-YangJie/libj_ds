@@ -28,6 +28,10 @@
 #include <list/list.h>
 #include <vector/vector.h>
 #include <deque/deque.h>
+#include <deque3/deque3.h>
+#ifdef DEQUE3_STR_SSO
+#include "testcode/deque3/sso_str.h"   /* 临时：SSO 字符串对照件 */
+#endif
 #include <priority_queue/priority_queue.h>
 #include <map/map.h>
 #include <multimap/multimap.h>
@@ -74,6 +78,26 @@
 #define TIMES_REMOVE_V_L 100
 #endif /* TIMES_REMOVE_V_L */
 
+/* 中段 insert / insert_n / erase / erase_range 每次都是 O(n)，单独用小次数；
+   位置统一随机。count 是全表扫描，次数再小一档。 */
+#ifndef TIMES_MID_V_L
+#define TIMES_MID_V_L   100
+#endif /* TIMES_MID_V_L */
+#ifndef TIMES_COUNT_V_L
+#define TIMES_COUNT_V_L 10
+#endif /* TIMES_COUNT_V_L */
+#ifndef TIMES_INSERT_N
+#define TIMES_INSERT_N  16
+#endif /* TIMES_INSERT_N */
+#ifndef TIMES_ERASE_RANGE_LEN
+#define TIMES_ERASE_RANGE_LEN 16
+#endif /* TIMES_ERASE_RANGE_LEN */
+
+/* sort 基准的固定种子：同一份数据要能重放两遍（升序/降序各一遍） */
+#ifndef SORT_SEED
+#define SORT_SEED 12345
+#endif /* SORT_SEED */
+
 #ifndef HASHMAP_CAPACITY_INIT
 #define HASHMAP_CAPACITY_INIT 2 * TIMES_INSERT
 #endif /* HASHMAP_CAPACITY_INIT */
@@ -102,6 +126,9 @@
 #elif defined(TEST_DEQUE)
 #define DS_NAME      "deque"
 #define TIME_DS      time_deque
+#elif defined(TEST_DEQUE3)
+#define DS_NAME      "deque3"
+#define TIME_DS      time_deque
 #elif defined(TEST_PQUEUE)
 #define DS_NAME      "priority_queue"
 #define TIME_DS      time_pqueue
@@ -110,7 +137,7 @@
 #define TIME_DS      time_vector
 #endif
 
-#if defined(TEST_LIST) || defined(TEST_VECTOR) || defined(TEST_DEQUE)
+#if defined(TEST_LIST) || defined(TEST_VECTOR) || defined(TEST_DEQUE) || defined(TEST_DEQUE3)
 #define FIND_OPS   TIMES_FIND_V_L
 #define REMOVE_OPS TIMES_REMOVE_V_L
 #else
@@ -122,6 +149,183 @@
                             (void)time_multimap; (void)time_multiset; (void)time_list; \
                             (void)time_vector; (void)time_vector_s; (void)time_pqueue; \
                             (void)time_deque; } while (0)
+
+
+/* ============================================================================
+ * 中段操作基准：insert / insert_n / erase / erase_range / count
+ *
+ * deque 和 deque3 的接口只差函数前缀与迭代器类型，所以只写一份宏、切前缀。
+ * 定位迭代器刻意放在计时之外：C++ 那边 begin() + n 是 O(1)，这边只能逐个
+ * next() 走过去，不把定位开销排掉的话会盖过 insert/erase 本身，对比就失真了。
+ * ========================================================================== */
+#if defined(TEST_DEQUE)
+#define BQ(_m)              cdeque_##_m
+#define BQ_IT               deque_iterator_t
+#define BQ_SEEK(_ds, _p)    deque_bench_seek((_ds), (_p))
+#elif defined(TEST_DEQUE3)
+#define BQ(_m)              c3deque_##_m
+#define BQ_IT               deque3_iterator_t
+#define BQ_SEEK(_ds, _p)    deque3_bench_seek((_ds), (_p))
+#endif
+
+/* 字符串基准的入参：默认直接递池子里的 char*（step=8，信封里就是那个指针）；
+   开 DEQUE3_STR_SSO 时改成先把串装进 sso_str_t，再递它的地址（step=32 > 8，信封里放地址）。 */
+#ifdef DEQUE3_STR_SSO
+static sso_str_t g_sso_scratch;
+
+static inline deque_data_t dq3_str_arg(const char* s)
+{
+    if (!sso_str_set(&g_sso_scratch, s))
+        return 0;
+    return (deque_data_t)(uintptr_t)&g_sso_scratch;
+}
+#define DQ3_STR_ARG()     dq3_str_arg(s_pool_str(dst))
+#else
+#define DQ3_STR_ARG()     ((deque_data_t)s_pool_str(dst))
+#endif
+
+/* 造第 _i 个元素：int 基准给值，字符串基准每回从池子里取一段新的 */
+#define MID_VAL_INT(_i)   ((deque_data_t)(_i))
+#define MID_VAL_RAND(_i)  ((deque_data_t)(rand() % TIMES_FIND))
+#define MID_VAL_STR(_i)   DQ3_STR_ARG()
+
+#define BENCH_DEQUE_MID_OPS(_ds, _VAL, _CNT_VAL)                                            \
+    do {                                                                                    \
+        int i;                                                                              \
+                                                                                            \
+        for (i = 0; i < TIMES_INSERT; ++i)                                                  \
+            BQ(push_back)((_ds), _VAL(i));                                                  \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        for (i = 0; i < TIMES_MID_V_L; ++i) {                                               \
+            BQ_IT it = BQ_SEEK((_ds), (size_t)(rand() % (long)BQ(size)((_ds))));            \
+            deque_data_t v = _VAL(i);   /* 造值放到计时之外，别混进 insert 的耗时里 */      \
+                                                                                            \
+            GET_DURATION({ BQ(insert)((_ds), it, v); }, time_deque);                        \
+        }                                                                                   \
+        printf("RESULT %s insert_mid %s %ld %ld ms size=%ld\n", __func__, DS_NAME,          \
+               (long)TIMES_MID_V_L, (long)(time_deque / 1000), (long)BQ(size)((_ds)));      \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        for (i = 0; i < TIMES_MID_V_L; ++i) {                                               \
+            BQ_IT it = BQ_SEEK((_ds), (size_t)(rand() % (long)BQ(size)((_ds))));            \
+            deque_data_t v = _VAL(i);                                                       \
+                                                                                            \
+            GET_DURATION({ BQ(insert_n)((_ds), it, TIMES_INSERT_N, v); }, time_deque);      \
+        }                                                                                   \
+        printf("RESULT %s insert_n_mid %s %ld %ld ms size=%ld\n", __func__, DS_NAME,        \
+               (long)TIMES_MID_V_L, (long)(time_deque / 1000), (long)BQ(size)((_ds)));      \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        for (i = 0; i < TIMES_MID_V_L; ++i) {                                               \
+            BQ_IT it = BQ_SEEK((_ds), (size_t)(rand() % (long)BQ(size)((_ds))));            \
+            GET_DURATION({ BQ(erase)((_ds), it); }, time_deque);                            \
+        }                                                                                   \
+        printf("RESULT %s erase_mid %s %ld %ld ms size=%ld\n", __func__, DS_NAME,           \
+               (long)TIMES_MID_V_L, (long)(time_deque / 1000), (long)BQ(size)((_ds)));      \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        for (i = 0; i < TIMES_MID_V_L; ++i) {                                               \
+            BQ_IT b = BQ_SEEK((_ds), (size_t)(rand() % (long)BQ(size)((_ds))));             \
+            BQ_IT e = b;                                                                    \
+            int   k;                                                                        \
+            for (k = 0; k < TIMES_ERASE_RANGE_LEN; ++k)                                     \
+                e = BQ(next)(e);                                                            \
+            GET_DURATION({ BQ(erase_range)((_ds), b, e); }, time_deque);                    \
+        }                                                                                   \
+        printf("RESULT %s erase_range_mid %s %ld %ld ms size=%ld\n", __func__, DS_NAME,     \
+               (long)TIMES_MID_V_L, (long)(time_deque / 1000), (long)BQ(size)((_ds)));      \
+                                                                                            \
+        time_deque = 0;                                                                     \
+        {                                                                                   \
+            size_t cnt = 0;                                                                 \
+                                                                                            \
+            GET_DURATION(for (i = 0; i < TIMES_COUNT_V_L; ++i) {                            \
+                cnt += (size_t)BQ(count)((_ds), _CNT_VAL(i));                               \
+            }, time_deque);                                                                 \
+            printf("RESULT %s count %s %ld %ld ms cnt=%zu size=%ld\n", __func__, DS_NAME,   \
+                   (long)TIMES_COUNT_V_L, (long)(time_deque / 1000), cnt,                   \
+                   (long)BQ(size)((_ds)));                                                  \
+        }                                                                                   \
+    } while (0)
+
+#if defined(TEST_DEQUE)
+/* 走到第 p 个元素：只用来给基准定位，不计时 */
+static deque_iterator_t deque_bench_seek(deque_t* _this, size_t p)
+{
+    deque_iterator_t it = cdeque_begin(_this);
+    size_t           k;
+
+    for (k = 0; k < p; ++k)
+        it = cdeque_next(it);
+    return it;
+}
+#endif
+
+#if defined(TEST_DEQUE3)
+static deque3_iterator_t deque3_bench_seek(deque3_t* _this, size_t p)
+{
+    deque3_iterator_t it = c3deque_begin(_this);
+    size_t            k;
+
+    for (k = 0; k < p; ++k)
+        it = c3deque_next(it);
+    return it;
+}
+#endif
+
+
+/* ============================================================================
+ * STL introsort 的宏版：给 deque / deque3 各展开一套排序函数
+ *
+ * 比较子是通过宏传进去的，展开后全内联 —— 和 std::sort 是模板一个道理。
+ * 要是传函数指针，每次比较都多一次间接调用，跟 STL 就没得比了。
+ * 元素宽度：deque 的槽固定 8 字节（deque_data_t），deque3 的 int 就是 4 字节，
+ * std::deque<ds_data_t> 是 8 字节 —— 排序搬运量本来就不同，对比时心里有数。
+ * ========================================================================== */
+#include <sort/sort_intro.h>
+
+#define DQ_IT             deque_iterator_t
+#define DQ_ADD(_it, _n)   __i_deque_advance((_it), (deque_size_t)(_n))
+#define DQ_NEXT(_it)      i_deque_next(_it)
+#define DQ_PREV(_it)      i_deque_prev(_it)
+#define DQ_DIST(_a, _b)   __i_deque_iterator_distance((_a), (_b))
+#define DQ_GET_I(_it)     (*(deque_data_t*)((_it).cur))
+#define DQ_GET_S(_it)     (*(char**)((_it).cur))
+#define DQ_LT_I(_a, _b)   ((_a) < (_b))
+#define DQ_LT_S(_a, _b)   (0 > strcmp((const char*)(_a), (const char*)(_b)))
+#define DQ_GT_S(_a, _b)   (0 < strcmp((const char*)(_a), (const char*)(_b)))
+#define DQ_GT_I(_a, _b)   ((_a) > (_b))
+#define DQ_ILT(_a, _b)    i_deque_iter_lt((_a), (_b))
+#define DQ_IEQ(_a, _b)    ((_a).cur == (_b).cur)
+
+I_SORT_DEFINE(sort_dq_int,  deque_data_t, DQ_IT, DQ_ADD, DQ_NEXT, DQ_PREV, DQ_DIST, DQ_IEQ, DQ_GET_I, DQ_LT_I, DQ_ILT)
+I_SORT_DEFINE(sort_dq_ides, deque_data_t, DQ_IT, DQ_ADD, DQ_NEXT, DQ_PREV, DQ_DIST, DQ_IEQ, DQ_GET_I, DQ_GT_I, DQ_ILT)
+I_SORT_DEFINE(sort_dq_str,  char*,        DQ_IT, DQ_ADD, DQ_NEXT, DQ_PREV, DQ_DIST, DQ_IEQ, DQ_GET_S, DQ_LT_S, DQ_ILT)
+I_SORT_DEFINE(sort_dq_sdes, char*,        DQ_IT, DQ_ADD, DQ_NEXT, DQ_PREV, DQ_DIST, DQ_IEQ, DQ_GET_S, DQ_GT_S, DQ_ILT)
+
+#define D3_IT             deque3_iterator_t
+#define D3_ADD(_it, _n)   __i_deque3_iter_add((_it), (ptrdiff_t)(_n))
+#define D3_NEXT(_it)      i_deque3_next(_it)
+#define D3_PREV(_it)      i_deque3_prev(_it)
+#define D3_DIST(_a, _b)   __i_deque3_iter_distance((_a), (_b))
+#define D3_GET_I(_it)     (*(int*)((_it).cur))
+#define D3_LT_I(_a, _b)   ((_a) < (_b))
+#define D3_ILT(_a, _b)    i_deque3_iter_lt((_a), (_b))
+#define D3_IEQ(_a, _b)    ((_a).cur == (_b).cur)
+#define D3_GT_I(_a, _b)   ((_a) > (_b))
+
+I_SORT_DEFINE(sort_d3_int,  int, D3_IT, D3_ADD, D3_NEXT, D3_PREV, D3_DIST, D3_IEQ, D3_GET_I, D3_LT_I, D3_ILT)
+I_SORT_DEFINE(sort_d3_ides, int, D3_IT, D3_ADD, D3_NEXT, D3_PREV, D3_DIST, D3_IEQ, D3_GET_I, D3_GT_I, D3_ILT)
+
+#ifdef DEQUE3_STR_SSO
+#define D3_GET_S(_it)     (*(sso_str_t*)((_it).cur))
+#define D3_LT_S(_a, _b)   (0 > sso_str_cmp(&(_a), &(_b)))
+#define D3_GT_S(_a, _b)   (0 < sso_str_cmp(&(_a), &(_b)))
+
+I_SORT_DEFINE(sort_d3_str,  sso_str_t, D3_IT, D3_ADD, D3_NEXT, D3_PREV, D3_DIST, D3_IEQ, D3_GET_S, D3_LT_S, D3_ILT)
+I_SORT_DEFINE(sort_d3_sdes, sso_str_t, D3_IT, D3_ADD, D3_NEXT, D3_PREV, D3_DIST, D3_IEQ, D3_GET_S, D3_GT_S, D3_ILT)
+#endif
 
 static void test_i_for(void)
 {
@@ -155,6 +359,8 @@ static void test_i_for(void)
     vector_t*         ds_vector_i   = VECTOR_NEW();
 #elif TEST_DEQUE
     deque_t*          ds_deque_i    = DEQUE_NEW();
+#elif TEST_DEQUE3
+    deque3_t*         ds_deque3_i   = DEQUE3_NEW_T(int);
 #elif TEST_PQUEUE
     priority_queue_t* ds_pqueue_i   = PRIORITY_QUEUE_NEW();
 #endif
@@ -192,6 +398,10 @@ static void test_i_for(void)
         DSL(cdeque, push_back)(ds_deque_i, TIMES_INSERT + 1);
         DSL(cdeque, push_back)(ds_deque_i, TIMES_INSERT + 2);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, insert)(ds_deque_i, DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_i)), i);       }, time_deque);
+#elif TEST_DEQUE3
+        DSL(c3deque, push_back)(ds_deque3_i, TIMES_INSERT + 1);
+        DSL(c3deque, push_back)(ds_deque3_i, TIMES_INSERT + 2);
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, insert)(ds_deque3_i, DSL(c3deque, prev)(DSL(c3deque, end)(ds_deque3_i)), i);       }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cpqueue, push)(ds_pqueue_i, i);          }, time_pqueue);
 #endif
@@ -267,6 +477,15 @@ static void test_i_for(void)
                 if (it.cur != e_it.cur) times_succ++;
             }, time_deque);
         }
+#elif TEST_DEQUE3
+        ds_size = DSL(c3deque, size)(ds_deque3_i);
+        {
+            deque3_iterator_t e_it = DSL(c3deque, end)(ds_deque3_i);
+            GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
+                deque3_iterator_t it = DSL(c3deque, find)(ds_deque3_i, i);
+                if (it.cur != e_it.cur) times_succ++;
+            }, time_deque);
+        }
 #elif TEST_PQUEUE
         ds_size = DSL(cpqueue, size)(ds_pqueue_i);
         /* unsupport */
@@ -320,6 +539,10 @@ static void test_i_for(void)
         GET_DURATION(for (int i = 0; i < TIMES_REMOVE_V_L; ++i) {
             removed += DSL(cdeque, remove)(ds_deque_i, rand() % TIMES_FIND);
         }, time_deque);  /* only 10^2 */
+#elif TEST_DEQUE3
+        GET_DURATION(for (int i = 0; i < TIMES_REMOVE_V_L; ++i) {
+            removed += DSL(c3deque, remove)(ds_deque3_i, rand() % TIMES_FIND);
+        }, time_deque);  /* only 10^2 */
 #elif TEST_PQUEUE
         removed = 0;
         /* unsupport */
@@ -357,6 +580,94 @@ static void test_i_for(void)
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, pop_back)(ds_deque_i);      }, time_deque);
         printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(cdeque, size)(ds_deque_i));
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_DEQUE_MID_OPS(ds_deque_i, MID_VAL_INT, MID_VAL_INT);
+
+        /* sort：清空后灌一批随机值（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向，两边输入完全一致 */
+        srand(SORT_SEED);
+        DSL(cdeque, erase_range)(ds_deque_i, DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(cdeque, push_back)(ds_deque_i, (deque_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort_dq_int(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_dq_int_sorted(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)),
+               (long)DSL(cdeque, size)(ds_deque_i));
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        DSL(cdeque, erase_range)(ds_deque_i, DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(cdeque, push_back)(ds_deque_i, (deque_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort_dq_ides(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_dq_ides_sorted(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)),
+               (long)DSL(cdeque, size)(ds_deque_i));
+    }
+#endif
+
+#ifdef TEST_DEQUE3
+    if (1)
+    {
+        deque3_size_t n;
+
+        time_deque = 0;
+        n = DSL(c3deque, size)(ds_deque3_i);
+        {
+            deque3_iterator_t b = DSL(c3deque, begin)(ds_deque3_i);
+            deque3_iterator_t e = DSL(c3deque, end)(ds_deque3_i);
+            GET_DURATION({ DSL(c3deque, erase_range)(ds_deque3_i, b, e); }, time_deque);
+        }
+        printf("RESULT %s erase %s %ld %ld ms\n", __func__, DS_NAME, (long)n, (long)(time_deque / 1000));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, push_back)(ds_deque3_i, i);  }, time_deque);
+        printf("RESULT %s push_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_i));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, pop_front)(ds_deque3_i);     }, time_deque);
+        printf("RESULT %s pop_front %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_i));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, push_front)(ds_deque3_i, i); }, time_deque);
+        printf("RESULT %s push_front %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_i));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, pop_back)(ds_deque3_i);      }, time_deque);
+        printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_i));
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_DEQUE_MID_OPS(ds_deque3_i, MID_VAL_INT, MID_VAL_INT);
+
+        /* sort：清空后灌一批随机值（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向，两边输入完全一致 */
+        srand(SORT_SEED);
+        DSL(c3deque, erase_range)(ds_deque3_i, DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(c3deque, push_back)(ds_deque3_i, (deque_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort_d3_int(DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_d3_int_sorted(DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i)),
+               (long)DSL(c3deque, size)(ds_deque3_i));
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        DSL(c3deque, erase_range)(ds_deque3_i, DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(c3deque, push_back)(ds_deque3_i, (deque_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort_d3_ides(DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_d3_ides_sorted(DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i)),
+               (long)DSL(c3deque, size)(ds_deque3_i));
     }
 #endif
 
@@ -454,6 +765,9 @@ static void test_i_for(void)
 #elif TEST_DEQUE
         GET_DURATION({ removed = DSL(cdeque, clear)(ds_deque_i);           }, time_deque);
         DEQUE_DELETE(&ds_deque_i);
+#elif TEST_DEQUE3
+        GET_DURATION({ removed = DSL(c3deque, clear)(ds_deque3_i);         }, time_deque);
+        DEQUE3_DELETE(&ds_deque3_i);
 #elif TEST_PQUEUE
         GET_DURATION({ removed = DSL(cpqueue, clear)(ds_pqueue_i);         }, time_pqueue);
         PRIORITY_QUEUE_DELETE(&ds_pqueue_i);
@@ -496,6 +810,8 @@ static void test_i_rand(void)
     vector_t*         ds_vector_i   = VECTOR_NEW();
 #elif TEST_DEQUE
     deque_t*          ds_deque_i    = DEQUE_NEW();
+#elif TEST_DEQUE3
+    deque3_t*         ds_deque3_i   = DEQUE3_NEW_T(int);
 #elif TEST_PQUEUE
     priority_queue_t* ds_pqueue_i   = PRIORITY_QUEUE_NEW();
 #endif
@@ -549,6 +865,12 @@ static void test_i_rand(void)
         DSL(cdeque, push_back)(ds_deque_i, TIMES_FIND + 2);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             DSL(cdeque, insert)(ds_deque_i, DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_i)), rand() % TIMES_FIND);
+        }, time_deque);
+#elif TEST_DEQUE3
+        DSL(c3deque, push_back)(ds_deque3_i, TIMES_FIND + 1);
+        DSL(c3deque, push_back)(ds_deque3_i, TIMES_FIND + 2);
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            DSL(c3deque, insert)(ds_deque3_i, DSL(c3deque, prev)(DSL(c3deque, end)(ds_deque3_i)), rand() % TIMES_FIND);
         }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
@@ -627,6 +949,15 @@ static void test_i_rand(void)
                 if (it.cur != e_it.cur) times_succ++;
             }, time_deque);
         }
+#elif TEST_DEQUE3
+        ds_size = DSL(c3deque, size)(ds_deque3_i);
+        {
+            deque3_iterator_t e_it = DSL(c3deque, end)(ds_deque3_i);
+            GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
+                deque3_iterator_t it = DSL(c3deque, find)(ds_deque3_i, rand() % TIMES_FIND);
+                if (it.cur != e_it.cur) times_succ++;
+            }, time_deque);
+        }
 #elif TEST_PQUEUE
         ds_size = DSL(cpqueue, size)(ds_pqueue_i);
         /* unsupport */
@@ -680,6 +1011,10 @@ static void test_i_rand(void)
         GET_DURATION(for (int i = 0; i < TIMES_REMOVE_V_L; ++i) {
             removed += DSL(cdeque, remove)(ds_deque_i, rand() % TIMES_FIND);
         }, time_deque);
+#elif TEST_DEQUE3
+        GET_DURATION(for (int i = 0; i < TIMES_REMOVE_V_L; ++i) {
+            removed += DSL(c3deque, remove)(ds_deque3_i, rand() % TIMES_FIND);
+        }, time_deque);
 #elif TEST_PQUEUE
         removed = 0;
         /* unsupport */
@@ -717,6 +1052,94 @@ static void test_i_rand(void)
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, pop_back)(ds_deque_i);      }, time_deque);
         printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(cdeque, size)(ds_deque_i));
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_DEQUE_MID_OPS(ds_deque_i, MID_VAL_RAND, MID_VAL_RAND);
+
+        /* sort：清空后灌一批随机值（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向，两边输入完全一致 */
+        srand(SORT_SEED);
+        DSL(cdeque, erase_range)(ds_deque_i, DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(cdeque, push_back)(ds_deque_i, (deque_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort_dq_int(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_dq_int_sorted(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)),
+               (long)DSL(cdeque, size)(ds_deque_i));
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        DSL(cdeque, erase_range)(ds_deque_i, DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(cdeque, push_back)(ds_deque_i, (deque_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort_dq_ides(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_dq_ides_sorted(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)),
+               (long)DSL(cdeque, size)(ds_deque_i));
+    }
+#endif
+
+#ifdef TEST_DEQUE3
+    if (1)
+    {
+        deque3_size_t n;
+
+        time_deque = 0;
+        n = DSL(c3deque, size)(ds_deque3_i);
+        {
+            deque3_iterator_t b = DSL(c3deque, begin)(ds_deque3_i);
+            deque3_iterator_t e = DSL(c3deque, end)(ds_deque3_i);
+            GET_DURATION({ DSL(c3deque, erase_range)(ds_deque3_i, b, e); }, time_deque);
+        }
+        printf("RESULT %s erase %s %ld %ld ms\n", __func__, DS_NAME, (long)n, (long)(time_deque / 1000));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, push_back)(ds_deque3_i, rand() % TIMES_FIND);  }, time_deque);
+        printf("RESULT %s push_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_i));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, pop_front)(ds_deque3_i);     }, time_deque);
+        printf("RESULT %s pop_front %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_i));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, push_front)(ds_deque3_i, rand() % TIMES_FIND); }, time_deque);
+        printf("RESULT %s push_front %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_i));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, pop_back)(ds_deque3_i);      }, time_deque);
+        printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_i));
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_DEQUE_MID_OPS(ds_deque3_i, MID_VAL_RAND, MID_VAL_RAND);
+
+        /* sort：清空后灌一批随机值（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向，两边输入完全一致 */
+        srand(SORT_SEED);
+        DSL(c3deque, erase_range)(ds_deque3_i, DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(c3deque, push_back)(ds_deque3_i, (deque_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort_d3_int(DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_d3_int_sorted(DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i)),
+               (long)DSL(c3deque, size)(ds_deque3_i));
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        DSL(c3deque, erase_range)(ds_deque3_i, DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(c3deque, push_back)(ds_deque3_i, (deque_data_t)(rand()));
+
+        time_deque = 0;
+        GET_DURATION({ sort_d3_ides(DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_d3_ides_sorted(DSL(c3deque, begin)(ds_deque3_i), DSL(c3deque, end)(ds_deque3_i)),
+               (long)DSL(c3deque, size)(ds_deque3_i));
     }
 #endif
 
@@ -814,6 +1237,9 @@ static void test_i_rand(void)
 #elif TEST_DEQUE
         GET_DURATION({ removed = DSL(cdeque, clear)(ds_deque_i);           }, time_deque);
         DEQUE_DELETE(&ds_deque_i);
+#elif TEST_DEQUE3
+        GET_DURATION({ removed = DSL(c3deque, clear)(ds_deque3_i);         }, time_deque);
+        DEQUE3_DELETE(&ds_deque3_i);
 #elif TEST_PQUEUE
         GET_DURATION({ removed = DSL(cpqueue, clear)(ds_pqueue_i);         }, time_pqueue);
         PRIORITY_QUEUE_DELETE(&ds_pqueue_i);
@@ -823,9 +1249,15 @@ static void test_i_rand(void)
     }
 }
 
+#ifndef S_POOL_LEN
 #define S_POOL_LEN    10000000
+#endif /* S_POOL_LEN */
+#ifndef S_STR_LEN_MIN
 #define S_STR_LEN_MIN 16
+#endif /* S_STR_LEN_MIN */
+#ifndef S_STR_LEN_MAX
 #define S_STR_LEN_MAX 31
+#endif /* S_STR_LEN_MAX */
 
 static char* g_s_pool = NULL;
 
@@ -913,6 +1345,12 @@ static void test_s_rand(void)
     vector_t*         ds_vector_s   = VECTOR_NEW_STRING();
 #elif TEST_DEQUE
     deque_t*          ds_deque_s    = DEQUE_NEW_STRING();
+#elif TEST_DEQUE3
+#ifdef DEQUE3_STR_SSO
+    deque3_t*         ds_deque3_s   = DEQUE3_NEW_OPS_T(g_class_deque_ops_sso(), sso_str_t);
+#else
+    deque3_t*         ds_deque3_s   = DEQUE3_NEW_OPS_T(g_class_deque_ops_string(), char*);
+#endif
 #elif TEST_PQUEUE
     priority_queue_t* ds_pqueue_s   = PRIORITY_QUEUE_NEW_STRING();
 #endif
@@ -969,6 +1407,12 @@ static void test_s_rand(void)
         DSL(cdeque, push_back)(ds_deque_s, (deque_data_t)s_pool_str(dst));
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             DSL(cdeque, insert)(ds_deque_s, DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_s)), (deque_data_t)s_pool_str(dst));
+        }, time_deque);
+#elif TEST_DEQUE3
+        DSL(c3deque, push_back)(ds_deque3_s, DQ3_STR_ARG());
+        DSL(c3deque, push_back)(ds_deque3_s, DQ3_STR_ARG());
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            DSL(c3deque, insert)(ds_deque3_s, DSL(c3deque, prev)(DSL(c3deque, end)(ds_deque3_s)), DQ3_STR_ARG());
         }, time_deque);
 #elif TEST_PQUEUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
@@ -1049,6 +1493,15 @@ static void test_s_rand(void)
                 if (it.cur != e_it.cur) times_succ++;
             }, time_deque);
         }
+#elif TEST_DEQUE3
+        ds_size = DSL(c3deque, size)(ds_deque3_s);
+        {
+            deque3_iterator_t e_it = DSL(c3deque, end)(ds_deque3_s);
+            GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) {
+                deque3_iterator_t it = DSL(c3deque, find)(ds_deque3_s, DQ3_STR_ARG());
+                if (it.cur != e_it.cur) times_succ++;
+            }, time_deque);
+        }
 #elif TEST_PQUEUE
         ds_size = DSL(cpqueue, size)(ds_pqueue_s);
         /* unsupport */
@@ -1105,6 +1558,10 @@ static void test_s_rand(void)
         GET_DURATION(for (int i = 0; i < TIMES_REMOVE_V_L; ++i) {
             removed += DSL(cdeque, remove)(ds_deque_s, (deque_data_t)s_pool_str(dst));
         }, time_deque);
+#elif TEST_DEQUE3
+        GET_DURATION(for (int i = 0; i < TIMES_REMOVE_V_L; ++i) {
+            removed += DSL(c3deque, remove)(ds_deque3_s, DQ3_STR_ARG());
+        }, time_deque);
 #elif TEST_PQUEUE
         removed = 0;
         /* unsupport */
@@ -1144,6 +1601,95 @@ static void test_s_rand(void)
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, pop_back)(ds_deque_s);      }, time_deque);
         printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(cdeque, size)(ds_deque_s));
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_DEQUE_MID_OPS(ds_deque_s, MID_VAL_STR, MID_VAL_STR);
+
+        /* sort：清空后灌一批池子里的串（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向，两边输入完全一致 */
+        srand(SORT_SEED);
+        DSL(cdeque, erase_range)(ds_deque_s, DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(cdeque, push_back)(ds_deque_s, (deque_data_t)s_pool_str(dst));
+
+        time_deque = 0;
+        GET_DURATION({ sort_dq_str(DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_dq_str_sorted(DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)),
+               (long)DSL(cdeque, size)(ds_deque_s));
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        DSL(cdeque, erase_range)(ds_deque_s, DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(cdeque, push_back)(ds_deque_s, (deque_data_t)s_pool_str(dst));
+
+        time_deque = 0;
+        GET_DURATION({ sort_dq_sdes(DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_dq_sdes_sorted(DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)),
+               (long)DSL(cdeque, size)(ds_deque_s));
+    }
+#endif
+
+#ifdef TEST_DEQUE3
+    if (1)
+    {
+        deque3_size_t n;
+        char dst[S_STR_LEN_MAX + 1];
+
+        time_deque = 0;
+        n = DSL(c3deque, size)(ds_deque3_s);
+        {
+            deque3_iterator_t b = DSL(c3deque, begin)(ds_deque3_s);
+            deque3_iterator_t e = DSL(c3deque, end)(ds_deque3_s);
+            GET_DURATION({ DSL(c3deque, erase_range)(ds_deque3_s, b, e); }, time_deque);
+        }
+        printf("RESULT %s erase %s %ld %ld ms\n", __func__, DS_NAME, (long)n, (long)(time_deque / 1000));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, push_back)(ds_deque3_s, DQ3_STR_ARG());  }, time_deque);
+        printf("RESULT %s push_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_s));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, pop_front)(ds_deque3_s);     }, time_deque);
+        printf("RESULT %s pop_front %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_s));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, push_front)(ds_deque3_s, DQ3_STR_ARG()); }, time_deque);
+        printf("RESULT %s push_front %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_s));
+
+        time_deque = 0;
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(c3deque, pop_back)(ds_deque3_s);      }, time_deque);
+        printf("RESULT %s pop_back %s %ld %ld ms size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT, (long)(time_deque / 1000), (long)DSL(c3deque, size)(ds_deque3_s));
+
+        /* insert / insert_n / erase / erase_range / count */
+        BENCH_DEQUE_MID_OPS(ds_deque3_s, MID_VAL_STR, MID_VAL_STR);
+
+        /* sort：清空后灌一批池子里的串（三方同一分布）再整体排序 —— 同一份数据排两遍，只改方向，两边输入完全一致 */
+        srand(SORT_SEED);
+        DSL(c3deque, erase_range)(ds_deque3_s, DSL(c3deque, begin)(ds_deque3_s), DSL(c3deque, end)(ds_deque3_s));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(c3deque, push_back)(ds_deque3_s, DQ3_STR_ARG());
+
+        time_deque = 0;
+        GET_DURATION({ sort_d3_str(DSL(c3deque, begin)(ds_deque3_s), DSL(c3deque, end)(ds_deque3_s)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=asc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_d3_str_sorted(DSL(c3deque, begin)(ds_deque3_s), DSL(c3deque, end)(ds_deque3_s)),
+               (long)DSL(c3deque, size)(ds_deque3_s));
+
+        srand(SORT_SEED);                       /* 同一份数据重放，只把方向换成降序 */
+        DSL(c3deque, erase_range)(ds_deque3_s, DSL(c3deque, begin)(ds_deque3_s), DSL(c3deque, end)(ds_deque3_s));
+        for (int k = 0; k < TIMES_INSERT; ++k)
+            DSL(c3deque, push_back)(ds_deque3_s, DQ3_STR_ARG());
+
+        time_deque = 0;
+        GET_DURATION({ sort_d3_sdes(DSL(c3deque, begin)(ds_deque3_s), DSL(c3deque, end)(ds_deque3_s)); }, time_deque);
+        printf("RESULT %s sort %s %ld %ld ms dir=desc sorted=%d size=%ld\n", __func__, DS_NAME, (long)TIMES_INSERT,
+               (long)(time_deque / 1000),
+               sort_d3_sdes_sorted(DSL(c3deque, begin)(ds_deque3_s), DSL(c3deque, end)(ds_deque3_s)),
+               (long)DSL(c3deque, size)(ds_deque3_s));
     }
 #endif
 
@@ -1244,6 +1790,9 @@ static void test_s_rand(void)
 #elif TEST_DEQUE
         GET_DURATION({ removed = DSL(cdeque, clear)(ds_deque_s);           }, time_deque);
         DEQUE_DELETE(&ds_deque_s);
+#elif TEST_DEQUE3
+        GET_DURATION({ removed = DSL(c3deque, clear)(ds_deque3_s);         }, time_deque);
+        DEQUE3_DELETE(&ds_deque3_s);
 #elif TEST_PQUEUE
         GET_DURATION({ removed = DSL(cpqueue, clear)(ds_pqueue_s);         }, time_pqueue);
         PRIORITY_QUEUE_DELETE(&ds_pqueue_s);

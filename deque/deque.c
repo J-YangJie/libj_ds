@@ -121,24 +121,6 @@ deque_data_t __i_deque_pop_front_free(deque_t* _this)
 
 /* checked */
 static JDSC_INLINE
-deque_iterator_t __i_deque_advance(deque_iterator_t it, deque_size_t n)
-{
-    deque_size_t noff, off = n + (it.cur - it.begin);
-    deque_size_t s = _I_DEQUE_BKT_SIZE;
-
-    if (off >= 0 && off < s) {
-        it.cur += n;
-        return it;
-    }
-
-    noff = off > 0 ? off / s : -((-off - 1) / s) - 1;
-    __i_deque_set_bkt(&it, it.bkt + noff);
-    it.cur = it.begin + (off - noff * s);
-    return it;
-}
-
-/* checked */
-static JDSC_INLINE
 void __i_deque_memmove_forward(deque_iterator_t dest, deque_iterator_t src, deque_size_t n)
 {
     for (deque_size_t i = 0; i < n; ++i) {

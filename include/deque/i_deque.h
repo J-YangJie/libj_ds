@@ -75,6 +75,17 @@ deque_size_t __i_deque_iterator_distance(deque_iterator_t begin, deque_iterator_
             + (begin.end - begin.cur);
 }
 
+/* 位置先后比较 —— 对应 STL 的 it1 < it2。
+   不能直接比 it.cur：那是 node 内部的指针，两个迭代器落在不同 node 时
+   比的是两块独立 malloc 的地址。先比 map 槽，同槽内再比 node 内偏移。 */
+static inline
+bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
+{
+    if (a.bkt != b.bkt)
+        return a.bkt < b.bkt;
+    return a.cur < b.cur;
+}
+
 /* checked */
 static inline
 bool i_deque_is_null_iterator(deque_iterator_t it)
@@ -209,6 +220,25 @@ static inline
 deque_iterator_t i_deque_prev(deque_iterator_t it)
 {
     return __i_deque_prev(it);
+}
+
+/* checked —— 随机访问：stl_deque.h:227 operator+=。n 可为负。
+   排序（sort_intro.h）要求迭代器能 +n，所以从 deque.c 提到头文件里来。 */
+static inline
+deque_iterator_t __i_deque_advance(deque_iterator_t it, deque_size_t n)
+{
+    deque_size_t noff, off = n + (it.cur - it.begin);
+    deque_size_t s = _I_DEQUE_BKT_SIZE;
+
+    if (off >= 0 && off < s) {
+        it.cur += n;
+        return it;
+    }
+
+    noff = off > 0 ? off / s : -((-off - 1) / s) - 1;
+    __i_deque_set_bkt(&it, it.bkt + noff);
+    it.cur = it.begin + (off - noff * s);
+    return it;
 }
 
 /* checked */
