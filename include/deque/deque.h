@@ -26,23 +26,25 @@ typedef struct deque_iterator {
     union {
         deque_data_t* d;
         char** sd;
-        deque_data_t* cur;
+        uint8_t* cur;
     };
-    deque_data_t*  begin;
-    deque_data_t*  end;
-    deque_data_t** bkt;
+    uint8_t*  begin;
+    uint8_t*  end;
+    uint8_t** bkt;
+    deque_step_t step;
 } deque_iterator_t;
 
 typedef struct deque_reverse_iterator {
     union {
         deque_data_t* d;
         char** sd;
-        deque_data_t* cur;
+        uint8_t* cur;
     };
-    deque_data_t*  begin;
-    deque_data_t*  end;
-    deque_data_t** bkt;
-    deque_data_t*  begin_cur;
+    uint8_t*  begin;
+    uint8_t*  end;
+    uint8_t** bkt;
+    uint8_t*  begin_cur;
+    deque_step_t step;
 } deque_reverse_iterator_t;
 typedef deque_reverse_iterator_t deque_r_iterator_t;
 
@@ -76,14 +78,16 @@ static inline deque_size_t       cdeque_remove_if(deque_t* _this, remove_if_cond
 static inline deque_size_t       cdeque_clear(deque_t* _this)                          { return i_deque_clear(_this); }
 
 
-deque_t* __deque_new(const class_deque_ops_t* ops);
+deque_t* __deque_new(const class_deque_ops_t* ops, deque_step_t step);
 void     __deque_delete(deque_t** _this);
 // const class_deque_t* class_deque_ins(void);
 // #define g_class_deque()      class_deque_ins()
 // #define cdeque               g_class_deque()
-#define DEQUE_NEW()          __deque_new(NULL)
-#define DEQUE_NEW_OPS(_ops)  __deque_new((_ops))
-#define DEQUE_NEW_STRING()   __deque_new(g_class_deque_ops_string())
-#define DEQUE_DELETE(_pptr)  do { __deque_delete((_pptr)); } while(0)
+#define DEQUE_NEW(_step)              __deque_new(NULL, (_step))
+#define DEQUE_NEW_OPS(_ops, _step)    __deque_new((_ops), (_step))
+#define DEQUE_NEW_T(_t)               __deque_new(NULL, sizeof(_t))
+#define DEQUE_NEW_OPS_T(_ops, _t)     __deque_new((_ops), sizeof(_t))
+#define DEQUE_NEW_STRING()            __deque_new(g_class_deque_ops_string(), sizeof(deque_data_t))
+#define DEQUE_DELETE(_pptr)           do { __deque_delete((_pptr)); } while(0)
 
 #endif /* __J_DEQUE_H */

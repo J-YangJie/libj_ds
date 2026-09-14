@@ -358,7 +358,7 @@ static void test_i_for(void)
 #elif TEST_VECTOR
     vector_t*         ds_vector_i   = VECTOR_NEW();
 #elif TEST_DEQUE
-    deque_t*          ds_deque_i    = DEQUE_NEW();
+    deque_t*          ds_deque_i    = DEQUE_NEW_T(deque_data_t);
 #elif TEST_DEQUE3
     deque3_t*         ds_deque3_i   = DEQUE3_NEW_T(int);
 #elif TEST_PQUEUE
@@ -809,7 +809,7 @@ static void test_i_rand(void)
 #elif TEST_VECTOR
     vector_t*         ds_vector_i   = VECTOR_NEW();
 #elif TEST_DEQUE
-    deque_t*          ds_deque_i    = DEQUE_NEW();
+    deque_t*          ds_deque_i    = DEQUE_NEW_T(deque_data_t);
 #elif TEST_DEQUE3
     deque3_t*         ds_deque3_i   = DEQUE3_NEW_T(int);
 #elif TEST_PQUEUE
