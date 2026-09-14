@@ -228,9 +228,8 @@ performance_jds_list.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_LIST
 
 performance_jds_deque.o : main.c Makefile
-	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE
+	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE -DDEQUE_STR_SSO
 
-# deque3 的字符串基准固定走 SSO 元素（sso_str_t），不再单列 char* 版本
 performance_jds_deque3.o : main.c Makefile
 	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE3 -DDEQUE3_STR_SSO
 

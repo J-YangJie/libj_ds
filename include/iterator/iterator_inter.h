@@ -20,7 +20,7 @@
 #ifndef __J_ITERATOR_INTER_H
 #define __J_ITERATOR_INTER_H
 
-#include <_compiler.h>
+#include <_compiler_inter.h>
 static JDSC_INLINE_FORCE void* const iterator_end(void)  { return (void*)JDSC_ITERATOR_END;  }
 static JDSC_INLINE_FORCE void* const iterator_rend(void) { return (void*)JDSC_ITERATOR_REND; }
 

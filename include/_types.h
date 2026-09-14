@@ -48,6 +48,7 @@ typedef ds_size_t  vector_size_t;
 typedef ds_count_t vector_count_t;
 
 /* deque */
+typedef size_t     deque_step_t;
 typedef ds_data_t  deque_data_t;
 typedef ds_size_t  deque_size_t;
 typedef ds_count_t deque_count_t;

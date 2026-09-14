@@ -22,7 +22,7 @@
 #include <string.h>
 #include <_log.h>
 #include <_memory.h>
-#include <_compiler.h>
+#include <_compiler_inter.h>
 
 #define TAG "[ds_ops_string]"
 

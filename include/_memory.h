@@ -29,7 +29,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <_compiler.h>
+#include <_compiler_inter.h>
 JDSC_MEMFUNC_PREFIX     void* _p_malloc(size_t size)                { return malloc(size); }
 JDSC_MEMFUNC_PREFIX     void* _p_calloc(size_t nmemb, size_t size)  { return calloc(nmemb, size); }
 JDSC_MEMFUNC_PREFIX     void* _p_realloc(void* ptr, size_t size)    { return realloc(ptr, size); }
