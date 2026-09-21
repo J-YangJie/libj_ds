@@ -20,7 +20,8 @@
 #ifndef __J_DEQUE_H
 #define __J_DEQUE_H
 
-#include <_types.h>
+#include <deque/deque_ops.h>
+#include <iterator/iterator.h>
 
 typedef struct deque_iterator {
     union {
@@ -113,7 +114,8 @@ const class_deque_t* class_deque_ins(void);
 #define DEQUE_NEW_OPS(_ops)           __deque_new((_ops), sizeof(deque_data_t))
 #define DEQUE_NEW_T(_type)            __deque_new(NULL, sizeof(_type))
 #define DEQUE_NEW_OPS_T(_ops, _type)  __deque_new((_ops), sizeof(_type))
-#define DEQUE_NEW_STRING()            __deque_new(g_class_deque_ops_string(), sizeof(deque_data_t))
+#define DEQUE_NEW_STRING()            __deque_new(g_class_deque_ops_sso(), sizeof(ds_sso_t))
+#define DEQUE_NEW_STRING_CHAR()       __deque_new(g_class_deque_ops_string(), sizeof(deque_data_t))
 #define DEQUE_DELETE(_pptr)           do { __deque_delete((_pptr)); } while(0)
 
 #endif /* __J_DEQUE_H */

@@ -115,20 +115,55 @@ void __i_deque_pop_front_bkt_free(i_deque_t* _this)
     _this->begin.cur = _this->begin.begin;
 }
 
+static JDSC_INLINE_FORCE
+void __i_deque_slot_memmove(const i_deque_t* _this, uint8_t* dest, const uint8_t* src)
+{
+    switch (_this->step) {
+    case 1:  memmove(dest, src, 1);  return ;
+    case 2:  memmove(dest, src, 2);  return ;
+    case 4:  memmove(dest, src, 4);  return ;
+    case 8:  memmove(dest, src, 8);  return ;
+    case 16: memmove(dest, src, 16); return ;
+    case 32: memmove(dest, src, 32); return ;
+    default: memmove(dest, src, _this->step); return ;
+    }
+}
+
+static JDSC_INLINE_FORCE
+bool __i_deque_may_self_ref(const i_deque_t* _this)
+{
+    return _this->step > (deque_step_t)sizeof(deque_data_t)
+        && !is_null(_this->ops) && !is_null(_this->ops->copy_data);
+}
+
+static JDSC_INLINE_FORCE_POLICY
+void __i_deque_slot_move_fix(const i_deque_t* _this, uint8_t* dest, const uint8_t* src)
+{
+    char*     p;
+    ptrdiff_t off;
+
+    memcpy(&p, src, sizeof(p));
+    off = (ptrdiff_t)(p - (const char*)src);
+
+    __i_deque_slot_memmove(_this, dest, src);
+
+    if (off >= 0 && off < (ptrdiff_t)_this->step) {
+        char* np = (char*)dest + off;
+
+        memcpy(dest, &np, sizeof(np));
+    }
+}
+
 static JDSC_INLINE_FORCE_POLICY
 void __i_deque_slot_move(const i_deque_t* _this, uint8_t* dest, const uint8_t* src)
 {
-    if (dest != src) {
-        switch (_this->step) {
-        case 1:  memmove(dest, src, 1);  return ;
-        case 2:  memmove(dest, src, 2);  return ;
-        case 4:  memmove(dest, src, 4);  return ;
-        case 8:  memmove(dest, src, 8);  return ;
-        case 16: memmove(dest, src, 16); return ;
-        case 32: memmove(dest, src, 32); return ;
-        default: memmove(dest, src, _this->step); return ;
-        }
-    }
+    if (dest == src)
+        return ;
+
+    if (__i_deque_may_self_ref(_this))
+        __i_deque_slot_move_fix(_this, dest, src);
+    else
+        __i_deque_slot_memmove(_this, dest, src);
 }
 
 static JDSC_INLINE
@@ -440,7 +475,7 @@ deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data)
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
             for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
-                if (_this->ops->__eq(__i_deque_slot_read(_this, i), data))
+                if (_this->ops->__eq(data, __i_deque_slot_read(_this, i)))
                     return __i_deque_make_iterator(_this, bkt, i);
             }
         }
@@ -475,7 +510,7 @@ deque_count_t i_deque_count(const i_deque_t* _this, deque_data_t data)
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
             for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
-                if (_this->ops->__eq(__i_deque_slot_read(_this, i), data))
+                if (_this->ops->__eq(data, __i_deque_slot_read(_this, i)))
                     ret++;
             }
         }
@@ -606,10 +641,10 @@ deque_size_t i_deque_clear(i_deque_t* _this)
             uint8_t* i = __i_deque_bkt_begin(_this, bkt);
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
+            ret += __i_deque_ptr_diff(l, i, _this->step);
+
             for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step))
                 _this->ops->free_data((deque_data_t*)i);
-
-            ret += __i_deque_ptr_diff(l, i, _this->step);
 
             if (_this->begin.bkt != bkt)
                 p_free(*bkt);

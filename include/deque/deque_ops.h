@@ -1,6 +1,6 @@
 /*
   Deque Custom Operation Interfaces
-  Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -31,5 +31,8 @@ typedef struct class_deque_ops {
 
 const class_deque_ops_t* class_deque_ops_string_ins(void);
 #define g_class_deque_ops_string()  class_deque_ops_string_ins()
+
+const class_deque_ops_t* class_deque_ops_sso_ins(void);
+#define g_class_deque_ops_sso()     class_deque_ops_sso_ins()
 
 #endif /* __J_DEQUE_OPS_H */
