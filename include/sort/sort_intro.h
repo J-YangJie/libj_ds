@@ -47,10 +47,16 @@
  *                 _DIST(a, b)  从 a 到 b 的距离（即 b - a；区间长度写 _DIST(first, last)）
  *                 _EQ(a, b)    两个迭代器是否指向同一位置
  *                 _GET(it)     _T 类型的左值，可直接读也可赋值
+ *                 _MOVE(dp, sp) 把 *sp 搬到 *dp（两个都是 _T*）。**所有**元素搬运
+ *                              都必须走它，不能写 `*dp = *sp`。
+ *                              POD 传 `*(dp) = *(sp)`，编译出来跟原来一模一样；
+ *                              自带指针指向自己内部的类型（DS_SSO 的内联串）
+ *                              要传带 rebase 的版本，否则 p 会指着旧位置，
+ *                              之后被当堆指针 free。
  *                 _LESS(a, b)  a < b，两个 _T 表达式
  *                 _LT(a, b)    迭代器位置先后：a 在 b 之前。⚠ 不能写成 a.cur < b.cur ——
  *                              node 内部的指针跨 node 之间没有可比性，必须按容器
- *                              自己的顺序来（deque3 是先比 map 槽再比槽内偏移）
+ *                              自己的顺序来（deque 是先比 map 槽再比槽内偏移）
  *                 )
  *
  *   展开后直接调 名字(first, last) 排序；另有 名字_sorted(first, last) 做有序自检。
@@ -64,14 +70,16 @@
 
 #include <sort/sort_seq.h>   /* I_SORT_THRESHOLD 与 i_sort_lg 与函数版共用一份 */
 
-#define I_SORT_DEFINE(_name, _T, _IT, _ADD, _NEXT, _PREV, _DIST, _EQ, _GET, _LESS, _LT)       \
+#define I_SORT_DEFINE(_name, _T, _IT, _ADD, _NEXT, _PREV, _DIST, _EQ, _GET, _MOVE, _LESS, _LT) \
                                                                                            \
 /* stl_algo.h:iter_swap */                                                                 \
 static inline void _name##_iter_swap(_IT _a, _IT _b)                                       \
 {                                                                                          \
-    _T _t = _GET(_a);                                                                      \
-    _GET(_a) = _GET(_b);                                                                   \
-    _GET(_b) = _t;                                                                         \
+    _T _t;                                                                                 \
+                                                                                           \
+    _MOVE(&_t, &_GET(_a));                                                                 \
+    _MOVE(&_GET(_a), &_GET(_b));                                                           \
+    _MOVE(&_GET(_b), &_t);                                                                 \
 }                                                                                          \
                                                                                            \
 /* 排完自检：整个区间是否非降序。基准里顺手验一下，省得排错了还看不出来 */                 \
@@ -91,16 +99,18 @@ static inline int _name##_sorted(_IT _first, _IT _last)                         
 /* stl_algo.h:1799 __unguarded_linear_insert —— 不查边界，靠前面已排好 */                  \
 static inline void _name##_linear_insert(_IT _last)                                        \
 {                                                                                          \
-    _T  _val  = _GET(_last);                                                               \
+    _T  _val;                                                                              \
     _IT _next = _PREV(_last);                                                           \
+                                                                                           \
+    _MOVE(&_val, &_GET(_last));                                                            \
                                                                                            \
     /* 注意方向：STL 这里是 comp(__val, __next)，值在左。调过来会多退一格踩到区间外 */     \
     while (_LESS(_val, _GET(_next))) {                                                     \
-        _GET(_last) = _GET(_next);                                                         \
+        _MOVE(&_GET(_last), &_GET(_next));                                                 \
         _last = _next;                                                                     \
         _next = _PREV(_next);                                                           \
     }                                                                                      \
-    _GET(_last) = _val;                                                                    \
+    _MOVE(&_GET(_last), &_val);                                                            \
 }                                                                                          \
                                                                                            \
 /* stl_algo.h:1819 __insertion_sort */                                                     \
@@ -114,15 +124,16 @@ static inline void _name##_insertion_sort(_IT _first, _IT _last)                
     for (_i = _NEXT(_first); !_EQ(_i, _last); _i = _NEXT(_i)) {                    \
         if (_LESS(_GET(_i), _GET(_first))) {                                               \
             /* _GLIBCXX_MOVE_BACKWARD3(_first, _i, _i + 1) */                              \
-            _T  _val = _GET(_i);                                                           \
+            _T  _val;                                                                      \
             _IT _j   = _i;                                                                 \
                                                                                            \
+            _MOVE(&_val, &_GET(_i));                                                       \
             while (!_EQ(_j, _first)) {                                                 \
                 _IT _jp = _PREV(_j);                                                    \
-                _GET(_j) = _GET(_jp);                                                      \
+                _MOVE(&_GET(_j), &_GET(_jp));                                              \
                 _j = _jp;                                                                  \
             }                                                                              \
-            _GET(_first) = _val;                                                           \
+            _MOVE(&_GET(_first), &_val);                                                   \
         } else {                                                                           \
             _name##_linear_insert(_i);                                                     \
         }                                                                                  \
@@ -194,20 +205,20 @@ static inline _IT _name##_partition_pivot(_IT _first, _IT _last)                
 }                                                                                          \
                                                                                            \
 /* stl_heap.h:134 __push_heap */                                                           \
-static inline void _name##_push_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _top, _T _val)\
+static inline void _name##_push_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _top, _T* _val)\
 {                                                                                          \
     ptrdiff_t _parent = (_hole - 1) / 2;                                                   \
                                                                                            \
-    while (_hole > _top && _LESS(_GET(_ADD(_first, _parent)), _val)) {                     \
-        _GET(_ADD(_first, _hole)) = _GET(_ADD(_first, _parent));                           \
+    while (_hole > _top && _LESS(_GET(_ADD(_first, _parent)), (*_val))) {                  \
+        _MOVE(&_GET(_ADD(_first, _hole)), &_GET(_ADD(_first, _parent)));                   \
         _hole = _parent;                                                                   \
         _parent = (_hole - 1) / 2;                                                         \
     }                                                                                      \
-    _GET(_ADD(_first, _hole)) = _val;                                                      \
+    _MOVE(&_GET(_ADD(_first, _hole)), _val);                                               \
 }                                                                                          \
                                                                                            \
 /* stl_heap.h:223 __adjust_heap */                                                         \
-static inline void _name##_adjust_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _len, _T _val)\
+static inline void _name##_adjust_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _len, _T* _val)\
 {                                                                                          \
     const ptrdiff_t _top = _hole;                                                          \
     ptrdiff_t       _second = _hole;                                                       \
@@ -216,13 +227,13 @@ static inline void _name##_adjust_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _l
         _second = 2 * (_second + 1);                                                       \
         if (_LESS(_GET(_ADD(_first, _second)), _GET(_ADD(_first, _second - 1))))           \
             _second--;                                                                     \
-        _GET(_ADD(_first, _hole)) = _GET(_ADD(_first, _second));                           \
+        _MOVE(&_GET(_ADD(_first, _hole)), &_GET(_ADD(_first, _second)));                   \
         _hole = _second;                                                                   \
     }                                                                                      \
                                                                                            \
     if ((_len & 1) == 0 && _second == (_len - 2) / 2) {                                    \
         _second = 2 * (_second + 1);                                                       \
-        _GET(_ADD(_first, _hole)) = _GET(_ADD(_first, _second - 1));                       \
+        _MOVE(&_GET(_ADD(_first, _hole)), &_GET(_ADD(_first, _second - 1)));               \
         _hole = _second - 1;                                                               \
     }                                                                                      \
     _name##_push_heap(_first, _hole, _top, _val);                                          \
@@ -231,10 +242,11 @@ static inline void _name##_adjust_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _l
 /* stl_heap.h:253 __pop_heap */                                                            \
 static inline void _name##_pop_heap(_IT _first, _IT _last, _IT _result)                    \
 {                                                                                          \
-    _T _val = _GET(_result);                                                               \
+    _T _val;                                                                               \
                                                                                            \
-    _GET(_result) = _GET(_first);                                                          \
-    _name##_adjust_heap(_first, 0, _DIST(_first, _last), _val);                             \
+    _MOVE(&_val, &_GET(_result));                                                          \
+    _MOVE(&_GET(_result), &_GET(_first));                                                  \
+    _name##_adjust_heap(_first, 0, _DIST(_first, _last), &_val);                            \
 }                                                                                          \
                                                                                            \
 /* stl_heap.h:339 __make_heap */                                                           \
@@ -247,9 +259,10 @@ static inline void _name##_make_heap(_IT _first, _IT _last)                     
                                                                                            \
     _len = _DIST(_first, _last);                                                            \
     for (_parent = (_len - 2) / 2; ; --_parent) {                                          \
-        _T _val = _GET(_ADD(_first, _parent));                                             \
+        _T _val;                                                                           \
                                                                                            \
-        _name##_adjust_heap(_first, _parent, _len, _val);                                  \
+        _MOVE(&_val, &_GET(_ADD(_first, _parent)));                                        \
+        _name##_adjust_heap(_first, _parent, _len, &_val);                                 \
         if (0 == _parent)                                                                  \
             return ;                                                                       \
     }                                                                                      \

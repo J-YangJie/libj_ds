@@ -1,6 +1,6 @@
 /*
   I-Deque Interfaces
-  Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ typedef struct i_deque {
     deque_bcount_t bkt_count_init;
     deque_iterator_t begin;
     deque_iterator_t end;
+    bool             sso;
 } i_deque_t;
 
 static inline
@@ -169,9 +170,15 @@ deque_r_iterator_t i_deque_null_r_iterator(void)
 
 
 static inline
+deque_size_t __i_deque_size(const i_deque_t* _this)
+{
+    return __i_deque_iterator_distance(_this->begin, _this->end);
+}
+
+static inline
 deque_size_t i_deque_size(const i_deque_t* _this)
 {
-    return is_null(_this) ? -1 : __i_deque_iterator_distance(_this->begin, _this->end);
+    return is_null(_this) ? -1 : __i_deque_size(_this);
 }
 
 static inline
@@ -382,6 +389,56 @@ deque_r_iterator_t i_deque_rprev(deque_r_iterator_t rit)
 {
     return __i_deque_rprev(rit);
 }
+
+
+
+
+
+static inline
+deque_iterator_t __i_deque_iterator(const i_deque_t* _this, deque_size_t n)
+{
+    return __i_deque_advance(_this->begin, n);
+}
+
+static inline
+deque_iterator_t i_deque_iterator(const i_deque_t* _this, deque_size_t n)
+{
+    if (!is_null(_this) && n >= 0 && n < __i_deque_size(_this))
+        return __i_deque_advance(_this->begin, n);
+    return i_deque_null_iterator();
+}
+
+static inline
+deque_value_t __i_deque_at(const i_deque_t* _this, deque_size_t n)
+{
+    return (deque_value_t){ .u8 = __i_deque_advance(_this->begin, n).cur, };
+}
+
+static inline
+deque_value_t i_deque_at(const i_deque_t* _this, deque_size_t n)
+{
+    if (!is_null(_this) && n >= 0 && n < __i_deque_size(_this))
+        return __i_deque_at(_this, n);
+    return (deque_value_t){ .u8 = NULL, };
+}
+
+static inline
+deque_value_t i_deque_front(const i_deque_t* _this)
+{
+    if (!is_null(_this) && !__i_deque_empty(_this))
+        return (deque_value_t){ .u8 = __i_deque_begin(_this).cur, };
+    return (deque_value_t){ .u8 = NULL, };
+}
+
+static inline
+deque_value_t i_deque_back(const i_deque_t* _this)
+{
+    if (!is_null(_this) && !__i_deque_empty(_this))
+        return (deque_value_t){ .u8 = __i_deque_prev(__i_deque_end(_this)).cur, };
+    return (deque_value_t){ .u8 = NULL, };
+}
+
+
 
 
 

@@ -7,8 +7,6 @@ SLIB_NAME := libj_ds.a
 WITH_LIST=y
 WITH_VECTOR=y
 WITH_DEQUE=y
-WITH_DEQUE3=y
-WITH_DEQUE_STL=n
 WITH_PRIORITY_QUEUE=y
 WITH_HASHMAP=y
 WITH_MAP=y
@@ -25,7 +23,8 @@ CXX = $(CROSS_COMPILE)g++
 AR  = $(CROSS_COMPILE)ar
 
 OBJS = \
-	operations/ds_ops_string.o
+	operations/ds_ops_string.o \
+	operations/ds_ops_sso.o
 
 ifeq ($(WITH_LIST), y)
 OBJS += list/list.o list/list_ops.o
@@ -39,12 +38,10 @@ ifeq ($(WITH_DEQUE), y)
 OBJS += deque/deque.o deque/deque_ops.o
 endif
 
-ifeq ($(WITH_DEQUE3), y)
-OBJS += deque3/deque3.o sort/sort_seq.o
-endif
-
-ifeq ($(WITH_DEQUE_STL), y)
-OBJS += deque_stl/deque_stl.o
+# sort_intro.h 的宏版排序靠 i_sort_lg（在 sort_seq.o 里）。vector 的基准会展开宏版，
+# 所以 WITH_VECTOR 也得带上它 —— 否则 WITH_DEQUE=n WITH_VECTOR=y 时缺符号。
+ifneq ($(findstring y, $(WITH_DEQUE)$(WITH_VECTOR)),)
+OBJS += sort/sort_seq.o
 endif
 
 ifeq ($(WITH_PRIORITY_QUEUE), y)
@@ -111,9 +108,6 @@ endif
 ifeq ($(WITH_DEQUE), y)
 PERFORMANCE_BINS += performance_deque
 endif
-ifeq ($(WITH_DEQUE3), y)
-PERFORMANCE_BINS += performance_deque3
-endif
 ifeq ($(WITH_HASHMAP), y)
 PERFORMANCE_BINS += performance_hashmap
 PERFORMANCE_BINS += performance_hashmap_reserve
@@ -165,10 +159,13 @@ endif # WITH_PERFORMANCE_STL
 
 ifeq ($(WITH_DEMO), y)
 ifeq ($(WITH_VECTOR), y)
-DEMO_BINS += demo/demo_vector_bin
+# DEMO_BINS += demo/demo_vector_bin
 endif
 ifeq ($(WITH_LIST), y)
 DEMO_BINS += demo/demo_list_bin
+endif
+ifeq ($(WITH_DEQUE), y)
+# DEMO_BINS += demo/demo_deque_bin
 endif
 ifeq ($(WITH_PRIORITY_QUEUE), y)
 DEMO_BINS += demo/demo_pqueue_bin
@@ -206,15 +203,8 @@ PERFORMANCE_J_DS_DEFINES= \
 		-DTIMES_FIND=$(PERFORMANCE_J_DS_TIMES_FIND) -DTIMES_FIND_V_L=$(PERFORMANCE_J_DS_TIMES_FIND_V_L) \
 		-DTIMES_REMOVE=$(PERFORMANCE_J_DS_TIMES_REMOVE) -DTIMES_REMOVE_V_L=$(PERFORMANCE_J_DS_TIMES_REMOVE_V_L)
 
-# 字符串基准的串长区间：deque / deque3 / stl_deque 三方共用这一个旋钮，
-# 保证跑的是同一组数据。
-#   deque3 的 sso_str_t 内联容量 11 个字符（buf 12 字节，留一个 '\0'）；
-#   std::string 是 15。取 11 是为了让两边都装得进内联、都走零分配那条路。
-#   超过 11 就落堆，每个元素一次 malloc —— 想对比堆那条路就把上限调大。
-# 改这个值重编即可切换；若用命令行覆盖（make PERFORMANCE_STR_LEN_MAX=31），
-# 对象文件不会自动重编，先 make clean。
 PERFORMANCE_STR_LEN_MIN ?= 1
-PERFORMANCE_STR_LEN_MAX ?= 24
+PERFORMANCE_STR_LEN_MAX ?= 15
 PERFORMANCE_STR_DEFINES = -DS_STR_LEN_MIN=$(PERFORMANCE_STR_LEN_MIN) -DS_STR_LEN_MAX=$(PERFORMANCE_STR_LEN_MAX)
 PERFORMANCE_J_DS_HASH_DEFINES= \
 		-DTIMES_INSERT=20000000 \
@@ -229,9 +219,6 @@ performance_jds_list.o : main.c
 
 performance_jds_deque.o : main.c Makefile
 	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE -DDEQUE_STR_SSO
-
-performance_jds_deque3.o : main.c Makefile
-	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE3 -DDEQUE3_STR_SSO
 
 performance_jds_pqueue.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_PQUEUE

@@ -50,8 +50,8 @@ bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out)
 
     if (len <= DS_SSO_LOCAL_CAP) {
         memcpy(o->buf, i, len + 1);
-        d->p = o->buf;
-        d->len = len;
+        o->p = o->buf;
+        o->len = len;
         return true;
     } else {
         char* s = (char*)p_malloc(len + 1);

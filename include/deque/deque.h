@@ -1,6 +1,6 @@
 /*
   Deque Interfaces
-  Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -22,6 +22,21 @@
 
 #include <deque/deque_ops.h>
 #include <iterator/iterator.h>
+#include <operations/ds_ops_sso.h>
+
+typedef struct deque_value {
+    union {
+        deque_data_t* d;
+        char** sd;
+        ds_sso_t* ssd;
+        uint8_t*  u8;
+        uint16_t* u16;
+        uint32_t* u32;
+        int8_t*   s8;
+        int16_t*  s16;
+        int32_t*  s32;
+    };
+} deque_value_t;
 
 typedef struct deque_iterator {
     union {
@@ -55,6 +70,7 @@ typedef i_deque_t deque_t;
 
 /* Method 1 */
 static inline deque_size_t       cdeque_size(const deque_t* _this)                          { return i_deque_size(_this); }
+static inline bool               __cdeque_empty(const deque_t* _this)                       { return __i_deque_empty(_this); }
 static inline deque_count_t      cdeque_count(const deque_t* _this, deque_data_t data)      { return i_deque_count(_this, data); }
 static inline deque_iterator_t   cdeque_end(const deque_t* _this)                           { return i_deque_end(_this); }
 static inline deque_iterator_t   cdeque_begin(const deque_t* _this)                         { return i_deque_begin(_this); }
@@ -64,6 +80,12 @@ static inline deque_r_iterator_t cdeque_rend(const deque_t* _this)              
 static inline deque_r_iterator_t cdeque_rbegin(const deque_t* _this)                        { return i_deque_rbegin(_this); }
 static inline deque_r_iterator_t cdeque_rnext(deque_r_iterator_t r_iterator)                { return i_deque_rnext(r_iterator); }
 static inline deque_r_iterator_t cdeque_rprev(deque_r_iterator_t r_iterator)                { return i_deque_rprev(r_iterator); }
+static inline deque_iterator_t   __cdeque_it(const deque_t* _this, deque_size_t n)          { return __i_deque_iterator(_this, n); }
+static inline deque_iterator_t   cdeque_it(const deque_t* _this, deque_size_t n)            { return i_deque_iterator(_this, n); }
+static inline deque_value_t      __cdeque_at(const deque_t* _this, deque_size_t n)          { return __i_deque_at(_this, n); }
+static inline deque_value_t      cdeque_at(const deque_t* _this, deque_size_t n)            { return i_deque_at(_this, n); }
+static inline deque_value_t      cdeque_back(const deque_t* _this)                          { return i_deque_back(_this); }
+static inline deque_value_t      cdeque_front(const deque_t* _this)                         { return i_deque_front(_this); }
 static inline deque_iterator_t   cdeque_find(const deque_t* _this, deque_data_t data)       { return i_deque_find(_this, data); }
 static inline bool               cdeque_push_back(deque_t* _this, deque_data_t data)        { return i_deque_push_back(_this, data); }
 static inline bool               cdeque_push_front(deque_t* _this, deque_data_t data)       { return i_deque_push_front(_this, data); }
@@ -81,15 +103,22 @@ static inline deque_size_t       cdeque_clear(deque_t* _this)                   
 /* Method 2 */
 typedef struct class_deque {
     deque_size_t (*size)(const deque_t* _this);
+    bool (*__empty)(const deque_t* _this);
     deque_count_t (*count)(const deque_t* _this, deque_data_t data);
     deque_iterator_t (*end)(const deque_t* _this);
     deque_iterator_t (*begin)(const deque_t* _this);
-    deque_iterator_t (*next)(const deque_iterator_t iterator);
-    deque_iterator_t (*prev)(const deque_iterator_t iterator);
+    deque_iterator_t (*next)(deque_iterator_t iterator);
+    deque_iterator_t (*prev)(deque_iterator_t iterator);
     deque_r_iterator_t (*rend)(const deque_t* _this);
     deque_r_iterator_t (*rbegin)(const deque_t* _this);
-    deque_r_iterator_t (*rnext)(const deque_r_iterator_t r_iterator);
-    deque_r_iterator_t (*rprev)(const deque_r_iterator_t r_iterator);
+    deque_r_iterator_t (*rnext)(deque_r_iterator_t r_iterator);
+    deque_r_iterator_t (*rprev)(deque_r_iterator_t r_iterator);
+    deque_iterator_t (*__it)(const deque_t* _this, deque_size_t n);                                                  /* return iterator by n(index), but without checking parameters */
+    deque_iterator_t (*it)(const deque_t* _this, deque_size_t n);                                                    /* return iterator by n(index) */
+    deque_value_t (*__at)(const deque_t* _this, deque_size_t n);                                                     /* STL: ds[index], but without checking parameters */
+    deque_value_t (*at)(const deque_t* _this, deque_size_t n);                                                       /* STL: ds->at(index) */
+    deque_value_t (*back)(const deque_t* _this);
+    deque_value_t (*front)(const deque_t* _this);
     deque_iterator_t (*find)(const deque_t* _this, deque_data_t data);
     bool (*push_back)(deque_t* _this, deque_data_t data);
     bool (*push_front)(deque_t* _this, deque_data_t data);

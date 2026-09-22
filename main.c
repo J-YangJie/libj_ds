@@ -35,6 +35,7 @@
 #include <set/set.h>
 #include <multiset/multiset.h>
 #include <operations/ds_ops_string.h>
+#include <operations/ds_ops_sso.h>
 
 #define cpqueue cpriority_queue
 
@@ -282,7 +283,7 @@ static deque_iterator_t deque_bench_seek(deque_t* _this, size_t p)
    数值和 char* 没有这个问题，保持最省钱的整体赋值。 */
 #define DQ_MOVE_I(_d, _s) (*(_d) = *(_s))
 #ifdef DEQUE_STR_SSO
-#define DQ_MOVE_S(_d, _s) __i_deque_elem_move_fix((uint8_t*)(_d), (const uint8_t*)(_s), sizeof(ds_sso_t))
+#define DQ_MOVE_S(_d, _s) ds_sso_move((_d), (_s))
 #else
 #define DQ_MOVE_S(_d, _s) (*(_d) = *(_s))
 #endif
