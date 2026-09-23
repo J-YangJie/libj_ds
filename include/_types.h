@@ -43,6 +43,7 @@ typedef ds_size_t  list_size_t;
 typedef ds_count_t list_count_t;
 
 /* vector */
+typedef size_t     vector_step_t;
 typedef ds_data_t  vector_data_t;
 typedef ds_size_t  vector_size_t;
 typedef ds_count_t vector_count_t;

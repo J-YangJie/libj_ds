@@ -714,6 +714,7 @@ const class_deque_t* class_deque_ins(void)
 {
     static const class_deque_t ins = {
         .size        = cdeque_size,
+        .__empty     = __cdeque_empty,
         .count       = cdeque_count,
         .end         = cdeque_end,
         .begin       = cdeque_begin,
@@ -723,6 +724,12 @@ const class_deque_t* class_deque_ins(void)
         .rbegin      = cdeque_rbegin,
         .rnext       = cdeque_rnext,
         .rprev       = cdeque_rprev,
+        .__it        = __cdeque_it,
+        .it          = cdeque_it,
+        .__at        = __cdeque_at,
+        .at          = cdeque_at,
+        .back        = cdeque_back,
+        .front       = cdeque_front,
         .find        = cdeque_find,
         .push_back   = cdeque_push_back,
         .push_front  = cdeque_push_front,

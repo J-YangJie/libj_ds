@@ -1,6 +1,7 @@
 /*
   Vector Custom Operation Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -31,5 +32,8 @@ typedef struct class_vector_ops {
 
 const class_vector_ops_t* class_vector_ops_string_ins(void);
 #define g_class_vector_ops_string()  class_vector_ops_string_ins()
+
+const class_vector_ops_t* class_vector_ops_sso_ins(void);
+#define g_class_vector_ops_sso()     class_vector_ops_sso_ins()
 
 #endif /* __J_VECTOR_OPS_H */

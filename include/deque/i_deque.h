@@ -423,18 +423,18 @@ deque_value_t i_deque_at(const i_deque_t* _this, deque_size_t n)
 }
 
 static inline
-deque_value_t i_deque_front(const i_deque_t* _this)
-{
-    if (!is_null(_this) && !__i_deque_empty(_this))
-        return (deque_value_t){ .u8 = __i_deque_begin(_this).cur, };
-    return (deque_value_t){ .u8 = NULL, };
-}
-
-static inline
 deque_value_t i_deque_back(const i_deque_t* _this)
 {
     if (!is_null(_this) && !__i_deque_empty(_this))
         return (deque_value_t){ .u8 = __i_deque_prev(__i_deque_end(_this)).cur, };
+    return (deque_value_t){ .u8 = NULL, };
+}
+
+static inline
+deque_value_t i_deque_front(const i_deque_t* _this)
+{
+    if (!is_null(_this) && !__i_deque_empty(_this))
+        return (deque_value_t){ .u8 = __i_deque_begin(_this).cur, };
     return (deque_value_t){ .u8 = NULL, };
 }
 

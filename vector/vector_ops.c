@@ -1,6 +1,7 @@
 /*
   Default Implementations Of Vector Custom Operation Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,14 +21,26 @@
 #include <vector/vector_ops.h>
 
 #include <operations/ds_ops_string.h>
+#include <operations/ds_ops_sso.h>
 
-/* __always_inline */ inline const class_vector_ops_t* class_vector_ops_string_ins(void)
+const class_vector_ops_t* class_vector_ops_string_ins(void)
 {
     static const class_vector_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_string,
         .__eq       = __ds_ops_eq_default_string,
         .copy_data  = ds_ops_copy_data_default_string,
         .free_data  = ds_ops_free_data_default_string,
+    };
+    return &ins;
+}
+
+const class_vector_ops_t* class_vector_ops_sso_ins(void)
+{
+    static const class_vector_ops_t ins = {
+        .valid_data = ds_ops_valid_data_default_sso,
+        .__eq       = __ds_ops_eq_default_sso,
+        .copy_data  = ds_ops_copy_data_default_sso,
+        .free_data  = ds_ops_free_data_default_sso,
     };
     return &ins;
 }
