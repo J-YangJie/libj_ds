@@ -32,32 +32,30 @@
 
 /* checked */
 static JDSC_INLINE
-void __i_vector_memmove_forward(const i_vector_t* _this, uint8_t* dest, uint8_t* src, vector_size_t n)
+void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_t* src, vector_size_t n)
 {
     const vector_step_t step = _this->step;
 
-    for (vector_size_t i = 0; i < n; ++i) {
-        __i_vector_slot_move(_this, dest, src);
-        dest = __i_vector_ptr_add(dest, 1, step);
-        src  = __i_vector_ptr_add(src, 1, step);
-    }
-}
-
-/* checked */
-static JDSC_INLINE
-void __i_vector_memmove_backward(const i_vector_t* _this, uint8_t* dest, uint8_t* src, vector_size_t n)
-{
-    const vector_step_t step = _this->step;
-
-    if (unlikely(n <= 0))
+    if (unlikely(n <= 0 || dest == src))
         return ;
 
-    dest = __i_vector_ptr_add(dest, n - 1, step);
-    src  = __i_vector_ptr_add(src,  n - 1, step);
-    for (vector_size_t i = 0; i < n; ++i) {
-        __i_vector_slot_move(_this, dest, src);
-        dest = __i_vector_ptr_sub(dest, 1, step);
-        src  = __i_vector_ptr_sub(src, 1, step);
+    if (_this->sso) {
+        const size_t d = (size_t)dest;
+        const size_t s = (size_t)src;
+        uint8_t* _src  = (uint8_t*)src;
+        vector_size_t i;
+
+        if (d > s && d < s + (size_t)(n * step)) {
+            dest = __i_vector_ptr_add(dest, n - 1, step);
+            _src = __i_vector_ptr_add(_src, n - 1, step);
+            for (i = 0; i < n; ++i, dest -= step, _src -= step)
+                __i_vector_slot_move(_this, dest, _src);
+        } else {
+            for (i = 0; i < n; ++i, dest += step, _src += step)
+                __i_vector_slot_move(_this, dest, _src);
+        }
+    } else {
+        memmove(dest, src, (size_t)(n * step));
     }
 }
 
@@ -74,6 +72,10 @@ bool __i_vector_reserve(i_vector_t* _this, vector_size_t n)
 
     if (n <= cap)
         return true;
+
+    /* TODO: 确定这样设置界限？ */
+    if (unlikely((size_t)n >= (SIZE_MAX / step) - 1))
+        return false;
 
     nh = p_realloc(_this->rend, (n + 1) * step);
     if (is_null(nh))
@@ -180,33 +182,53 @@ err:
 }
 
 /* checked */
+static JDSC_INLINE_FORCE_POLICY
+vector_size_t __i_vector_check_len(const i_vector_t* _this, vector_size_t n)
+{
+    const vector_size_t size = __i_vector_size(_this);
+    vector_size_t len;
+
+    if (n < 1)
+        n = 1;
+
+    len = size + (size > n ? size : n);
+
+    if (unlikely(len < size)) /* overflow */
+        return -1;
+
+    return len < _this->capacity_init ? _this->capacity_init : len;
+}
+
+/* checked */
 /* Non independent logical function */
 JDSC_INLINE_POLICY
 vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data)
 {
     const vector_step_t step = _this->step;
-    vector_size_t move  = (vector_size_t)__i_vector_ptr_diff(_this->end, pos, step);
-    vector_size_t cap   = __i_vector_capacity(_this);
-    vector_size_t avail = cap - __i_vector_size(_this);
+    ptrdiff_t off;
+    vector_size_t move, avail;
 
-    if (unlikely(pos < _this->begin && pos > _this->end))
+    if (unlikely(pos < _this->begin || pos > _this->end))
         return i_vector_null_iterator();
 
+    off   = __i_vector_ptr_diff(pos, _this->begin, step);
+    move  = (vector_size_t)__i_vector_ptr_diff(_this->end, pos, step);
+    avail = __i_vector_capacity(_this) - __i_vector_size(_this);
+
     if (n > avail) {
-        vector_size_t ncap = 0 == cap ? _this->capacity_init / 2 : cap;
-        while ((ncap *= 2) < n + avail);
-        if (!__i_vector_reserve(_this, ncap))
+        if (!__i_vector_reserve(_this, __i_vector_check_len(_this, n)))
             return i_vector_null_iterator();
+        pos = __i_vector_ptr_add(_this->begin, off, step);
     }
 
-    __i_vector_memmove_backward(_this, __i_vector_ptr_add(pos, n, step), pos, move);
+    __i_vector_slot_move_n(_this, __i_vector_ptr_add(pos, n, step), pos, move);
     _this->end = __i_vector_ptr_add(_this->end, n, step);
     if (!__i_vector_slot_write_n(_this, pos, n, data))
         goto err_slot;
     return __i_vector_make_iterator(step, pos);
 
 err_slot:
-    __i_vector_memmove_forward(_this, pos, __i_vector_ptr_add(pos, n, step), move);
+    __i_vector_slot_move_n(_this, pos, __i_vector_ptr_add(pos, n, step), move);
     _this->end = __i_vector_ptr_sub(_this->end, n, step);
     return i_vector_null_iterator();
 }
@@ -242,7 +264,7 @@ vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos)
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
         _this->ops->free_data((vector_data_t*)pos);
 
-    __i_vector_memmove_forward(_this, pos, __i_vector_ptr_add(pos, 1, step), n - 1);
+    __i_vector_slot_move_n(_this, pos, __i_vector_ptr_add(pos, 1, step), n - 1);
     _this->end = __i_vector_ptr_sub(_this->end, 1, step);
     return __i_vector_make_iterator(step, pos);
 }
@@ -264,8 +286,8 @@ vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint
             _this->ops->free_data((vector_data_t*)it);
     }
 
-    __i_vector_memmove_forward(_this, begin, end, n);
-    _this->end = __i_vector_ptr_sub(_this->end, n, step);
+    __i_vector_slot_move_n(_this, begin, end, n);
+    _this->end = __i_vector_ptr_add(begin, n, step);
     return __i_vector_make_iterator(step, begin);
 }
 
@@ -276,6 +298,9 @@ bool __vector_init(vector_t* vector)
     vector_size_t alloc = vector->capacity_init > 0 ? vector->capacity_init + 1 : 1;
 
     vector->rend  = (uint8_t*)p_malloc(alloc * vector->step);
+    if (is_null(vector->rend))
+        return false;
+
     vector->begin = __i_vector_ptr_add(vector->rend, 1, vector->step);
     vector->end   = vector->begin;
     vector->end_of_storage = __i_vector_ptr_add(vector->begin, alloc - 1, vector->step);

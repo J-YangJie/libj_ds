@@ -369,7 +369,7 @@ vector_value_t i_vector_front(const i_vector_t* _this)
 
 /* checked */
 static inline
-bool __i_vector_slot_write(const i_vector_t* _this, vector_data_t data, uint8_t* slot)
+bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t data)
 {
     if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
         return _this->ops->copy_data(data, (vector_data_t*)slot);
@@ -439,28 +439,30 @@ bool i_vector_push_back(i_vector_t* _this, vector_data_t data)
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return false;
 
-    if (_this->end_of_storage != _this->end) {
-        slot = _this->end;
-        if (!__i_vector_slot_write(_this, data, slot))
+    slot = _this->end;
+    if (_this->end_of_storage != slot) {
+        if (!__i_vector_slot_write(_this, slot, data))
             return false;
-        _this->end = __i_vector_ptr_add(_this->end, 1, _this->step);
+        _this->end = slot + _this->step;
         return true;
     }
 
-    return !i_vector_is_null_iterator(__i_vector_insert_run(_this, _this->end, 1, data));
+    return !i_vector_is_null_iterator(__i_vector_insert_run(_this, slot, 1, data));
 }
 
 /* checked */
 static inline
 void i_vector_pop_back(i_vector_t* _this)
 {
+    uint8_t* slot;
+
     if (is_null(_this) || __i_vector_empty(_this))
         return ;
 
-    _this->end = __i_vector_ptr_sub(_this->end, 1, _this->step);
+    _this->end = slot = _this->end - _this->step;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-        _this->ops->free_data((vector_data_t*)_this->end);
+        _this->ops->free_data((vector_data_t*)slot);
 }
 
 /* checked */
@@ -508,9 +510,13 @@ vector_iterator_t i_vector_erase_range(i_vector_t* _this, vector_iterator_t iter
         return i_vector_null_iterator();
 
     if (_this->end == iterator_end.cur) {
-        while (iterator_begin.cur != _this->end)
-            i_vector_pop_back(_this);
-        return __i_vector_end(_this);
+        if (iterator_begin.cur <= iterator_end.cur && iterator_begin.cur >= _this->begin) {
+            while (iterator_begin.cur != _this->end)
+                i_vector_pop_back(_this);
+            return __i_vector_end(_this);
+        } else {
+            return i_vector_null_iterator();
+        }
     }
     return __i_vector_erase_range(_this, iterator_begin.cur, iterator_end.cur);
 }
@@ -577,9 +583,9 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
     uint8_t* r;
     uint8_t* end;
 
-    if (is_null(_this) 
-        || (!is_null(_this->ops) 
-            && !is_null(_this->ops->valid_data) 
+    if (is_null(_this)
+        || (!is_null(_this->ops)
+            && !is_null(_this->ops->valid_data)
             && !_this->ops->valid_data(data)))
         return -1;
 
