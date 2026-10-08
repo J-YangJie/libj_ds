@@ -390,6 +390,36 @@ deque_r_iterator_t i_deque_rprev(deque_r_iterator_t rit)
     return __i_deque_rprev(rit);
 }
 
+/* ============================================================================
+ * 排序钩子 —— 给 include/sort/sort_intro.h 的 I_SORT_DEFINE 用
+ *
+ * 这一组只描述「本容器怎么随机访问 / 前后走 / 量距离 / 判相等 / 判先后 / 取元素地址」，
+ * 与元素类型无关，所以固定放在这里。调用点写 I_SORT_DEFINE 时直接引用这几个名字，
+ * 不必再自己定义一遍。
+ * 剩下的 _T / _MOVE / _LESS 才是「元素类型 + 排序方向」的事，由使用者给。
+ *
+ * 用法：
+ *   I_SORT_DEFINE(sort_dq_asc, deque_data_t, i_deque_sort_it,
+ *                 i_deque_sort_add, i_deque_sort_next, i_deque_sort_prev,
+ *                 i_deque_sort_dist, i_deque_sort_eq, i_deque_sort_addr,
+ *                 DQ_MOVE, DQ_LESS, i_deque_sort_lt)
+ * ========================================================================== */
+#define i_deque_sort_it             deque_iterator_t
+#define i_deque_sort_add(_it, _n)   __i_deque_advance((_it), (deque_size_t)(_n))
+#define i_deque_sort_next(_it)      __i_deque_next(_it)
+#define i_deque_sort_prev(_it)      __i_deque_prev(_it)
+#define i_deque_sort_dist(_a, _b)   __i_deque_iterator_distance((_a), (_b))
+#define i_deque_sort_eq(_a, _b)     ((_a).cur == (_b).cur)
+#define i_deque_sort_lt(_a, _b)     i_deque_iter_lt((_a), (_b))   /* 跨 bkt 不能比 .cur */
+#define i_deque_sort_get(_T, _it)  (*(_T*)((_it).cur))             /* 取元素 _T 左值 */
+
+/* 便捷展开：deque 的迭代器天生就是类型擦除的（要跨 bkt，没法是裸指针），
+   所以上面那套钩子可以固定名字，这里直接用。 */
+#define I_DEQUE_SORT_DEFINE(_name, _T, _MOVE, _LESS)                           \
+    I_SORT_DEFINE(_name, _T, i_deque_sort_it, i_deque_sort_add, i_deque_sort_next,\
+                  i_deque_sort_prev, i_deque_sort_dist, i_deque_sort_eq,       \
+                  i_deque_sort_get, _MOVE, _LESS, i_deque_sort_lt)
+
 
 
 

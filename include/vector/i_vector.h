@@ -22,6 +22,7 @@
 
 #include <stddef.h>
 #include <_compiler.h>
+#include <sort/sort_intro.h>   /* I_VECTOR_SORT_DEFINE 用到 I_SORT_DEFINE */
 #include <vector/vector_ops.h>
 
 #ifndef is_null
@@ -227,6 +228,36 @@ vector_iterator_t i_vector_prev(vector_iterator_t it)
 {
     return __i_vector_prev(it);
 }
+
+/* ============================================================================
+ * 排序钩子 + 便捷展开
+ *
+ * 容器侧这一组只描述「本容器怎么走路 + 怎么从迭代器落到元素上」：
+ *   _ADD/_NEXT/_PREV/_DIST/_EQ/_LT  —— 纯迭代器操作，与元素类型无关
+ *   _GET(_T, it)                    —— 取元素的 _T 左值；容器知道元素在哪，_T 由调用点给
+ * 剩下 _T / _MOVE / _LESS 才是元素类型与排序方向的事。
+ *
+ * 排序迭代器取裸 _T* —— 和 STL 的 vector<T>::iterator 就是 T* 一样，所以 _IT 要按
+ * 类型展开（typedef），这也是唯一没法固定名字的一项。带上 step 的 vector_iterator_t
+ * 也能通用，但每个元素多一次乘法和一次结构体读写，实测「已升序」输入上慢 70%+。
+ *
+ * 用法：
+ *   I_VECTOR_SORT_DEFINE(sort_vt_int, vector_data_t, VT_MOVE, VT_LESS)
+ *   sort_vt_int((vector_data_t*)cvector_begin(v).cur, (vector_data_t*)cvector_end(v).cur);
+ * ========================================================================== */
+#define i_vector_sort_get(_T, _it)   (*(_T*)(_it))
+#define i_vector_sort_add(_it, _n)   ((_it) + (_n))
+#define i_vector_sort_next(_it)      ((_it) + 1)
+#define i_vector_sort_prev(_it)      ((_it) - 1)
+#define i_vector_sort_dist(_a, _b)   ((_b) - (_a))
+#define i_vector_sort_eq(_a, _b)     ((_a) == (_b))
+#define i_vector_sort_lt(_a, _b)     ((_a) < (_b))
+
+#define I_VECTOR_SORT_DEFINE(_name, _T, _MOVE, _LESS)                          \
+    typedef _T* _name##_vit;                                                   \
+    I_SORT_DEFINE(_name, _T, _name##_vit, i_vector_sort_add, i_vector_sort_next,\
+                  i_vector_sort_prev, i_vector_sort_dist, i_vector_sort_eq,    \
+                  i_vector_sort_get, _MOVE, _LESS, i_vector_sort_lt)
 
 /* checked */
 static inline

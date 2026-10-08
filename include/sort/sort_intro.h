@@ -46,7 +46,9 @@
  *                                放在按元素扫描的热路径上会被放大。STL 也是分开的。
  *                 _DIST(a, b)  从 a 到 b 的距离（即 b - a；区间长度写 _DIST(first, last)）
  *                 _EQ(a, b)    两个迭代器是否指向同一位置
- *                 _GET(it)     _T 类型的左值，可直接读也可赋值
+ *                 _GET(_T, it) _T 类型的左值，可直接读也可赋值。容器侧提供：
+ *                              纯委托 - 容器知道怎么从迭代器落到元素上，
+ *                              而元素类型由这里的 _T 给。
  *                 _MOVE(dp, sp) 把 *sp 搬到 *dp（两个都是 _T*）。**所有**元素搬运
  *                              都必须走它，不能写 `*dp = *sp`。
  *                              POD 传 `*(dp) = *(sp)`，编译出来跟原来一模一样；
@@ -77,9 +79,9 @@ static inline void _name##_iter_swap(_IT _a, _IT _b)                            
 {                                                                                          \
     _T _t;                                                                                 \
                                                                                            \
-    _MOVE(&_t, &_GET(_a));                                                                 \
-    _MOVE(&_GET(_a), &_GET(_b));                                                           \
-    _MOVE(&_GET(_b), &_t);                                                                 \
+    _MOVE(&_t, &_GET(_T, _a));                                                                 \
+    _MOVE(&_GET(_T, _a), &_GET(_T, _b));                                                           \
+    _MOVE(&_GET(_T, _b), &_t);                                                                 \
 }                                                                                          \
                                                                                            \
 /* 排完自检：整个区间是否非降序。基准里顺手验一下，省得排错了还看不出来 */                 \
@@ -91,7 +93,7 @@ static inline int _name##_sorted(_IT _first, _IT _last)                         
         return 1;                                                                          \
                                                                                            \
     for (_p = _first, _q = _NEXT(_first); !_EQ(_q, _last); _p = _q, _q = _NEXT(_q))\
-        if (_LESS(_GET(_q), _GET(_p)))                                                     \
+        if (_LESS(_GET(_T, _q), _GET(_T, _p)))                                                     \
             return 0;                                                                      \
     return 1;                                                                              \
 }                                                                                          \
@@ -102,15 +104,15 @@ static inline void _name##_linear_insert(_IT _last)                             
     _T  _val;                                                                              \
     _IT _next = _PREV(_last);                                                           \
                                                                                            \
-    _MOVE(&_val, &_GET(_last));                                                            \
+    _MOVE(&_val, &_GET(_T, _last));                                                            \
                                                                                            \
     /* 注意方向：STL 这里是 comp(__val, __next)，值在左。调过来会多退一格踩到区间外 */     \
-    while (_LESS(_val, _GET(_next))) {                                                     \
-        _MOVE(&_GET(_last), &_GET(_next));                                                 \
+    while (_LESS(_val, _GET(_T, _next))) {                                                     \
+        _MOVE(&_GET(_T, _last), &_GET(_T, _next));                                                 \
         _last = _next;                                                                     \
         _next = _PREV(_next);                                                           \
     }                                                                                      \
-    _MOVE(&_GET(_last), &_val);                                                            \
+    _MOVE(&_GET(_T, _last), &_val);                                                            \
 }                                                                                          \
                                                                                            \
 /* stl_algo.h:1819 __insertion_sort */                                                     \
@@ -122,18 +124,18 @@ static inline void _name##_insertion_sort(_IT _first, _IT _last)                
         return ;                                                                           \
                                                                                            \
     for (_i = _NEXT(_first); !_EQ(_i, _last); _i = _NEXT(_i)) {                    \
-        if (_LESS(_GET(_i), _GET(_first))) {                                               \
+        if (_LESS(_GET(_T, _i), _GET(_T, _first))) {                                               \
             /* _GLIBCXX_MOVE_BACKWARD3(_first, _i, _i + 1) */                              \
             _T  _val;                                                                      \
             _IT _j   = _i;                                                                 \
                                                                                            \
-            _MOVE(&_val, &_GET(_i));                                                       \
+            _MOVE(&_val, &_GET(_T, _i));                                                       \
             while (!_EQ(_j, _first)) {                                                 \
                 _IT _jp = _PREV(_j);                                                    \
-                _MOVE(&_GET(_j), &_GET(_jp));                                              \
+                _MOVE(&_GET(_T, _j), &_GET(_T, _jp));                                              \
                 _j = _jp;                                                                  \
             }                                                                              \
-            _MOVE(&_GET(_first), &_val);                                                   \
+            _MOVE(&_GET(_T, _first), &_val);                                                   \
         } else {                                                                           \
             _name##_linear_insert(_i);                                                     \
         }                                                                                  \
@@ -163,16 +165,16 @@ static inline void _name##_final_insertion_sort(_IT _first, _IT _last)          
 /* stl_algo.h:79 __move_median_to_first —— 三数取中，把中位数换到 _result */               \
 static inline void _name##_move_median_to_first(_IT _result, _IT _a, _IT _b, _IT _c)       \
 {                                                                                          \
-    if (_LESS(_GET(_a), _GET(_b))) {                                                       \
-        if (_LESS(_GET(_b), _GET(_c)))                                                     \
+    if (_LESS(_GET(_T, _a), _GET(_T, _b))) {                                                       \
+        if (_LESS(_GET(_T, _b), _GET(_T, _c)))                                                     \
             _name##_iter_swap(_result, _b);                                                \
-        else if (_LESS(_GET(_a), _GET(_c)))                                                \
+        else if (_LESS(_GET(_T, _a), _GET(_T, _c)))                                                \
             _name##_iter_swap(_result, _c);                                                \
         else                                                                               \
             _name##_iter_swap(_result, _a);                                                \
-    } else if (_LESS(_GET(_a), _GET(_c))) {                                                \
+    } else if (_LESS(_GET(_T, _a), _GET(_T, _c))) {                                                \
         _name##_iter_swap(_result, _a);                                                    \
-    } else if (_LESS(_GET(_b), _GET(_c))) {                                                \
+    } else if (_LESS(_GET(_T, _b), _GET(_T, _c))) {                                                \
         _name##_iter_swap(_result, _c);                                                    \
     } else {                                                                               \
         _name##_iter_swap(_result, _b);                                                    \
@@ -183,10 +185,10 @@ static inline void _name##_move_median_to_first(_IT _result, _IT _a, _IT _b, _IT
 static inline _IT _name##_unguarded_partition(_IT _first, _IT _last, _IT _pivot)           \
 {                                                                                          \
     for (;;) {                                                                             \
-        while (_LESS(_GET(_first), _GET(_pivot)))                                          \
+        while (_LESS(_GET(_T, _first), _GET(_T, _pivot)))                                          \
             _first = _NEXT(_first);                                                      \
         _last = _PREV(_last);                                                           \
-        while (_LESS(_GET(_pivot), _GET(_last)))                                           \
+        while (_LESS(_GET(_T, _pivot), _GET(_T, _last)))                                           \
             _last = _PREV(_last);                                                       \
         if (!(_LT(_first, _last)))                                                         \
             return _first;                                                                 \
@@ -209,12 +211,12 @@ static inline void _name##_push_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _top
 {                                                                                          \
     ptrdiff_t _parent = (_hole - 1) / 2;                                                   \
                                                                                            \
-    while (_hole > _top && _LESS(_GET(_ADD(_first, _parent)), (*_val))) {                  \
-        _MOVE(&_GET(_ADD(_first, _hole)), &_GET(_ADD(_first, _parent)));                   \
+    while (_hole > _top && _LESS(_GET(_T, _ADD(_first, _parent)), (*_val))) {                  \
+        _MOVE(&_GET(_T, _ADD(_first, _hole)), &_GET(_T, _ADD(_first, _parent)));                   \
         _hole = _parent;                                                                   \
         _parent = (_hole - 1) / 2;                                                         \
     }                                                                                      \
-    _MOVE(&_GET(_ADD(_first, _hole)), _val);                                               \
+    _MOVE(&_GET(_T, _ADD(_first, _hole)), _val);                                               \
 }                                                                                          \
                                                                                            \
 /* stl_heap.h:223 __adjust_heap */                                                         \
@@ -225,15 +227,15 @@ static inline void _name##_adjust_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _l
                                                                                            \
     while (_second < (_len - 1) / 2) {                                                     \
         _second = 2 * (_second + 1);                                                       \
-        if (_LESS(_GET(_ADD(_first, _second)), _GET(_ADD(_first, _second - 1))))           \
+        if (_LESS(_GET(_T, _ADD(_first, _second)), _GET(_T, _ADD(_first, _second - 1))))           \
             _second--;                                                                     \
-        _MOVE(&_GET(_ADD(_first, _hole)), &_GET(_ADD(_first, _second)));                   \
+        _MOVE(&_GET(_T, _ADD(_first, _hole)), &_GET(_T, _ADD(_first, _second)));                   \
         _hole = _second;                                                                   \
     }                                                                                      \
                                                                                            \
     if ((_len & 1) == 0 && _second == (_len - 2) / 2) {                                    \
         _second = 2 * (_second + 1);                                                       \
-        _MOVE(&_GET(_ADD(_first, _hole)), &_GET(_ADD(_first, _second - 1)));               \
+        _MOVE(&_GET(_T, _ADD(_first, _hole)), &_GET(_T, _ADD(_first, _second - 1)));               \
         _hole = _second - 1;                                                               \
     }                                                                                      \
     _name##_push_heap(_first, _hole, _top, _val);                                          \
@@ -244,8 +246,8 @@ static inline void _name##_pop_heap(_IT _first, _IT _last, _IT _result)         
 {                                                                                          \
     _T _val;                                                                               \
                                                                                            \
-    _MOVE(&_val, &_GET(_result));                                                          \
-    _MOVE(&_GET(_result), &_GET(_first));                                                  \
+    _MOVE(&_val, &_GET(_T, _result));                                                          \
+    _MOVE(&_GET(_T, _result), &_GET(_T, _first));                                                  \
     _name##_adjust_heap(_first, 0, _DIST(_first, _last), &_val);                            \
 }                                                                                          \
                                                                                            \
@@ -261,7 +263,7 @@ static inline void _name##_make_heap(_IT _first, _IT _last)                     
     for (_parent = (_len - 2) / 2; ; --_parent) {                                          \
         _T _val;                                                                           \
                                                                                            \
-        _MOVE(&_val, &_GET(_ADD(_first, _parent)));                                        \
+        _MOVE(&_val, &_GET(_T, _ADD(_first, _parent)));                                        \
         _name##_adjust_heap(_first, _parent, _len, &_val);                                 \
         if (0 == _parent)                                                                  \
             return ;                                                                       \

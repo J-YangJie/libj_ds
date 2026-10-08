@@ -211,11 +211,11 @@ PERFORMANCE_J_DS_HASH_DEFINES= \
 		-DTIMES_FIND=100000000 -DTIMES_FIND_V_L=$(PERFORMANCE_J_DS_TIMES_FIND_V_L) \
 		-DTIMES_REMOVE=100000000 -DTIMES_REMOVE_V_L=$(PERFORMANCE_J_DS_TIMES_REMOVE_V_L)
 
-performance_jds_vector.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_VECTOR
-
 performance_jds_list.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_LIST
+
+performance_jds_vector.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_VECTOR -DDEQUE_STR_SSO
 
 performance_jds_deque.o : main.c Makefile
 	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE -DDEQUE_STR_SSO
@@ -265,11 +265,11 @@ PERFORMANCE_STL_HASH_DEFINES= \
 		-DTIMES_FIND=100000000 -DTIMES_FIND_V_L=$(PERFORMANCE_STL_TIMES_FIND_V_L) \
 		-DTIMES_REMOVE=100000000 -DTIMES_REMOVE_V_L=$(PERFORMANCE_STL_TIMES_REMOVE_V_L)
 
-performance_stl_vector.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_VECTOR
-
 performance_stl_list.o : main_stl.cpp
 	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_LIST
+
+performance_stl_vector.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_VECTOR
 
 performance_stl_deque.o : main_stl.cpp Makefile
 	@$(CXX) $(CXXFLAGS) -c -o $@ $< $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE
