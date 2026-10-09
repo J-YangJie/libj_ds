@@ -217,9 +217,6 @@ bool __i_deque_slot_write_n(const i_deque_t* _this, deque_iterator_t pos, deque_
 
         return true;
     } else {
-        if (_this->step > sizeof(deque_data_t))
-            return false;
-
         while (n-- > 0) {
             switch (_this->step)
             {
@@ -227,7 +224,7 @@ bool __i_deque_slot_write_n(const i_deque_t* _this, deque_iterator_t pos, deque_
             case 2: *(uint16_t*)pos.cur = (uint16_t)data; break;
             case 4: *(uint32_t*)pos.cur = (uint32_t)data; break;
             case 8: *(uint64_t*)pos.cur = (uint64_t)data; break;
-            default: break;
+            default: return false;
             }
 
             succ++;
@@ -399,20 +396,14 @@ deque_iterator_t __i_deque_make_iterator(const i_deque_t* _this, uint8_t** bkt, 
 static JDSC_INLINE_FORCE_POLICY
 deque_data_t __i_deque_slot_read(const i_deque_t* _this, const uint8_t* slot)
 {
-    deque_data_t data = 0;
-
-    if (_this->step > sizeof(deque_data_t))
-        return (deque_data_t)(uintptr_t)slot;
-
     switch (_this->step)
     {
-    case 1: data = *(const uint8_t*)slot;  break;
-    case 2: data = *(const uint16_t*)slot; break;
-    case 4: data = *(const uint32_t*)slot; break;
-    case 8: data = *(const uint64_t*)slot; break;
-    default: break;
+    case 1: return *(const uint8_t*)slot;
+    case 2: return *(const uint16_t*)slot;
+    case 4: return *(const uint32_t*)slot;
+    case 8: return *(const uint64_t*)slot;
+    default: return (deque_data_t)(uintptr_t)slot;
     }
-    return data;
 }
 
 deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data)

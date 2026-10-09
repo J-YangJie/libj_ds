@@ -38,9 +38,11 @@ typedef bool (*remove_if_condition_kv)(ds_key_t key, ds_value_t value);
 typedef bool (*__cmp)(ds_data_t left, ds_data_t right);
 
 /* list */
+typedef size_t     list_step_t;
 typedef ds_data_t  list_data_t;
 typedef ds_size_t  list_size_t;
 typedef ds_count_t list_count_t;
+typedef bool (*list_cmp_t)(list_data_t left, list_data_t right); /* Return true if [ `left` < `right` ]. Both sides are the value stored in the node (an address for step > 8), read the same way as `class_list_ops_t::__eq`'s `right`. `NULL` means "no comparator" and the caller falls back to the container's own rule */
 
 /* vector */
 typedef size_t     vector_step_t;

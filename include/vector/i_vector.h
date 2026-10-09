@@ -405,38 +405,29 @@ bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t
     if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
         return _this->ops->copy_data(data, (vector_data_t*)slot);
 
-    if (_this->step <= sizeof(vector_data_t)) {
-        switch (_this->step)
-        {
-        case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
-        case 2: *(uint16_t*)slot = (uint16_t)data; break;
-        case 4: *(uint32_t*)slot = (uint32_t)data; break;
-        case 8: *(uint64_t*)slot = (uint64_t)data; break;
-        default: return false;
-        }
-        return true;
+    switch (_this->step)
+    {
+    case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
+    case 2: *(uint16_t*)slot = (uint16_t)data; break;
+    case 4: *(uint32_t*)slot = (uint32_t)data; break;
+    case 8: *(uint64_t*)slot = (uint64_t)data; break;
+    default: return false;
     }
-    return false;
+    return true;
 }
 
 /* checked */
 static inline
 vector_data_t __i_vector_slot_read(const i_vector_t* _this, const uint8_t* slot)
 {
-    vector_data_t data = 0;
-
-    if (_this->step > sizeof(vector_data_t))
-        return (vector_data_t)(uintptr_t)slot;
-
     switch (_this->step)
     {
-    case 1: data = *(const uint8_t*)slot;  break;
-    case 2: data = *(const uint16_t*)slot; break;
-    case 4: data = *(const uint32_t*)slot; break;
-    case 8: data = *(const uint64_t*)slot; break;
-    default: break;
+    case 1: return *(const uint8_t*)slot;
+    case 2: return *(const uint16_t*)slot;
+    case 4: return *(const uint32_t*)slot;
+    case 8: return *(const uint64_t*)slot;
+    default: return (vector_data_t)(uintptr_t)slot;
     }
-    return data;
 }
 
 /* checked */

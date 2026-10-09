@@ -35,7 +35,8 @@ typedef struct ds_sso {
 
 bool ds_ops_valid_data_default_sso(ds_data_t data);              /* SSO type: judge the validity of the `data`(whether the pointer is null and whether the length is greater than 0),
                                                                               without limiting the length */
-bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right);   /* SSO type: return true if [ `left` == `right` ] */
+bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right);   /* SSO type: return true if [ `left` == `right` ]; `left` is the user's `char*`, `right` is the address of a `ds_sso_t` */
+bool __ds_ops_lt_default_sso(ds_data_t left, ds_data_t right);   /* SSO type: return true if [ `left` < `right` ]; both sides are the address of a `ds_sso_t` */
 bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out); /* SSO type: deep copy `in` and use `out` to receive the copied memory */
 void ds_ops_free_data_default_sso(ds_data_t* data);              /* SSO type: release the `data` and set `data` to `NULL` */
 

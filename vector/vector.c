@@ -151,9 +151,6 @@ bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_
 
         return true;
     } else {
-        if (_this->step > sizeof(vector_data_t))
-            return false;
-
         while (n-- > 0) {
             switch (_this->step)
             {
@@ -161,7 +158,7 @@ bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_
             case 2: *(uint16_t*)pos = (uint16_t)data; break;
             case 4: *(uint32_t*)pos = (uint32_t)data; break;
             case 8: *(uint64_t*)pos = (uint64_t)data; break;
-            default: break;
+            default: return false;
             }
 
             suc++;

@@ -26,6 +26,19 @@
 
 #define _to(x)   ((list_data_t)(x))
 
+/* sort 的第三分支：用户自己给的比较器（这里就是升序，等价于 LIST_SORT_ASC） */
+static bool demo_int_lt(list_data_t left, list_data_t right)
+{
+    return left < right;
+}
+
+/* SSO 链的比较器：槽里是 ds_sso_t。cmp 传 NULL/1/2 是按 list_data_t 数值排，
+   对字符串链没意义，所以这里自己给一个。 */
+static bool demo_sso_lt(list_data_t left, list_data_t right)
+{
+    return 0 > ds_sso_cmp((const ds_sso_t*)left, (const ds_sso_t*)right);
+}
+
 #define foreach()          { for (list_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("%zd", it_data_safe(it)); }
 #define foreach_string()   { for (list_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("%s", it_sdata_safe(it)); }
 #define foreach_r_string() { for (list_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it)) pr_test("%s", it_sdata_safe(it)); }
@@ -127,6 +140,79 @@ static void demo_about_find(void)
     LIST_DELETE(&demo);
 }
 
+/* 这一组是本次重写新补上的，思路照 bits/stl_list.h */
+static void demo_about_algorithms(void)
+{
+    list_t* demo  = LIST_NEW();
+    list_t* other = LIST_NEW();
+    int     a[] = { 5, 1, 4, 2, 8, 8, 3, 7, 1 };
+    int     b[] = { 6, 0, 9 };
+
+    for (size_t i = 0; i < sizeof(a) / sizeof(a[0]); ++i)
+        cds->push_back(demo, a[i]);
+    foreach(); // [ 5, 1, 4, 2, 8, 8, 3, 7, 1 ]
+    pr_test("");
+
+    cds->sort(demo, LIST_SORT_ASC);  // 升序：carry + tmp[64] 的 64 路归并，元素一个都不搬（传 NULL 等价）
+    foreach(); // [ 1, 1, 2, 3, 4, 5, 7, 8, 8 ]
+    pr_test("");
+
+    cds->sort(demo, LIST_SORT_DESC); // 降序：魔术数字 2
+    foreach(); // [ 8, 8, 7, 5, 4, 3, 2, 1, 1 ]
+    pr_test("");
+
+    cds->sort(demo, demo_int_lt);    // 第三分支：直接给比较器，效果同升序
+    foreach(); // [ 1, 1, 2, 3, 4, 5, 7, 8, 8 ]
+    pr_test("");
+
+    cds->unique(demo); // 去掉连续重复
+    foreach(); // [ 1, 2, 3, 4, 5, 7, 8 ]
+    pr_test("");
+
+    cds->reverse(demo); // _M_reverse：就地翻转 next/prev
+    foreach(); // [ 8, 7, 5, 4, 3, 2, 1 ]
+    pr_test("");
+    cds->reverse(demo);
+
+    for (size_t i = 0; i < sizeof(b) / sizeof(b[0]); ++i)
+        cds->push_back(other, b[i]);
+    cds->sort(other, LIST_SORT_ASC); // [ 0, 6, 9 ]
+    cds->merge(demo, other);   // 两条有序链归并，other 被搬空
+    foreach(); // [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+    pr_test("");
+
+    cds->resize(demo, 5, -1);  // 截短
+    foreach(); // [ 0, 1, 2, 3, 4 ]
+    pr_test("");
+    cds->resize(demo, 7, -1);  // 补默认值
+    foreach(); // [ 0, 1, 2, 3, 4, -1, -1 ]
+    pr_test("");
+
+    cds->assign(demo, 3, 42);  // 清空再填 3 份
+    foreach(); // [ 42, 42, 42 ]
+    pr_test("");
+
+    cds->clear(other);
+    cds->push_back(other, 100);
+    cds->push_back(other, 200);
+    cds->splice_range(demo, cds->begin(demo), other,
+                      cds->begin(other), cds->next(other, cds->begin(other))); // 搬 other 的首元素过来
+    foreach(); // [ 100, 42, 42, 42 ]
+    pr_test("");
+
+    cds->splice(demo, cds->end(demo), other); // 剩下的整条搬到尾部
+    foreach(); // [ 100, 42, 42, 42, 200 ]
+    pr_test("");
+
+    cds->swap(demo, other); // 换的是两条链的头，元素一个都不动
+    foreach(); // [ ]
+    pr_test("");
+    cds->swap(demo, other);
+
+    LIST_DELETE(&demo);
+    LIST_DELETE(&other);
+}
+
 static void demo_string(void)
 {
     list_t* demo = LIST_NEW_STRING();
@@ -144,6 +230,28 @@ static void demo_string(void)
     LIST_DELETE(&demo);
 }
 
+/* SSO：<= DS_SSO_LOCAL_CAP(15) 字节的串直接内联在节点里，不再单独 malloc 一块串体；
+   ds_sso_t 的 p 在 offset 0，所以 it_sdata(it) / it_data(it) 的用法都不变。 */
+static void demo_about_sso(void)
+{
+    list_t* demo = LIST_NEW_SSO();
+
+    cds->push_back(demo, _to("j"));
+    cds->push_back(demo, _to("sso-inline"));               // 10 字节：内联
+    cds->push_back(demo, _to("this one is over 15 bytes")); // 25 字节：超了才单独 malloc
+
+    for (list_iterator_t it = cds->begin(demo); it_ne(cds->end(demo), it); it = cds->next(demo, it)) {
+        ds_sso_t* s = (ds_sso_t*)it.d;
+        pr_test("%-24s len=%-3zu %s", s->p, s->len, s->p == s->buf ? "local (no extra malloc)" : "heap");
+    }
+
+    cds->sort(demo, demo_sso_lt); // 大小串混排；SSO 的比较器得自己给
+    foreach_string();
+    pr_test("");
+
+    LIST_DELETE(&demo);
+}
+
 int main(void)
 {
     /* values */
@@ -151,8 +259,10 @@ int main(void)
     demo_about_insert();
     demo_about_erase();
     demo_about_find();
+    demo_about_algorithms();
 
     /* strings */
     demo_string();
+    demo_about_sso();
     return 0;
 }

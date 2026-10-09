@@ -483,18 +483,15 @@ bool __i_deque_slot_write(const i_deque_t* _this, deque_data_t data, uint8_t* sl
     if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
         return _this->ops->copy_data(data, (deque_data_t*)slot);
 
-    if (_this->step <= sizeof(deque_data_t)) {
-        switch (_this->step)
-        {
-        case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
-        case 2: *(uint16_t*)slot = (uint16_t)data; break;
-        case 4: *(uint32_t*)slot = (uint32_t)data; break;
-        case 8: *(uint64_t*)slot = (uint64_t)data; break;
-        default: return false;
-        }
-        return true;
+    switch (_this->step)
+    {
+    case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
+    case 2: *(uint16_t*)slot = (uint16_t)data; break;
+    case 4: *(uint32_t*)slot = (uint32_t)data; break;
+    case 8: *(uint64_t*)slot = (uint64_t)data; break;
+    default: return false;
     }
-    return false;
+    return true;
 }
 
 static inline

@@ -42,6 +42,12 @@ bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right)
 }
 
 JDSC_INLINE
+bool __ds_ops_lt_default_sso(ds_data_t left, ds_data_t right)
+{
+    return ds_sso_cmp((const ds_sso_t*)left, (const ds_sso_t*)right) < 0;
+}
+
+JDSC_INLINE
 bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out)
 {
     const char* i = (const char*)in;

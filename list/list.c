@@ -1,6 +1,7 @@
 /*
   List Implementations
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -19,892 +20,333 @@
 
 #include <list/list.h>
 
+#include <_log.h>
 #include <_memory.h>
-#include <linux/_types.h>
-#include <linux/list.h>
+#include <_compiler_inter.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator_inter.h>
+#include <string.h>
 
-typedef struct list_node {
-    list_data_t data;
-    struct list_head node;
-} list_node_t;
+#define TAG "[list]"
 
-struct list {
-    const class_list_ops_t* ops;
-    struct list_head head;
-    list_size_t size;
-};
+/* STL list::sort() 里那个 __tmp[64]：长度够 2^64 个元素，够用了 */
+#define _I_LIST_SORT_TMP  64
 
-#define dlist_entry(ptr) list_entry((ptr), struct list_node, node)
-
-static /* __always_inline */ inline list_size_t __dlist_size(const list_t* _this)
+/* ---------------------------------------------------------------------------
+ * 节点分配 —— 对应 STL 的 _List_impl::_M_create_node 与 _Alloc_traits::construct
+ *
+ * 节点一次分配 sizeof(struct list_head) + step 字节：前半是指针域（offset 0），
+ * 后半是元素槽（offset 16）。所以元素拿到的是 p_malloc 那一档对齐，用户
+ * alignas 超过这一档的诉求在这里满足不了 —— 详见 include/list/i_list.h 顶部注释。
+ * ------------------------------------------------------------------------- */
+/* checked */
+list_node_t* __i_list_alloc_node(i_list_t* _this, list_data_t data)
 {
-    return _this->size;
-}
+    list_node_t* t;
 
-static /* __always_inline */ inline list_size_t _dlist_size(const list_t* _this)
-{
-    if (unlikely(is_null(_this)))
-        return -1;
-    return __dlist_size(_this);
-}
-
-static list_count_t __dlist_count(const list_t* _this, list_data_t data)
-{
-    list_size_t ret = 0;
-    list_node_t* t = NULL;
-    list_node_t* n = NULL;
-
-    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
-        list_for_each_entry_safe(t, n, &_this->head, node) {
-            if (data == t->data)
-                ret++;
-        }
-    } else {
-        list_for_each_entry_safe(t, n, &_this->head, node) {
-            if (_this->ops->__eq(data, t->data))
-                ret++;
-        }
-    }
-
-    return ret;
-}
-
-static /* __always_inline */ inline list_count_t dlist_count(const list_t* _this, list_data_t data)
-{
-    if (unlikely(is_null(_this)))
-        return -1;
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
-        return -1;
-
-    return __dlist_count(_this, data);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_first(const list_t* _this)
-{
-    if (is_null(_this->head.next) || list_empty(&_this->head))
-        return NULL;
-    return dlist_entry(_this->head.next);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_last(const list_t* _this)
-{
-    if (is_null(_this->head.prev) || list_empty(&_this->head))
-        return NULL;
-    return dlist_entry(_this->head.prev);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_end(const list_t* _this)
-{
-    return (list_node_t*)iterator_end();
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_begin(const list_t* _this)
-{
-    struct list_head* t = _this->head.next;
-
-    if (unlikely(is_null(t)))
-        return NULL; /* Err: memory has been modified illegally */
-
-    if (list_empty(&_this->head))
-        return __dlist_end(_this);
-    return dlist_entry(t); /* Be careful about the situation when `t` is `NULL` */
-}
-
-static /* __always_inline */ inline list_node_t* _dlist_begin(const list_t* _this)
-{
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __dlist_begin(_this);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_next(const list_t* _this, const list_node_t* node)
-{
-    struct list_head* t = NULL;
-
-    if (list_empty(&_this->head) || __dlist_end(_this) == node)
-        return __dlist_end(_this);
-
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
-
-    /* This check should come after `end` or `rend` */
-    t = node->node.next;
-    if (unlikely(is_null(t)))
-        return NULL; /* Err: `node` doesn't belong to current list or memory has been modified illegally */
-
-    if (&_this->head == t)
-        return __dlist_end(_this);
-
-    return dlist_entry(t);
-}
-
-static /* __always_inline */ inline list_node_t* _dlist_next(const list_t* _this, const list_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __dlist_next(_this, node);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_prev(const list_t* _this, const list_node_t* node)
-{
-    struct list_head* t = NULL;
-
-    if (list_empty(&_this->head))
-        return __dlist_end(_this);
-
-    if (__dlist_end(_this) == node)
-        return __dlist_last(_this); /* Err: since the `ds` is non-empty, 
-                                            the return value includes the error case of `NULL` */
-
-    /* This check should come after `end` or `rend` */
-    t = node->node.prev;
-    if (unlikely(is_null(t)))
-        return NULL; /* Err: `node` doesn't belong to current list or memory has been modified illegally */
-
-    if (&_this->head == t)
-        return __dlist_end(_this);
-
-    return dlist_entry(t);
-}
-
-static /* __always_inline */ inline list_node_t* _dlist_prev(const list_t* _this, const list_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __dlist_prev(_this, node);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_rend(const list_t* _this)
-{
-    return (list_node_t*)iterator_rend();
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_rbegin(const list_t* _this)
-{
-    struct list_head* t = _this->head.prev;
-
-    if (unlikely(is_null(t)))
-        return NULL; /* Err: memory has been modified illegally */
-
-    if (list_empty(&_this->head))
-        return __dlist_rend(_this);
-    return dlist_entry(t); /* Be careful about the situation when `t` is `NULL` */
-}
-
-static /* __always_inline */ inline list_node_t* _dlist_rbegin(const list_t* _this)
-{
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __dlist_rbegin(_this);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_rnext(const list_t* _this, const list_node_t* node)
-{
-    struct list_head* t = NULL;
-
-    if (list_empty(&_this->head) || __dlist_rend(_this) == node)
-        return __dlist_rend(_this);
-
-    /* The input parameter is `reverse_iterator`, and there's no need 
-       to check whether it equals `end` */
-
-    /* This check should come after `end` or `rend` */
-    t = node->node.prev;
-    if (unlikely(is_null(t)))
-        return NULL; /* Err: `node` doesn't belong to current list or memory has been modified illegally */
-
-    if (&_this->head == t)
-        return __dlist_rend(_this);
-
-    return dlist_entry(t);
-}
-
-static /* __always_inline */ inline list_node_t* _dlist_rnext(const list_t* _this, const list_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __dlist_rnext(_this, node);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_rprev(const list_t* _this, const list_node_t* node)
-{
-    struct list_head* t = NULL;
-
-    if (list_empty(&_this->head))
-        return __dlist_rend(_this);
-
-    if (__dlist_rend(_this) == node)
-        return __dlist_first(_this); /* Err: since the `ds` is non-empty, 
-                                             the return value includes the error case of `NULL` */
-
-    /* This check should come after `end` or `rend` */
-    t = node->node.next;
-    if (unlikely(is_null(t)))
-        return NULL; /* Err: `node` doesn't belong to current list or memory has been modified illegally */
-
-    if (&_this->head == t)
-        return __dlist_rend(_this);
-
-    return dlist_entry(t);
-}
-
-static /* __always_inline */ inline list_node_t* _dlist_rprev(const list_t* _this, const list_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __dlist_rprev(_this, node);
-}
-
-static /* __always_inline */ inline list_data_t dlist_first(const list_t* _this, list_data_t default_data)
-{
-    if (is_null(_this) || is_null(_this->head.next) || list_empty(&_this->head))
-        return default_data;
-    return dlist_entry(_this->head.next)->data;
-}
-
-static /* __always_inline */ inline list_data_t dlist_last(const list_t* _this, list_data_t default_data)
-{
-    if (is_null(_this) || is_null(_this->head.prev) || list_empty(&_this->head))
-        return default_data;
-    return dlist_entry(_this->head.prev)->data;
-}
-
-static list_node_t* __dlist_find(const list_t* _this, list_data_t data)
-{
-    list_node_t* t = NULL;
-
-    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
-        list_for_each_entry(t, &_this->head, node) {
-            if (data == t->data)
-                return t;
-        }
-    } else {
-        list_for_each_entry(t, &_this->head, node) {
-            if (_this->ops->__eq(data, t->data))
-                return t;
-        }
-    }
-    return NULL;
-}
-
-static /* __always_inline */ inline list_node_t* dlist_find(const list_t* _this, list_data_t data)
-{
-    list_node_t* t = NULL;
-
-    if (unlikely(is_null(_this)))
+    if (is_null(_this))
         return NULL;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return NULL;
 
-    t = __dlist_find(_this, data);
-    return is_null(t) ? __dlist_end(_this) : t;
-}
-
-static inline list_node_t* dlist_alloc_node_and_copy_data(const list_t* _this, list_data_t data)
-{
-    list_node_t* t = NULL;
-
-    if (unlikely(is_null(_this)))
+    t = (list_node_t*)p_malloc(sizeof(list_node_t) + _this->step);
+    if (is_null(t))
         return NULL;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+    if (!__i_list_value_write(_this, t->value, data)) {
+        p_free(t);
         return NULL;
-
-    t = (list_node_t*)p_malloc(sizeof(list_node_t));
-    if (unlikely(is_null(t)))
-        return NULL;
-
-    if (is_null(_this->ops) || is_null(_this->ops->copy_data)) {
-        t->data = data;
-    } else {
-        list_data_t tdata = t->data;
-
-        if (!_this->ops->copy_data(data, &t->data)) {
-            t->data = tdata;
-            goto err;
-        }
     }
 
     return t;
+}
+
+/* checked */
+void __i_list_free_node(i_list_t* _this, list_node_t* node)
+{
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+        _this->ops->free_data((list_data_t*)node->value);
+
+    p_free(node);
+}
+
+/* checked */
+list_size_t __i_list_clear(i_list_t* _this)
+{
+    list_size_t       ret = _this->size;
+    struct list_head* p   = _this->head.next;
+
+    while (p != &_this->head) {
+        struct list_head* n = p->next;
+        list_node_t*      t = (list_node_t*)p;
+
+        if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+            _this->ops->free_data((list_data_t*)t->value);
+
+        p_free(t);
+        p = n;
+    }
+
+    INIT_LIST_HEAD(&_this->head);
+    _this->size = 0;
+    return ret;
+}
+
+/* ---------------------------------------------------------------------------
+ * STL: _List_node_base::swap(__x, __y) —— 换的是两条链的「头」，元素一个都不动
+ * ------------------------------------------------------------------------- */
+/* checked */
+void __i_list_swap_head(i_list_t* _this, i_list_t* other)
+{
+    struct list_head* a = &_this->head;
+    struct list_head* b = &other->head;
+    list_size_t       s;
+
+    if (a->next != a) {
+        if (b->next != b) {
+            struct list_head* t;
+
+            t = a->next; a->next = b->next; b->next = t;
+            t = a->prev; a->prev = b->prev; b->prev = t;
+            a->next->prev = a;
+            a->prev->next = a;
+            b->next->prev = b;
+            b->prev->next = b;
+        } else {
+            b->next = a->next;
+            b->prev = a->prev;
+            b->next->prev = b;
+            b->prev->next = b;
+            INIT_LIST_HEAD(a);
+        }
+    } else if (b->next != b) {
+        a->next = b->next;
+        a->prev = b->prev;
+        a->next->prev = a;
+        a->prev->next = a;
+        INIT_LIST_HEAD(b);
+    }
+
+    s = _this->size;
+    _this->size = other->size;
+    other->size = s;
+}
+
+/* ---------------------------------------------------------------------------
+ * STL: list::merge(list& __x) —— 纯搬链，不碰 size，size 由调用方负责
+ * ------------------------------------------------------------------------- */
+/* checked */
+void __i_list_merge_run(i_list_t* _this, i_list_t* other, list_cmp_t cmp)
+{
+    struct list_head* first1 = _this->head.next;
+    struct list_head* last1  = &_this->head;
+    struct list_head* first2 = other->head.next;
+    struct list_head* last2  = &other->head;
+
+    while (first1 != last1 && first2 != last2) {
+        if (__i_list_value_lt_cmp(_this, cmp, __I_LIST_NODE2VALUE(first2), __I_LIST_NODE2VALUE(first1))) {
+            struct list_head* next = first2->next;
+
+            __i_list_transfer(first1, first2, next);
+            first2 = next;
+        } else {
+            first1 = first1->next;
+        }
+    }
+
+    if (first2 != last2)
+        __i_list_transfer(last1, first2, last2);
+}
+
+/* ---------------------------------------------------------------------------
+ * STL: list::sort() —— carry + __tmp[64] 的 64 路归并
+ *
+ * 每次从原链摘一个节点进 carry，然后跟 tmp[] 里长度递增的已序段两两归并，
+ * 像二进制加法一样往上进位。全程只改指针，元素一次都不搬。
+ * ------------------------------------------------------------------------- */
+/* checked */
+void __i_list_sort(i_list_t* _this, list_cmp_t cmp)
+{
+    i_list_t   carry;
+    i_list_t   tmp[_I_LIST_SORT_TMP];
+    i_list_t*  fill;
+    i_list_t*  counter;
+    list_size_t n = _this->size;
+    int        i;
+
+    if (n < 2)
+        return ;
+
+    __i_list_init_shell(&carry, _this);
+    for (i = 0; i < _I_LIST_SORT_TMP; ++i)
+        __i_list_init_shell(&tmp[i], _this);
+
+    fill = tmp;
+    do {
+        /* carry.splice(carry.begin(), *this, this->begin()) */
+        __i_list_transfer(__i_list_base(&carry), _this->head.next, _this->head.next->next);
+
+        for (counter = tmp; counter != fill && !list_empty(&counter->head); ++counter) {
+            __i_list_merge_run(counter, &carry, cmp);
+            __i_list_swap_head(counter, &carry);
+        }
+        __i_list_swap_head(counter, &carry);
+        if (counter == fill)
+            ++fill;
+    } while (!list_empty(&_this->head));
+
+    for (counter = tmp + 1; counter != fill; ++counter)
+        __i_list_merge_run(counter, counter - 1, cmp);
+
+    __i_list_swap_head(_this, fill - 1);
+    _this->size = n; /* swap_head 只换「头」，size 得自己找回来 */
+}
+
+/* ---------------------------------------------------------------------------
+ * STL: list::insert(pos, n, data) —— 往 pos 之前塞 n 份；失败时把已塞的撤回来
+ * ------------------------------------------------------------------------- */
+/* checked */
+void __i_list_insert_n(i_list_t* _this, struct list_head* pos, list_size_t n, list_data_t data, list_iterator_t* out)
+{
+    list_iterator_t at;
+    list_iterator_t first = i_list_null_iterator();
+    list_node_t*    t;
+    list_size_t     i;
+
+    for (i = 0; i < n; ++i) {
+        t = __i_list_alloc_node(_this, data);
+        if (is_null(t))
+            goto err;
+
+        __i_list_hook(t, pos);
+        _this->size++;
+
+        if (0 == i)
+            first = __i_list_make_iterator(t->value);
+    }
+
+    *out = first;
+    return ;
 
 err:
-    p_free(t);
-    return NULL;
+    if (!i_list_is_null_iterator(first)) {
+        at = (pos == __i_list_base(_this)) ? __i_list_end(_this)
+                                           : __i_list_make_iterator(__I_LIST_NODE2VALUE(pos));
+        __i_list_erase_range(_this, first, at);
+    }
+    *out = i_list_null_iterator();
 }
 
-static /* __always_inline */ inline list_node_t* __dlist_push_back(list_t* _this, list_node_t* node)
+/* checked */
+list_size_t __i_list_resize(i_list_t* _this, list_size_t n, list_data_t default_data)
 {
-    list_add_tail(&node->node, &_this->head);
-    _this->size++;
-    return node;
-}
+    list_iterator_t ret;
 
-static /* __always_inline */ inline list_node_t* dlist_push_back(list_t* _this, list_data_t data)
-{
-    list_node_t* t = NULL;
+    if (n == _this->size)
+        return n;
 
-    t = dlist_alloc_node_and_copy_data(_this, data);
-    if (is_null(t))
-        return NULL;
-
-    return __dlist_push_back(_this, t);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_push_front(list_t* _this, list_node_t* node)
-{
-    list_add(&node->node, &_this->head);
-    _this->size++;
-    return node;
-}
-
-static /* __always_inline */ inline list_node_t* dlist_push_front(list_t* _this, list_data_t data)
-{
-    list_node_t* t = NULL;
-
-    t = dlist_alloc_node_and_copy_data(_this, data);
-    if (is_null(t))
-        return NULL;
-
-    return __dlist_push_front(_this, t);
-}
-
-static /* __always_inline */ inline list_node_t* __dlist_insert(list_t* _this, list_node_t* pos, list_node_t* node)
-{
-    __list_add(&node->node, pos->node.prev, &pos->node);
-    _this->size++;
-    return node;
-}
-
-static /* __always_inline */ inline list_node_t* dlist_insert(list_t* _this, list_node_t* pos, list_data_t data)
-{
-    list_node_t* t = NULL;
-
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
-    if (is_null(_this) || is_null(pos)/* || __dlist_rend(_this) == pos*/)
-        return NULL;
-
-    t = dlist_alloc_node_and_copy_data(_this, data);
-    if (is_null(t))
-        return NULL;
-
-    if (__dlist_end(_this) == pos)
-        return __dlist_push_back(_this, t);
-    return __dlist_insert(_this, pos, t);
-}
-
-static /* __always_inline */ inline void __dlist_erase(list_t* _this, list_node_t* pos)
-{
-    list_del_init(&pos->node);
-    _this->size--;
-}
-
-static /* __always_inline */ inline list_node_t* dlist_erase(list_t* _this, list_node_t* pos)
-{
-    list_node_t* t = NULL;
-
-    if (unlikely(is_null(_this) || is_null(pos)))
-        return NULL;
-
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
-    if (list_empty(&_this->head) || __dlist_end(_this) == pos/* || __dlist_rend(_this) == pos*/)
-        return NULL;
-
-    t = __dlist_next(_this, pos);
-    if (is_null(t))
-        return NULL;
-
-    __dlist_erase(_this, pos);
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-        _this->ops->free_data(&pos->data);
-
-    p_free(pos);
-
-    return t;
-}
-
-static list_node_t* dlist_erase_range(list_t* _this, list_node_t* begin, list_node_t* end)
-{
-    list_node_t* pos = begin;
-    list_node_t* n = NULL;
-
-    if (unlikely(is_null(_this) || is_null(begin) || is_null(end)))
-        return NULL;
-
-    /* Both `begin` and `end` can be equal to end() */
-    if (list_empty(&_this->head)/* || __dlist_rend(_this) == begin || __dlist_rend(_this) == end*/)
-        return NULL;
-
-    if (__dlist_end(_this) == begin)
-        return __dlist_end(_this) == end ? __dlist_end(_this) : NULL;
-
-    list_for_each_entry_safe_from(pos, n, &_this->head, node) {
-        if (__dlist_end(_this) != end && (&end->node == &pos->node))
-            break;
-
-        __dlist_erase(_this, pos);
-
-        if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-            _this->ops->free_data(&pos->data);
-
-        p_free(pos);
+    if (n < _this->size) {
+        ret = __i_list_erase_range(_this, __i_list_it(_this, n), __i_list_end(_this));
+        return i_list_is_null_iterator(ret) ? -1 : n;
     }
 
-    /* TODO: if `end` is not equal to end(), but still satisfies the judgment, indicating
-             that there is an error in the parameters. Do we need to return an error? */
-    if (&_this->head == &pos->node)
-        return __dlist_end(_this);
-    return end;
-}
-
-static /* __always_inline */ inline void __dlist_pop_back(list_t* _this)
-{
-    struct list_head* t = _this->head.prev;
-
-    if (unlikely(is_null(t)))
-        return ; /* Err: memory has been modified illegally */
-
-    if (!list_empty(&_this->head)) {
-        list_del_init(t);
-        _this->size--;
-    }
-}
-
-static /* __always_inline */ inline void dlist_pop_back(list_t* _this)
-{
-    list_node_t* t = NULL;
-
-    if (unlikely(is_null(_this)))
-        return ;
-
-    t = __dlist_last(_this);
-    if (is_null(t))
-        return ;
-
-    __dlist_pop_back(_this);
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-        _this->ops->free_data(&t->data);
-
-    p_free(t);
-}
-
-static /* __always_inline */ inline void __dlist_pop_front(list_t* _this)
-{
-    struct list_head* t = _this->head.next;
-
-    if (unlikely(is_null(t)))
-        return ; /* Err: memory has been modified illegally */
-
-    if (!list_empty(&_this->head)) {
-        list_del_init(t);
-        _this->size--;
-    }
-}
-
-static /* __always_inline */ inline void dlist_pop_front(list_t* _this)
-{
-    list_node_t* t = NULL;
-
-    if (unlikely(is_null(_this)))
-        return ;
-
-    t = __dlist_first(_this);
-    if (is_null(t))
-        return ;
-
-    __dlist_pop_front(_this);
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-        _this->ops->free_data(&t->data);
-
-    p_free(t);
-}
-
-static list_size_t dlist_remove(list_t* _this, list_data_t data)
-{
-    list_size_t ret = 0;
-    list_node_t* t = NULL;
-    list_node_t* n = NULL;
-
-    if (unlikely(is_null(_this)))
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(default_data))
         return -1;
+
+    __i_list_insert_n(_this, __i_list_base(_this), n - _this->size, default_data, &ret);
+    return i_list_is_null_iterator(ret) ? -1 : n;
+}
+
+/* checked */
+list_size_t __i_list_assign(i_list_t* _this, list_size_t n, list_data_t data)
+{
+    list_iterator_t ret;
+
+    __i_list_clear(_this);
+
+    if (0 == n)
+        return 0;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return -1;
 
-    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
-        list_for_each_entry_safe(t, n, &_this->head, node) {
-            if (data != t->data)
-                continue;
-
-            __dlist_erase(_this, t);
-
-            if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-                _this->ops->free_data(&t->data);
-
-            p_free(t);
-            ret++;
-        }
-    } else {
-        list_for_each_entry_safe(t, n, &_this->head, node) {
-            if (!_this->ops->__eq(data, t->data))
-                continue;
-
-            __dlist_erase(_this, t);
-
-            if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-                _this->ops->free_data(&t->data);
-
-            p_free(t);
-            ret++;
-        }
-    }
-
-    return ret;
+    __i_list_insert_n(_this, __i_list_base(_this), n, data, &ret);
+    return i_list_is_null_iterator(ret) ? -1 : n;
 }
 
-static list_size_t dlist_remove_if(list_t* _this, remove_if_condition cond)
+/* checked */
+list_t* __list_new(const class_list_ops_t* ops, list_step_t step)
 {
-    list_size_t ret = 0;
-    list_node_t* t = NULL;
-    list_node_t* n = NULL;
+    list_t* list;
 
-    if (unlikely(is_null(_this) || is_null(cond)))
-        return -1;
+    if (0 == step)
+        return NULL;
 
-    list_for_each_entry_safe(t, n, &_this->head, node) {
-        if (!cond(t->data))
-            continue;
-
-        __dlist_erase(_this, t);
-
-        if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-            _this->ops->free_data(&t->data);
-
-        p_free(t);
-        ret++;
-    }
-
-    return ret;
-}
-
-static list_size_t dlist_clear(list_t* _this)
-{
-    list_size_t ret = 0;
-    list_node_t* t = NULL;
-    list_node_t* n = NULL;
-
-    if (unlikely(is_null(_this)))
-        return -1;
-
-    list_for_each_entry_safe(t, n, &_this->head, node) {
-        __dlist_erase(_this, t);
-
-        if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-            _this->ops->free_data(&t->data);
-
-        p_free(t);
-        ret++;
-    }
-
-    return ret;
-}
-
-list_t* __list_new(const class_list_ops_t* ops)
-{
-    list_t* list = (list_t*)p_calloc(1, sizeof(list_t));
+    list = (list_t*)p_calloc(1, sizeof(list_t));
     if (is_null(list))
         return NULL;
 
-    list->ops = ops;
+    list->ops  = ops;
+    list->step = step;
     INIT_LIST_HEAD(&list->head);
+    if (g_class_list_ops_sso() == list->ops)
+        list->sso = true;
     return list;
 }
 
+/* checked */
 void __list_delete(list_t** _this)
 {
     if (is_null(_this) || is_null(*_this))
-        return;
+        return ;
 
-    dlist_clear(*_this);
+    __i_list_clear(*_this);
     p_free(*_this);
 }
-
-#if 0
-typedef list_iterator_t* (*fp_end)(const list_t* _this);
-typedef list_iterator_t* (*fp_begin)(const list_t* _this);
-typedef list_iterator_t* (*fp_next)(const list_t* _this, const list_iterator_t* iterator);
-typedef list_iterator_t* (*fp_prev)(const list_t* _this, const list_iterator_t* iterator);
-typedef list_r_iterator_t* (*fp_rend)(const list_t* _this);
-typedef list_r_iterator_t* (*fp_rbegin)(const list_t* _this);
-typedef list_r_iterator_t* (*fp_rnext)(const list_t* _this, const list_r_iterator_t* r_iterator);
-typedef list_r_iterator_t* (*fp_rprev)(const list_t* _this, const list_r_iterator_t* r_iterator);
-typedef list_iterator_t* (*fp_find)(const list_t* _this, list_data_t data);
-typedef list_iterator_t* (*fp_push_back)(list_t* _this, list_data_t data);
-typedef list_iterator_t* (*fp_push_front)(list_t* _this, list_data_t data);
-typedef list_iterator_t* (*fp_insert)(list_t* _this, list_iterator_t* iterator, list_data_t data);
-typedef list_iterator_t* (*fp_erase)(list_t* _this, list_iterator_t* iterator);
-typedef list_iterator_t* (*fp_erase_range)(list_t* _this, list_iterator_t* iterator_begin, list_iterator_t* iterator_end);
-
-/* __always_inline */ inline const class_list_t* class_list_ins(void)
-{
-    static const class_list_t ins = {
-        .size        = _dlist_size,
-        .count       = dlist_count,
-        .end         = (fp_end)__dlist_end,
-        .begin       = (fp_begin)_dlist_begin,
-        .next        = (fp_next)_dlist_next,
-        .prev        = (fp_prev)_dlist_prev,
-        .rend        = (fp_rend)__dlist_rend,
-        .rbegin      = (fp_rbegin)_dlist_rbegin,
-        .rnext       = (fp_rnext)_dlist_rnext,
-        .rprev       = (fp_rprev)_dlist_rprev,
-        .first       = dlist_first,
-        .last        = dlist_last,
-        .find        = (fp_find)dlist_find,
-        .push_back   = (fp_push_back)dlist_push_back,
-        .push_front  = (fp_push_front)dlist_push_front,
-        .insert      = (fp_insert)dlist_insert,
-        .erase       = (fp_erase)dlist_erase,
-        .erase_range = (fp_erase_range)dlist_erase_range,
-        .pop_back    = dlist_pop_back,
-        .pop_front   = dlist_pop_front,
-        .remove      = dlist_remove,
-        .remove_if   = dlist_remove_if,
-        .clear       = dlist_clear,
-    };
-    return &ins;
-}
-
-#else
 
 const class_list_t* class_list_ins(void)
 {
     static const class_list_t ins = {
-        .size        = clist_size,
-        .count       = clist_count,
-        .end         = clist_end,
-        .begin       = clist_begin,
-        .next        = clist_next,
-        .prev        = clist_prev,
-        .rend        = clist_rend,
-        .rbegin      = clist_rbegin,
-        .rnext       = clist_rnext,
-        .rprev       = clist_rprev,
-        .first       = clist_first,
-        .last        = clist_last,
-        .find        = clist_find,
-        .push_back   = clist_push_back,
-        .push_front  = clist_push_front,
-        .insert      = clist_insert,
-        .erase       = clist_erase,
-        .erase_range = clist_erase_range,
-        .pop_back    = clist_pop_back,
-        .pop_front   = clist_pop_front,
-        .remove      = clist_remove,
-        .remove_if   = clist_remove_if,
-        .clear       = clist_clear,
+        .size         = clist_size,
+        .__empty      = __clist_empty,
+        .count        = clist_count,
+        .end          = clist_end,
+        .begin        = clist_begin,
+        .next         = clist_next,
+        .prev         = clist_prev,
+        .rend         = clist_rend,
+        .rbegin       = clist_rbegin,
+        .rnext        = clist_rnext,
+        .rprev        = clist_rprev,
+        .__it         = __clist_it,
+        .it           = clist_it,
+        .__at         = __clist_at,
+        .at           = clist_at,
+        .front        = clist_front,
+        .back         = clist_back,
+        .first        = clist_first,
+        .last         = clist_last,
+        .find         = clist_find,
+        .push_back    = clist_push_back,
+        .push_front   = clist_push_front,
+        .insert       = clist_insert,
+        .insert_n     = clist_insert_n,
+        .erase        = clist_erase,
+        .erase_range  = clist_erase_range,
+        .pop_back     = clist_pop_back,
+        .pop_front    = clist_pop_front,
+        .remove       = clist_remove,
+        .remove_if    = clist_remove_if,
+        .unique       = clist_unique,
+        .reverse      = clist_reverse,
+        .sort         = clist_sort,
+        .merge        = clist_merge,
+        .splice       = clist_splice,
+        .splice_range = clist_splice_range,
+        .resize       = clist_resize,
+        .swap         = clist_swap,
+        .assign       = clist_assign,
+        .clear        = clist_clear,
     };
     return &ins;
 }
-#endif /* 0 */
-
-
-
-
-
-
-list_size_t clist_size(const list_t* _this)
-{
-    return _dlist_size(_this);
-}
-
-list_count_t clist_count(const list_t* _this, list_data_t data)
-{
-    return dlist_count(_this, data);
-}
-
-list_iterator_t clist_end(const list_t* _this)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)__dlist_end(_this);
-    return it;
-}
-
-list_iterator_t clist_begin(const list_t* _this)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)_dlist_begin(_this);
-    return it;
-}
-
-list_iterator_t clist_next(const list_t* _this, const list_iterator_t iterator)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)_dlist_next(_this, (const list_node_t*)iterator.d);
-    return it;
-}
-
-list_iterator_t clist_prev(const list_t* _this, const list_iterator_t iterator)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)_dlist_prev(_this, (const list_node_t*)iterator.d);
-    return it;
-}
-
-list_r_iterator_t clist_rend(const list_t* _this)
-{
-    list_r_iterator_t it;
-    it.d = (list_data_t*)__dlist_rend(_this);
-    return it;
-}
-
-list_r_iterator_t clist_rbegin(const list_t* _this)
-{
-    list_r_iterator_t it;
-    it.d = (list_data_t*)_dlist_rbegin(_this);
-    return it;
-}
-
-list_r_iterator_t clist_rnext(const list_t* _this, const list_r_iterator_t r_iterator)
-{
-    list_r_iterator_t it;
-    it.d = (list_data_t*)_dlist_rnext(_this, (const list_node_t*)r_iterator.d);
-    return it;
-}
-
-list_r_iterator_t clist_rprev(const list_t* _this, const list_r_iterator_t r_iterator)
-{
-    list_r_iterator_t it;
-    it.d = (list_data_t*)_dlist_rprev(_this, (const list_node_t*)r_iterator.d);
-    return it;
-}
-
-list_data_t clist_first(const list_t* _this, list_data_t default_data)
-{
-    return dlist_first(_this, default_data);
-}
-
-list_data_t clist_last(const list_t* _this, list_data_t default_data)
-{
-    return dlist_last(_this, default_data);
-}
-
-list_iterator_t clist_find(const list_t* _this, list_data_t data)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)dlist_find(_this, data);
-    return it;
-}
-
-list_iterator_t clist_push_back(list_t* _this, list_data_t data)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)dlist_push_back(_this, data);
-    return it;
-}
-
-list_iterator_t clist_push_front(list_t* _this, list_data_t data)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)dlist_push_front(_this, data);
-    return it;
-}
-
-list_iterator_t clist_insert(list_t* _this, list_iterator_t iterator, list_data_t data)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)dlist_insert(_this, (list_node_t*)iterator.d, data);
-    return it;
-}
-
-list_iterator_t clist_erase(list_t* _this, list_iterator_t iterator)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)dlist_erase(_this, (list_node_t*)iterator.d);
-    return it;
-}
-
-list_iterator_t clist_erase_range(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)
-{
-    list_iterator_t it;
-    it.d = (list_data_t*)dlist_erase_range(_this, (list_node_t*)iterator_begin.d, (list_node_t*)iterator_end.d);
-    return it;
-}
-
-void clist_pop_back(list_t* _this)
-{
-    dlist_pop_back(_this);
-}
-
-void clist_pop_front(list_t* _this)
-{
-    dlist_pop_front(_this);
-}
-
-list_size_t clist_remove(list_t* _this, list_data_t data)
-{
-    return dlist_remove(_this, data);
-}
-
-list_size_t clist_remove_if(list_t* _this, remove_if_condition cond)
-{
-    return dlist_remove_if(_this, cond);
-}
-
-list_size_t clist_clear(list_t* _this)
-{
-    return dlist_clear(_this);
-}
-
-
-
-
-
-// #include <multimap/multimap.h>
-// typedef multimap_value_node_t* (*fp_multimap_values_end)(const multimap_values_t* _this);
-// typedef multimap_value_node_t* (*fp_multimap_values_rend)(const multimap_values_t* _this);
-// typedef multimap_value_node_t* (*fp_multimap_values_begin)(const multimap_values_t* _this);
-// typedef multimap_value_node_t* (*fp_multimap_values_rbegin)(const multimap_values_t* _this);
-// typedef multimap_value_node_t* (*fp_multimap_values_next)(const multimap_values_t* _this, const multimap_value_node_t* node);
-// typedef multimap_value_node_t* (*fp_multimap_values_prev)(const multimap_values_t* _this, const multimap_value_node_t* node);
-// typedef multimap_value_node_t* (*fp_multimap_values_find)(const multimap_values_t* _this, multimap_value_t value);
-// typedef multimap_value_node_t* (*fp_multimap_values_push_back)(multimap_values_t* _this, multimap_value_t value);
-// typedef multimap_value_node_t* (*fp_multimap_values_push_front)(multimap_values_t* _this, multimap_value_t value);
-// typedef multimap_value_node_t* (*fp_multimap_values_insert)(multimap_values_t* _this, multimap_value_node_t* pos, multimap_value_t value);
-// typedef multimap_value_node_t* (*fp_multimap_values_erase)(multimap_values_t* _this, multimap_value_node_t* pos);
-// typedef multimap_value_node_t* (*fp_multimap_values_erase_range)(multimap_values_t* _this, multimap_value_node_t* begin, multimap_value_node_t* end);
-// /* __always_inline */ inline const class_multimap_values_t* class_multimap_values_ins(void)
-// {
-//     static const class_multimap_values_t ins = {
-//         .size        = _dlist_size,
-//         .count       = dlist_count,
-//         .end         = (fp_multimap_values_end)__dlist_end,
-//         .rend        = (fp_multimap_values_rend)__dlist_rend,
-//         .begin       = (fp_multimap_values_begin)_dlist_begin,
-//         .rbegin      = (fp_multimap_values_rbegin)_dlist_rbegin,
-//         .next        = (fp_multimap_values_next)_dlist_next,
-//         .prev        = (fp_multimap_values_prev)_dlist_prev,
-//         .first       = _dlist_first,
-//         .last        = _dlist_last,
-//         .find        = (fp_multimap_values_find)dlist_find,
-//         .push_back   = (fp_multimap_values_push_back)dlist_push_back,
-//         .push_front  = (fp_multimap_values_push_front)dlist_push_front,
-//         .insert      = (fp_multimap_values_insert)dlist_insert,
-//         .erase       = (fp_multimap_values_erase)dlist_erase,
-//         .erase_range = (fp_multimap_values_erase_range)dlist_erase_range,
-//         .pop_back    = dlist_pop_back,
-//         .pop_front   = dlist_pop_front,
-//         .remove      = dlist_remove,
-//         .remove_if   = dlist_remove_if,
-//         .clear       = dlist_clear,
-//     };
-//     return &ins;
-// }
