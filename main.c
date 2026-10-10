@@ -331,9 +331,10 @@ static void test_i_for(void)
         }, time_hashmap);
 #elif TEST_MAP
         ds_size = DSL(cmap, size)(ds_map_i);
+        map_iterator_t iterator_end = DSL(cmap, end)(ds_map_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
             map_iterator_t it = DSL(cmap, find)(ds_map_i, i);
-            if (it.d && iterator_end() != it.d) times_succ++;
+            if (iterator_end.d != it.d) times_succ++;
         }, time_map);
 #elif TEST_SET
         ds_size = DSL(cset, size)(ds_set_i);
@@ -595,9 +596,10 @@ static void test_i_rand(void)
         }, time_hashmap);
 #elif TEST_MAP
         ds_size = DSL(cmap, size)(ds_map_i);
+        map_iterator_t iterator_end = DSL(cmap, end)(ds_map_i);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
             map_iterator_t it = DSL(cmap, find)(ds_map_i, rand() % TIMES_FIND);
-            if (it.d && iterator_end() != it.d) times_succ++;
+            if (iterator_end.d != it.d) times_succ++;
         }, time_map);
 #elif TEST_SET
         ds_size = DSL(cset, size)(ds_set_i);
@@ -1419,9 +1421,10 @@ static void test_s_rand(void)
         }, time_hashmap);
 #elif TEST_MAP
         ds_size = DSL(cmap, size)(ds_map_s);
+        map_iterator_t iterator_end = DSL(cmap, end)(ds_map_s);
         GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
             map_iterator_t it = DSL(cmap, find)(ds_map_s, (map_key_t)s_pool_str(dst));
-            if (it.d && iterator_end() != it.d) times_succ++;
+            if (iterator_end.d != it.d) times_succ++;
         }, time_map);
 #elif TEST_SET
         ds_size = DSL(cset, size)(ds_set_s);

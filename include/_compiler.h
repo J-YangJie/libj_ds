@@ -21,8 +21,8 @@
 #define __J_COMPILER_H
 
 #define JDSC_ITERATOR_ERR_NULL  0
-#define JDSC_ITERATOR_END       1
-#define JDSC_ITERATOR_REND      2
+#define JDSC_ITERATOR_END       1UL
+#define JDSC_ITERATOR_REND      2UL
 
 #if defined(JDSC_DEBUG)
 #include <assert.h>

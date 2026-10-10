@@ -23,9 +23,8 @@
 #include <_memory.h>
 #include <_compiler_inter.h>
 #include <linux/_types.h>
-#include <linux/rbtree.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator_inter.h>
+#include <rbtree/rbtree_iterator.h>
 
 typedef struct map_node {
     map_key_t key;
@@ -75,6 +74,7 @@ map_count_t map_count(const map_t* _this, map_key_t key)
     return is_null(t) ? -1 : (__map_end(_this) == t ? 0 : 1);
 }
 
+#if 0
 static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 map_node_t* ___map_first(const map_t* _this)
 {
@@ -88,18 +88,19 @@ map_node_t* ___map_last(const map_t* _this)
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : map_entry(t);
 }
+#endif
 
 static JDSC_INLINE_FORCE
 map_node_t* __map_end(const map_t* _this)
 {
-    return (map_node_t*)iterator_end();
+    return (map_node_t*)__rbtree_end(&_this->root);
 }
 
 static JDSC_INLINE_FORCE
 map_node_t* __map_begin(const map_t* _this)
 {
-    map_node_t* t = ___map_first(_this);
-    return is_null(t) ? __map_end(_this) : t;
+    rbtree_iterator_t it = __rbtree_begin(&_this->root);
+    return __rbtree_is_end(it) ? (map_node_t*)it : map_entry(it);
 }
 
 static JDSC_INLINE_FORCE
@@ -111,82 +112,48 @@ map_node_t* _map_begin(const map_t* _this)
 }
 
 static JDSC_INLINE_FORCE
-map_node_t* __map_next(const map_t* _this, const map_node_t* node)
+map_node_t* __map_next(const map_node_t* node)
 {
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-    JDSC_ASSERT(__map_end(_this) != node);
-
-#if JDSC_ITERATOR_ERR_NULL
-    if (unlikely(__map_end(_this) == node))
-        return NULL;
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_next(&node->node);
-    return is_null(t) ? __map_end(_this) : map_entry(t);
+    rbtree_const_iterator_t it = __rbtree_is_end((rbtree_const_iterator_t)node) ? (rbtree_const_iterator_t)node : &node->node;
+    it = __rbtree_next(it);
+    return is_null(it) || __rbtree_is_end(it) ? (map_node_t*)it : map_entry(it);
 }
 
 static JDSC_INLINE_FORCE
-map_node_t* _map_next(const map_t* _this, const map_node_t* node)
+map_node_t* _map_next(const map_node_t* node)
 {
-    if (unlikely(is_null(_this) || is_null(node)))
+    if (unlikely(is_null(node)))
         return NULL;
-    return __map_next(_this, node);
+    return __map_next(node);
 }
 
 static JDSC_INLINE_FORCE_POLICY
-map_node_t* __map_prev(const map_t* _this, const map_node_t* node)
+map_node_t* __map_prev(const map_node_t* node)
 {
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-
-    if (unlikely(__map_end(_this) == node))
-        return ___map_last(_this); /* Err: since the `ds` is non-empty, 
-                                            the return value includes the error case of `NULL` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_prev(&node->node);
-    JDSC_ASSERT(!is_null(t));
-
-#if JDSC_ITERATOR_ERR_NULL
-    return is_null(t) ? NULL : map_entry(t);
-#else
-    return map_entry(t);
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
+    rbtree_const_iterator_t it = __rbtree_is_end((rbtree_const_iterator_t)node) ? (rbtree_const_iterator_t)node : &node->node;
+    it = __rbtree_prev(it);
+    return is_null(it) ? (map_node_t*)it : map_entry(it);
 }
 
 static JDSC_INLINE_FORCE
-map_node_t* _map_prev(const map_t* _this, const map_node_t* node)
+map_node_t* _map_prev(const map_node_t* node)
 {
-    if (unlikely(is_null(_this) || is_null(node)))
+    if (unlikely(is_null(node)))
         return NULL;
-    return __map_prev(_this, node);
+    return __map_prev(node);
 }
 
 static JDSC_INLINE_FORCE
 map_node_t* __map_rend(const map_t* _this)
 {
-    return (map_node_t*)iterator_rend();
+    return (map_node_t*)__rbtree_rend(&_this->root);
 }
 
 static JDSC_INLINE_FORCE
 map_node_t* __map_rbegin(const map_t* _this)
 {
-    map_node_t* t = ___map_last(_this);
-    return is_null(t) ? __map_rend(_this) : t;
+    rbtree_iterator_t it = __rbtree_rbegin(&_this->root);
+    return __rbtree_is_rend(it) ? (map_node_t*)it : map_entry(it);
 }
 
 static JDSC_INLINE_FORCE
@@ -198,69 +165,35 @@ map_node_t* _map_rbegin(const map_t* _this)
 }
 
 static JDSC_INLINE_FORCE
-map_node_t* __map_rnext(const map_t* _this, const map_node_t* node)
+map_node_t* __map_rnext(const map_node_t* node)
 {
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-    JDSC_ASSERT(__map_rend(_this) != node);
-
-#if JDSC_ITERATOR_ERR_NULL
-    if (unlikely(__map_rend(_this) == node))
-        return NULL;
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-    /* The input parameter is `reverse_iterator`, and there's no need 
-       to check whether it equals `end` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_prev(&node->node);
-    return is_null(t) ? __map_rend(_this) : map_entry(t);
+    rbtree_const_iterator_t it = __rbtree_is_rend((rbtree_const_iterator_t)node) ? (rbtree_const_iterator_t)node : &node->node;
+    it = __rbtree_rnext(it);
+    return is_null(it) || __rbtree_is_rend(it) ? (map_node_t*)it : map_entry(it);
 }
 
 static JDSC_INLINE_FORCE
-map_node_t* _map_rnext(const map_t* _this, const map_node_t* node)
+map_node_t* _map_rnext(const map_node_t* node)
 {
-    if (unlikely(is_null(_this) || is_null(node)))
+    if (unlikely(is_null(node)))
         return NULL;
-    return __map_rnext(_this, node);
+    return __map_rnext(node);
 }
 
 static JDSC_INLINE_FORCE_POLICY
-map_node_t* __map_rprev(const map_t* _this, const map_node_t* node)
+map_node_t* __map_rprev(const map_node_t* node)
 {
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-
-    if (unlikely(__map_rend(_this) == node))
-        return ___map_first(_this); /* Err: since the `ds` is non-empty, 
-                                           the return value includes the error case of `NULL` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_next(&node->node);
-    JDSC_ASSERT(!is_null(t));
-
-#if JDSC_ITERATOR_ERR_NULL
-    return is_null(t) ? NULL : map_entry(t);
-#else
-    return map_entry(t);
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
+    rbtree_const_iterator_t it = __rbtree_is_rend((rbtree_const_iterator_t)node) ? (rbtree_const_iterator_t)node : &node->node;
+    it = __rbtree_rprev(it);
+    return is_null(it) ? (map_node_t*)it : map_entry(it);
 }
 
 static JDSC_INLINE_FORCE
-map_node_t* _map_rprev(const map_t* _this, const map_node_t* node)
+map_node_t* _map_rprev(const map_node_t* node)
 {
-    if (unlikely(is_null(_this) || is_null(node)))
+    if (unlikely(is_null(node)))
         return NULL;
-    return __map_rprev(_this, node);
+    return __map_rprev(node);
 }
 
 static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
@@ -593,11 +526,16 @@ map_node_t* map_erase(map_t* _this, map_node_t* pos)
     if (unlikely(RB_EMPTY_ROOT(&_this->root) || __map_end(_this) == pos)/* || __map_rend(_this) == pos*/)
         return NULL;
 
-    t = __map_next(_this, pos);
+    t = __map_next(pos);
     if (unlikely(is_null(t)))
         return NULL;
 
     ___map_erase(_this, pos);
+
+    /* Erase may have replaced the root node. If `end` is returned,
+       the return value must be refreshed. */
+    if (unlikely(__rbtree_is_end((rbtree_const_iterator_t)t)))
+        t = __map_end(_this);
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
         _this->ops->free_key(&pos->key);
@@ -649,7 +587,7 @@ map_size_t map_remove_if(map_t* _this, remove_if_condition_kv cond)
 
     for (t = __map_begin(_this); __map_end(_this) != t; ) {
         if (!cond(t->key, t->value)) {
-            t = __map_next(_this, t);
+            t = __map_next(t);
             continue;
         }
 
@@ -817,17 +755,17 @@ map_iterator_t cmap_begin(const map_t* _this)
     return it;
 }
 
-map_iterator_t cmap_next(const map_t* _this, const map_iterator_t iterator)
+map_iterator_t cmap_next(const map_iterator_t iterator)
 {
     map_iterator_t it;
-    it.d = (map_iterator_kv_t*)_map_next(_this, (const map_node_t*)iterator.d);
+    it.d = (map_iterator_kv_t*)_map_next((const map_node_t*)iterator.d);
     return it;
 }
 
-map_iterator_t cmap_prev(const map_t* _this, const map_iterator_t iterator)
+map_iterator_t cmap_prev(const map_iterator_t iterator)
 {
     map_iterator_t it;
-    it.d = (map_iterator_kv_t*)_map_prev(_this, (const map_node_t*)iterator.d);
+    it.d = (map_iterator_kv_t*)_map_prev((const map_node_t*)iterator.d);
     return it;
 }
 
@@ -845,17 +783,17 @@ map_r_iterator_t cmap_rbegin(const map_t* _this)
     return it;
 }
 
-map_r_iterator_t cmap_rnext(const map_t* _this, const map_r_iterator_t r_iterator)
+map_r_iterator_t cmap_rnext(const map_r_iterator_t r_iterator)
 {
     map_r_iterator_t it;
-    it.d = (map_r_iterator_kv_t*)_map_rnext(_this, (const map_node_t*)r_iterator.d);
+    it.d = (map_r_iterator_kv_t*)_map_rnext((const map_node_t*)r_iterator.d);
     return it;
 }
 
-map_r_iterator_t cmap_rprev(const map_t* _this, const map_r_iterator_t r_iterator)
+map_r_iterator_t cmap_rprev(const map_r_iterator_t r_iterator)
 {
     map_r_iterator_t it;
-    it.d = (map_r_iterator_kv_t*)_map_rprev(_this, (const map_node_t*)r_iterator.d);
+    it.d = (map_r_iterator_kv_t*)_map_rprev((const map_node_t*)r_iterator.d);
     return it;
 }
 

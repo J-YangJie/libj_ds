@@ -66,12 +66,12 @@ map_size_t        cmap_size(const map_t* _this);
 map_count_t       cmap_count(const map_t* _this, map_key_t key);
 map_iterator_t    cmap_end(const map_t* _this);
 map_iterator_t    cmap_begin(const map_t* _this);
-map_iterator_t    cmap_next(const map_t* _this, const map_iterator_t iterator);
-map_iterator_t    cmap_prev(const map_t* _this, const map_iterator_t iterator);
+map_iterator_t    cmap_next(const map_iterator_t iterator);
+map_iterator_t    cmap_prev(const map_iterator_t iterator);
 map_r_iterator_t  cmap_rend(const map_t* _this);
 map_r_iterator_t  cmap_rbegin(const map_t* _this);
-map_r_iterator_t  cmap_rnext(const map_t* _this, const map_r_iterator_t r_iterator);
-map_r_iterator_t  cmap_rprev(const map_t* _this, const map_r_iterator_t r_iterator);
+map_r_iterator_t  cmap_rnext(const map_r_iterator_t r_iterator);
+map_r_iterator_t  cmap_rprev(const map_r_iterator_t r_iterator);
 map_iterator_t    cmap_find(const map_t* _this, map_key_t key);
 map_iterator_t    cmap_lower_bound(const map_t* _this, map_key_t key);
 map_iterator_t    cmap_upper_bound(const map_t* _this, map_key_t key);
@@ -88,12 +88,12 @@ typedef struct class_map {
     map_count_t (*count)(const map_t* _this, map_key_t key);
     map_iterator_t (*end)(const map_t* _this);
     map_iterator_t (*begin)(const map_t* _this);
-    map_iterator_t (*next)(const map_t* _this, const map_iterator_t iterator);
-    map_iterator_t (*prev)(const map_t* _this, const map_iterator_t iterator);
+    map_iterator_t (*next)(const map_iterator_t iterator);
+    map_iterator_t (*prev)(const map_iterator_t iterator);
     map_r_iterator_t (*rend)(const map_t* _this);
     map_r_iterator_t (*rbegin)(const map_t* _this);
-    map_r_iterator_t (*rnext)(const map_t* _this, const map_r_iterator_t r_iterator);
-    map_r_iterator_t (*rprev)(const map_t* _this, const map_r_iterator_t r_iterator);
+    map_r_iterator_t (*rnext)(const map_r_iterator_t r_iterator);
+    map_r_iterator_t (*rprev)(const map_r_iterator_t r_iterator);
     map_iterator_t (*find)(const map_t* _this, map_key_t key);
     map_iterator_t (*lower_bound)(const map_t* _this, map_key_t key);                 /* >= key */
     map_iterator_t (*upper_bound)(const map_t* _this, map_key_t key);                 /*  > key */
