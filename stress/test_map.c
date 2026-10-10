@@ -53,20 +53,18 @@ static stress_iterator_t begin(void* _this)
 
 static stress_iterator_t next(void* _this, stress_iterator_t iterator)
 {
-    map_t* this = (map_t*)_this;
     map_iterator_t it;
     it.d = (map_iterator_kv_t*)iterator.d;
-    it = cds->next(this, it);
+    it = cds->next(it);
     stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
     return r;
 }
 
 static stress_iterator_t prev(void* _this, stress_iterator_t iterator)
 {
-    map_t* this = (map_t*)_this;
     map_iterator_t it;
     it.d = (map_iterator_kv_t*)iterator.d;
-    it = cds->prev(this, it);
+    it = cds->prev(it);
     stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
     return r;
 }
@@ -89,20 +87,18 @@ static stress_iterator_t rbegin(void* _this)
 
 static stress_iterator_t rnext(void* _this, stress_iterator_t r_iterator)
 {
-    map_t* this = (map_t*)_this;
     map_r_iterator_t it;
     it.d = (map_r_iterator_kv_t*)r_iterator.d;
-    it = cds->rnext(this, it);
+    it = cds->rnext(it);
     stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
     return r;
 }
 
 static stress_iterator_t rprev(void* _this, stress_iterator_t r_iterator)
 {
-    map_t* this = (map_t*)_this;
     map_r_iterator_t it;
     it.d = (map_r_iterator_kv_t*)r_iterator.d;
-    it = cds->rprev(this, it);
+    it = cds->rprev(it);
     stress_iterator_t r = { .d = it.d, .ptr1 = NULL, .ptr2 = NULL, .ptr3 = NULL };
     return r;
 }

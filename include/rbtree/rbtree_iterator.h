@@ -95,10 +95,14 @@ rbtree_iterator_t __red_rb_next(rbtree_const_iterator_t _it)
     if (it->rb_right)
         return __red_rb_leftmost(it->rb_right);
 
-    while ((p = rb_parent(it)) && it == p->rb_right)
+    while ((p = rb_parent(it)) && !RB_EMPTY_NODE(p) && it == p->rb_right)
         it = p;
 
-    return p ? p : __rbtree_return_end(it);
+    if (!p)
+        return __rbtree_return_end(it);              /* 无哨兵：保持旧语义 */
+    if (RB_EMPTY_NODE(p))
+        return __rbtree_return_end(p);               /* p 是哨兵 -> end */
+    return p;
 }
 
 static inline
@@ -112,16 +116,20 @@ rbtree_iterator_t __red_rb_prev(rbtree_const_iterator_t _it)
     if (it->rb_left)
         return __red_rb_rightmost(it->rb_left);
 
-    while ((p = rb_parent(it)) && it == p->rb_left)
+    while ((p = rb_parent(it)) && !RB_EMPTY_NODE(p) && it == p->rb_left)
         it = p;
 
-    return p ? p : __rbtree_return_rend(it);
+    if (!p)
+        return __rbtree_return_rend(it);             /* 无哨兵：保持旧语义 */
+    if (RB_EMPTY_NODE(p))
+        return __rbtree_return_rend(p);              /* p 是哨兵 -> rend */
+    return p;
 }
 
 static inline
 rbtree_iterator_t __rbtree_end(const struct rb_root *root)
 {
-    return (rbtree_iterator_t)((unsigned long)root->rb_node | __RBTREE_ITERATOR_END);
+    return (rbtree_iterator_t)((unsigned long)root->header | __RBTREE_ITERATOR_END);
 }
 
 static inline
@@ -158,8 +166,8 @@ rbtree_iterator_t __rbtree_prev(rbtree_const_iterator_t it)
     JDSC_ASSERT(t); /* RB_EMPTY_ROOT */
 
     if (unlikely(__rbtree_is_end(it)))
-        return t ? __red_rb_rightmost(t) : t; /* Err: since the `ds` is non-empty, 
-                                                        the return value includes the error case of `NULL` */
+        /* t 是哨兵：它用 rb_left 保存当前根，据此取最右节点 */
+        return (t && t->rb_left) ? __red_rb_rightmost(t->rb_left) : NULL;
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */
@@ -173,7 +181,7 @@ rbtree_iterator_t __rbtree_prev(rbtree_const_iterator_t it)
 static inline
 rbtree_iterator_t __rbtree_rend(const struct rb_root *root)
 {
-    return (rbtree_iterator_t)((unsigned long)root->rb_node | __RBTREE_ITERATOR_REND);
+    return (rbtree_iterator_t)((unsigned long)root->header | __RBTREE_ITERATOR_REND);
 }
 
 static inline
@@ -210,8 +218,8 @@ rbtree_iterator_t __rbtree_rprev(rbtree_const_iterator_t it)
     JDSC_ASSERT(t); /* RB_EMPTY_ROOT */
 
     if (unlikely(__rbtree_is_rend(it)))
-        return t ? __red_rb_leftmost(t) : t; /* Err: since the `ds` is non-empty, 
-                                                        the return value includes the error case of `NULL` */
+        /* t 是哨兵：它用 rb_left 保存当前根，据此取最左节点 */
+        return (t && t->rb_left) ? __red_rb_leftmost(t->rb_left) : NULL;
 
     /* This check should come after `end` or `rend`.
        This is a pre-judgment condition for `rb_next` or `rb_prev` */

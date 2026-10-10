@@ -23,6 +23,7 @@ struct rb_node {
 
 struct rb_root {
     struct rb_node* rb_node;
+    struct rb_node* header;   /* 可选哨兵（end/rend 的锚点）；NULL = stock Linux 语义，见 rbtree.h */
 };
 
 #endif /* __LINUX_TYPES_H */

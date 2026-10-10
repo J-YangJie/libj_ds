@@ -46,6 +46,33 @@ static inline void rb_set_color(struct rb_node *rb, int color)
 #define RB_EMPTY_NODE(node)	(rb_parent(node) == node)
 #define RB_CLEAR_NODE(node)	(rb_set_parent(node, node))
 
+/*
+ * 初始化一棵树，可选地挂一个哨兵节点（header）。
+ *
+ * header == NULL 时与 stock Linux rbtree 行为逐字节一致（根节点的 parent 为 NULL）。
+ *
+ * header != NULL（本仓库里 map 用）时的不变量：
+ *   1) 根节点的 parent 指向 header（不再是 NULL）—— 因此“谁算根”的判据
+ *      在 rbtree.c 里统一写成 (parent != root->header)，header 为 NULL 时自动退化为旧语义；
+ *   2) header 自身 parent 自指，于是 RB_EMPTY_NODE(header) 成立，充当“我是哨兵”的标记；
+ *   3) header->rb_left 保存当前根节点（rb_insert_color / rb_erase 末尾同步），
+ *      这样从“哨兵”能反查到树，`prev(end)` 不必再带容器指针。
+ *
+ * header 必须位于容器内部（地址与容器同寿），end()/rend() 才稳定。
+ */
+static inline void rb_root_init(struct rb_root* root, struct rb_node* header)
+{
+    root->rb_node = NULL;
+    root->header  = header;
+
+    if (header) {
+        header->rb_left  = NULL;
+        header->rb_right = NULL;
+        rb_set_parent(header, header);
+        rb_set_black(header);
+    }
+}
+
 static inline void rb_init_node(struct rb_node *rb)
 {
     rb->rb_parent_color = 0;

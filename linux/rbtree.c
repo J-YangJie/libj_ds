@@ -34,7 +34,7 @@ static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
 
     rb_set_parent(right, parent);
 
-    if (parent)
+    if (parent != root->header)
     {
         if (node == parent->rb_left)
             parent->rb_left = right;
@@ -57,7 +57,7 @@ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
 
     rb_set_parent(left, parent);
 
-    if (parent)
+    if (parent != root->header)
     {
         if (node == parent->rb_right)
             parent->rb_right = left;
@@ -73,7 +73,7 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
 {
     struct rb_node *parent, *gparent;
 
-    while ((parent = rb_parent(node)) && rb_is_red(parent))
+    while ((parent = rb_parent(node)) != root->header && rb_is_red(parent))
     {
         gparent = rb_parent(parent);
 
@@ -132,6 +132,9 @@ void rb_insert_color(struct rb_node *node, struct rb_root *root)
     }
 
     rb_set_black(root->rb_node);
+
+    if (root->header)
+        root->header->rb_left = root->rb_node;
 }
 
 static void __rb_erase_color(struct rb_node *node, struct rb_node *parent, struct rb_root *root)
@@ -230,7 +233,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
         while ((left = node->rb_left) != NULL)
             node = left;
 
-        if (rb_parent(old)) {
+        if (rb_parent(old) != root->header) {
             if (rb_parent(old)->rb_left == old)
                 rb_parent(old)->rb_left = node;
             else
@@ -265,7 +268,7 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
 
     if (child)
         rb_set_parent(child, parent);
-    if (parent)
+    if (parent != root->header)
     {
         if (parent->rb_left == node)
             parent->rb_left = child;
@@ -278,6 +281,9 @@ void rb_erase(struct rb_node *node, struct rb_root *root)
 color:
     if (color == RB_BLACK)
         __rb_erase_color(child, parent, root);
+
+    if (root->header)
+        root->header->rb_left = root->rb_node;
 }
 
 struct rb_node *rb_first(const struct rb_root *root)
@@ -321,7 +327,8 @@ struct rb_node *rb_next(const struct rb_node *node)
     while ((parent = rb_parent(node)) && node == parent->rb_right)
         node = parent;
 
-    return parent;
+    /* 走到哨兵即“没有后继”，对调用方仍然是 NULL */
+    return (parent && RB_EMPTY_NODE(parent)) ? NULL : parent;
 }
 
 struct rb_node *rb_prev(const struct rb_node *node)
@@ -341,14 +348,15 @@ struct rb_node *rb_prev(const struct rb_node *node)
     while ((parent = rb_parent(node)) && node == parent->rb_left)
         node = parent;
 
-    return parent;
+    /* 走到哨兵即“没有前驱”，对调用方仍然是 NULL */
+    return (parent && RB_EMPTY_NODE(parent)) ? NULL : parent;
 }
 
 void rb_replace_node(struct rb_node *victim, struct rb_node *new, struct rb_root *root)
 {
 	struct rb_node *parent = rb_parent(victim);
 
-    if (parent) {
+    if (parent != root->header) {
         if (victim == parent->rb_left)
             parent->rb_left = new;
         else

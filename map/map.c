@@ -44,6 +44,7 @@ struct map {
     const class_map_ops_t* ops;
     struct rb_root root;
     map_size_t size;
+    struct rb_node header;   /* end()/rend() 的锚点，地址与 map 同寿 -> 哨兵稳定 */
 };
 
 #define TAG "[map]"
@@ -385,7 +386,7 @@ map_node_t* ___map_insert(map_t* _this, map_node_t* node)
         }
     }
 
-    rb_link_node(&node->node, parent, n);
+    rb_link_node(&node->node, parent ? parent : &_this->header, n);
     rb_insert_color(&node->node, &_this->root);
     _this->size++;
     return node;
@@ -532,10 +533,7 @@ map_node_t* map_erase(map_t* _this, map_node_t* pos)
 
     ___map_erase(_this, pos);
 
-    /* Erase may have replaced the root node. If `end` is returned,
-       the return value must be refreshed. */
-    if (unlikely(__rbtree_is_end((rbtree_const_iterator_t)t)))
-        t = __map_end(_this);
+    /* 哨兵锚在 map 自身，erase 即使换了根也不会失效，无需再刷新返回值 */
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
         _this->ops->free_key(&pos->key);
@@ -638,7 +636,7 @@ map_t* __map_new(const class_map_ops_t* ops)
     }
 
     map->ops  = ops;
-    map->root = RB_ROOT;
+    rb_root_init(&map->root, &map->header);
     return map;
 
 err:

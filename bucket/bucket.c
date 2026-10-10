@@ -1288,7 +1288,7 @@ void __bucket_init(bucket_t* bucket, bucket_ds_t type)
     bucket->size = 0;
 
 #if 1
-    bucket->ds.p = NULL; /* TODO: Current approach is for performance, only works in this version */
+    bucket->ds.rb = RB_ROOT; /* 整结构初始化：union 里的 rb_root 不止 rb_node 一个成员，只写 ds.p 会漏掉其余成员 */
 #else
     if (likely(BKT_DS_HLIST == type)) {
         INIT_HLIST_HEAD(&bucket->ds.hl);
@@ -1343,7 +1343,7 @@ void __bucket_switch(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t
         hlist_move_list(&tmp.ds.hl, &_this->ds.hl);
         break;
     case BKT_DS_RBTREE:
-        _this->ds.rb.rb_node = tmp.ds.rb.rb_node;
+        _this->ds.rb = tmp.ds.rb; /* 整结构拷贝，避免漏掉 rb_root 的其它成员 */
         break;
     default:
         return ; /* Segment fault: may occur */
