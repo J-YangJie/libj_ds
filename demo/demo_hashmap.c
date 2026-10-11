@@ -27,9 +27,9 @@
 
 #define _tok(x)  ((hashmap_key_t)(x))
 
-#define foreach()           { for (hashmap_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("(%zd, %zd)",       it_key_safe(it), it_value_safe(it)); }
-#define foreach_kstring()   { for (hashmap_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("(%s(0x%zx), %zd)", it_skey_safe(it), it_hash_safe(it), it_value_safe(it)); }
-#define foreach_r_kstring() { for (hashmap_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it)) pr_test("(%s(0x%zx), %zd)", it_skey_safe(it), it_hash_safe(it), it_value_safe(it)); }
+#define foreach()           { for (hashmap_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(it))  pr_test("(%zd, %zd)",       it_key_safe(it), it_value_safe(it)); }
+#define foreach_kstring()   { for (hashmap_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(it))  pr_test("(%s(0x%zx), %zd)", it_skey_safe(it), it_hash_safe(it), it_value_safe(it)); }
+#define foreach_r_kstring() { for (hashmap_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(it)) pr_test("(%s(0x%zx), %zd)", it_skey_safe(it), it_hash_safe(it), it_value_safe(it)); }
 
 static class_hashmap_ops_t demo_ops = {
     .__hash      = __ds_ops_hash_default_string,
@@ -69,11 +69,11 @@ static void demo_base_and_iterator(void)
     pr_test("");
 
     {
-        for (hashmap_iterator_t   it = cds->end(demo);    it_ne(cds->begin(demo), it); )  { it = cds->prev(demo, it);  pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it)); }
+        for (hashmap_iterator_t   it = cds->end(demo);    it_ne(cds->begin(demo), it); )  { it = cds->prev(it);  pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it)); }
         pr_test("");                  // [ (8, 8), (7, 7), (6, 6), (5, 5), (4, 4), (3, 3), (35, 35), (19, 19), (2, 2), (1, 1) ]
-        for (hashmap_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it))       pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it));
+        for (hashmap_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(it))       pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it));
         pr_test("");                  // [ (8, 8), (7, 7), (6, 6), (5, 5), (4, 4), (3, 3), (35, 35), (19, 19), (2, 2), (1, 1) ]
-        for (hashmap_r_iterator_t it = cds->rend(demo);   it_ne(cds->rbegin(demo), it); ) { it = cds->rprev(demo, it); pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it)); }
+        for (hashmap_r_iterator_t it = cds->rend(demo);   it_ne(cds->rbegin(demo), it); ) { it = cds->rprev(it); pr_test("(%zd, %zd)", it_key_safe(it), it_value_safe(it)); }
         pr_test("");                  // [ (1, 1), (2, 2), (19, 19), (35, 35), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8) ]
     }
 
@@ -117,11 +117,11 @@ static void demo_about_erase(void)
         if (NULL != strstr(id[1], it_skey_safe(it)))
             it = cds->erase(demo, it);
         else
-            it = cds->next(demo, it);
+            it = cds->next(it);
     }
     // after for [ ('?混搭33*&', 3), ('中文', 4), ('123', 2), ('yj', 0), ('test', 5) ]
 
-    it = cds->erase(demo, cds->prev(demo, cds->end(demo))); // [ ('?混搭33*&', 3), ('中文', 4), ('123', 2), ('yj', 0) ], it -> end()
+    it = cds->erase(demo, cds->prev(cds->end(demo)));         // [ ('?混搭33*&', 3), ('中文', 4), ('123', 2), ('yj', 0) ], it -> end()
 
     ret = cds->remove(demo, _tok(id[0]));                     // [ ('?混搭33*&', 3), ('中文', 4), ('123', 2) ], return 1(1 element has been removed)
 

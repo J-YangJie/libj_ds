@@ -23,9 +23,8 @@
 #include <_memory.h>
 #include <_compiler_inter.h>
 #include <linux/_types.h>
-#include <linux/rbtree.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator_inter.h>
+#include <iterator/rbtree_iterator.h>
 
 typedef struct multiset_node {
     multiset_key_t key;
@@ -96,6 +95,7 @@ multiset_count_t multiset_count(const multiset_t* _this, multiset_key_t key)
     return ret;
 }
 
+#if 0
 static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 multiset_node_t* ___multiset_first(const multiset_t* _this)
 {
@@ -109,180 +109,9 @@ multiset_node_t* ___multiset_last(const multiset_t* _this)
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : multiset_entry(t);
 }
+#endif
 
-static JDSC_INLINE_FORCE
-multiset_node_t* __multiset_end(const multiset_t* _this)
-{
-    return (multiset_node_t*)iterator_end();
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* __multiset_begin(const multiset_t* _this)
-{
-    multiset_node_t* t = ___multiset_first(_this);
-    return is_null(t) ? __multiset_end(_this) : t;
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* _multiset_begin(const multiset_t* _this)
-{
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __multiset_begin(_this);
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* __multiset_next(const multiset_t* _this, const multiset_node_t* node)
-{
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-    JDSC_ASSERT(__multiset_end(_this) != node);
-
-#if JDSC_ITERATOR_ERR_NULL
-    if (unlikely(__multiset_end(_this) == node))
-        return NULL;
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_next(&node->node);
-    return is_null(t) ? __multiset_end(_this) : multiset_entry(t);
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* _multiset_next(const multiset_t* _this, const multiset_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __multiset_next(_this, node);
-}
-
-static JDSC_INLINE_FORCE_POLICY
-multiset_node_t* __multiset_prev(const multiset_t* _this, const multiset_node_t* node)
-{
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-
-    if (unlikely(__multiset_end(_this) == node))
-        return ___multiset_last(_this); /* Err: since the `ds` is non-empty, 
-                                                the return value includes the error case of `NULL` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_prev(&node->node);
-    JDSC_ASSERT(!is_null(t));
-
-#if JDSC_ITERATOR_ERR_NULL
-    return is_null(t) ? NULL : multiset_entry(t);
-#else
-    return multiset_entry(t);
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* _multiset_prev(const multiset_t* _this, const multiset_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __multiset_prev(_this, node);
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* __multiset_rend(const multiset_t* _this)
-{
-    return (multiset_node_t*)iterator_rend();
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* __multiset_rbegin(const multiset_t* _this)
-{
-    multiset_node_t* t = ___multiset_last(_this);
-    return is_null(t) ? __multiset_rend(_this) : t;
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* _multiset_rbegin(const multiset_t* _this)
-{
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __multiset_rbegin(_this);
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* __multiset_rnext(const multiset_t* _this, const multiset_node_t* node)
-{
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-    JDSC_ASSERT(__multiset_rend(_this) != node);
-
-#if JDSC_ITERATOR_ERR_NULL
-    if (unlikely(__multiset_rend(_this) == node))
-        return NULL;
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-    /* The input parameter is `reverse_iterator`, and there's no need 
-       to check whether it equals `end` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_prev(&node->node);
-    return is_null(t) ? __multiset_rend(_this) : multiset_entry(t);
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* _multiset_rnext(const multiset_t* _this, const multiset_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __multiset_rnext(_this, node);
-}
-
-static JDSC_INLINE_FORCE_POLICY
-multiset_node_t* __multiset_rprev(const multiset_t* _this, const multiset_node_t* node)
-{
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-
-    if (unlikely(__multiset_rend(_this) == node))
-        return ___multiset_first(_this); /* Err: since the `ds` is non-empty,
-                                                the return value includes the error case of `NULL` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_next(&node->node);
-    JDSC_ASSERT(!is_null(t));
-
-#if JDSC_ITERATOR_ERR_NULL
-    return is_null(t) ? NULL : multiset_entry(t);
-#else
-    return multiset_entry(t);
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-}
-
-static JDSC_INLINE_FORCE
-multiset_node_t* _multiset_rprev(const multiset_t* _this, const multiset_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __multiset_rprev(_this, node);
-}
+__RBTREE_ITERATOR_TEMPLATE(multiset)
 
 static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 multiset_node_t* ___multiset_find(const multiset_t* _this, multiset_key_t key)
@@ -750,6 +579,7 @@ multiset_iterator_t cmultiset_end(const multiset_t* _this)
 {
     multiset_iterator_t it;
     it.d = (multiset_data_t*)__multiset_end(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -757,20 +587,23 @@ multiset_iterator_t cmultiset_begin(const multiset_t* _this)
 {
     multiset_iterator_t it;
     it.d = (multiset_data_t*)_multiset_begin(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
-multiset_iterator_t cmultiset_next(const multiset_t* _this, const multiset_iterator_t iterator)
+multiset_iterator_t cmultiset_next(const multiset_iterator_t iterator)
 {
     multiset_iterator_t it;
-    it.d = (multiset_data_t*)_multiset_next(_this, (const multiset_node_t*)iterator.d);
+    it.d = (multiset_data_t*)_multiset_next((const multiset_t*)iterator.private_data, (const multiset_node_t*)iterator.d);
+    it.private_data = iterator.private_data;
     return it;
 }
 
-multiset_iterator_t cmultiset_prev(const multiset_t* _this, const multiset_iterator_t iterator)
+multiset_iterator_t cmultiset_prev(const multiset_iterator_t iterator)
 {
     multiset_iterator_t it;
-    it.d = (multiset_data_t*)_multiset_prev(_this, (const multiset_node_t*)iterator.d);
+    it.d = (multiset_data_t*)_multiset_prev((const multiset_t*)iterator.private_data, (const multiset_node_t*)iterator.d);
+    it.private_data = iterator.private_data;
     return it;
 }
 
@@ -778,6 +611,7 @@ multiset_r_iterator_t cmultiset_rend(const multiset_t* _this)
 {
     multiset_r_iterator_t it;
     it.d = (multiset_data_t*)__multiset_rend(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -785,20 +619,23 @@ multiset_r_iterator_t cmultiset_rbegin(const multiset_t* _this)
 {
     multiset_r_iterator_t it;
     it.d = (multiset_data_t*)_multiset_rbegin(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
-multiset_r_iterator_t cmultiset_rnext(const multiset_t* _this, const multiset_r_iterator_t r_iterator)
+multiset_r_iterator_t cmultiset_rnext(const multiset_r_iterator_t r_iterator)
 {
     multiset_r_iterator_t it;
-    it.d = (multiset_data_t*)_multiset_rnext(_this, (const multiset_node_t*)r_iterator.d);
+    it.d = (multiset_data_t*)_multiset_rnext((const multiset_t*)r_iterator.private_data, (const multiset_node_t*)r_iterator.d);
+    it.private_data = r_iterator.private_data;
     return it;
 }
 
-multiset_r_iterator_t cmultiset_rprev(const multiset_t* _this, const multiset_r_iterator_t r_iterator)
+multiset_r_iterator_t cmultiset_rprev(const multiset_r_iterator_t r_iterator)
 {
     multiset_r_iterator_t it;
-    it.d = (multiset_data_t*)_multiset_rprev(_this, (const multiset_node_t*)r_iterator.d);
+    it.d = (multiset_data_t*)_multiset_rprev((const multiset_t*)r_iterator.private_data, (const multiset_node_t*)r_iterator.d);
+    it.private_data = r_iterator.private_data;
     return it;
 }
 
@@ -806,6 +643,7 @@ multiset_iterator_t cmultiset_find(const multiset_t* _this, multiset_key_t key)
 {
     multiset_iterator_t it;
     it.d = (multiset_data_t*)multiset_find(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -813,6 +651,7 @@ multiset_iterator_t cmultiset_lower_bound(const multiset_t* _this, multiset_key_
 {
     multiset_iterator_t it;
     it.d = (multiset_data_t*)multiset_lower_bound(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -820,6 +659,7 @@ multiset_iterator_t cmultiset_upper_bound(const multiset_t* _this, multiset_key_
 {
     multiset_iterator_t it;
     it.d = (multiset_data_t*)multiset_upper_bound(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -827,6 +667,7 @@ multiset_iterator_t cmultiset_insert(multiset_t* _this, multiset_key_t key)
 {
     multiset_iterator_t it;
     it.d = (multiset_data_t*)multiset_insert(_this, key);
+    it.private_data = _this;
     return it;
 }
 
@@ -834,6 +675,7 @@ multiset_iterator_t cmultiset_erase(multiset_t* _this, multiset_iterator_t itera
 {
     multiset_iterator_t it;
     it.d = (multiset_data_t*)multiset_erase(_this, (multiset_node_t*)iterator.d);
+    it.private_data = _this;
     return it;
 }
 

@@ -28,6 +28,7 @@ typedef struct set_iterator {
         set_data_t* d;
         char** sd;
     };
+    void* private_data;
 } set_iterator_t;
 
 typedef struct set_reverse_iterator {
@@ -35,6 +36,7 @@ typedef struct set_reverse_iterator {
         set_data_t* d;
         char** sd;
     };
+    void* private_data;
 } set_reverse_iterator_t;
 typedef set_reverse_iterator_t set_r_iterator_t;
 
@@ -45,12 +47,12 @@ set_size_t        cset_size(const set_t* _this);
 set_count_t       cset_count(const set_t* _this, set_key_t key);
 set_iterator_t    cset_end(const set_t* _this);
 set_iterator_t    cset_begin(const set_t* _this);
-set_iterator_t    cset_next(const set_t* _this, const set_iterator_t iterator);
-set_iterator_t    cset_prev(const set_t* _this, const set_iterator_t iterator);
+set_iterator_t    cset_next(const set_iterator_t iterator);
+set_iterator_t    cset_prev(const set_iterator_t iterator);
 set_r_iterator_t  cset_rend(const set_t* _this);
 set_r_iterator_t  cset_rbegin(const set_t* _this);
-set_r_iterator_t  cset_rnext(const set_t* _this, const set_r_iterator_t r_iterator);
-set_r_iterator_t  cset_rprev(const set_t* _this, const set_r_iterator_t r_iterator);
+set_r_iterator_t  cset_rnext(const set_r_iterator_t r_iterator);
+set_r_iterator_t  cset_rprev(const set_r_iterator_t r_iterator);
 set_iterator_t    cset_find(const set_t* _this, set_key_t key);
 set_iterator_t    cset_lower_bound(const set_t* _this, set_key_t key);
 set_iterator_t    cset_upper_bound(const set_t* _this, set_key_t key);
@@ -66,12 +68,12 @@ typedef struct class_set {
     set_count_t (*count)(const set_t* _this, set_key_t key);
     set_iterator_t (*end)(const set_t* _this);
     set_iterator_t (*begin)(const set_t* _this);
-    set_iterator_t (*next)(const set_t* _this, const set_iterator_t iterator);
-    set_iterator_t (*prev)(const set_t* _this, const set_iterator_t iterator);
+    set_iterator_t (*next)(const set_iterator_t iterator);
+    set_iterator_t (*prev)(const set_iterator_t iterator);
     set_r_iterator_t (*rend)(const set_t* _this);
     set_r_iterator_t (*rbegin)(const set_t* _this);
-    set_r_iterator_t (*rnext)(const set_t* _this, const set_r_iterator_t r_iterator);
-    set_r_iterator_t (*rprev)(const set_t* _this, const set_r_iterator_t r_iterator);
+    set_r_iterator_t (*rnext)(const set_r_iterator_t r_iterator);
+    set_r_iterator_t (*rprev)(const set_r_iterator_t r_iterator);
     set_iterator_t (*find)(const set_t* _this, set_key_t key);
     set_iterator_t (*lower_bound)(const set_t* _this, set_key_t key); /* >= key */
     set_iterator_t (*upper_bound)(const set_t* _this, set_key_t key); /*  > key */

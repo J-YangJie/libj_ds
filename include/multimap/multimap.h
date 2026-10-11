@@ -38,6 +38,7 @@ typedef struct multimap_iterator {
     union {
         multimap_iterator_kv_t* d;
     };
+    void* private_data;
 } multimap_iterator_t;
 
 typedef struct multimap_reverse_iterator_kv {
@@ -56,6 +57,7 @@ typedef struct multimap_reverse_iterator {
     union {
         multimap_reverse_iterator_kv_t* d;
     };
+    void* private_data;
 } multimap_reverse_iterator_t;
 typedef multimap_reverse_iterator_t multimap_r_iterator_t;
 
@@ -66,12 +68,12 @@ multimap_size_t        cmultimap_size(const multimap_t* _this);
 multimap_count_t       cmultimap_count(const multimap_t* _this, multimap_key_t key);
 multimap_iterator_t    cmultimap_end(const multimap_t* _this);
 multimap_iterator_t    cmultimap_begin(const multimap_t* _this);
-multimap_iterator_t    cmultimap_next(const multimap_t* _this, const multimap_iterator_t iterator);
-multimap_iterator_t    cmultimap_prev(const multimap_t* _this, const multimap_iterator_t iterator);
+multimap_iterator_t    cmultimap_next(const multimap_iterator_t iterator);
+multimap_iterator_t    cmultimap_prev(const multimap_iterator_t iterator);
 multimap_r_iterator_t  cmultimap_rend(const multimap_t* _this);
 multimap_r_iterator_t  cmultimap_rbegin(const multimap_t* _this);
-multimap_r_iterator_t  cmultimap_rnext(const multimap_t* _this, const multimap_r_iterator_t r_iterator);
-multimap_r_iterator_t  cmultimap_rprev(const multimap_t* _this, const multimap_r_iterator_t r_iterator);
+multimap_r_iterator_t  cmultimap_rnext(const multimap_r_iterator_t r_iterator);
+multimap_r_iterator_t  cmultimap_rprev(const multimap_r_iterator_t r_iterator);
 multimap_iterator_t    cmultimap_find(const multimap_t* _this, multimap_key_t key);
 multimap_iterator_t    cmultimap_lower_bound(const multimap_t* _this, multimap_key_t key);
 multimap_iterator_t    cmultimap_upper_bound(const multimap_t* _this, multimap_key_t key);
@@ -87,12 +89,12 @@ typedef struct class_multimap {
     multimap_count_t (*count)(const multimap_t* _this, multimap_key_t key);
     multimap_iterator_t (*end)(const multimap_t* _this);
     multimap_iterator_t (*begin)(const multimap_t* _this);
-    multimap_iterator_t (*next)(const multimap_t* _this, const multimap_iterator_t iterator);
-    multimap_iterator_t (*prev)(const multimap_t* _this, const multimap_iterator_t iterator);
+    multimap_iterator_t (*next)(const multimap_iterator_t iterator);
+    multimap_iterator_t (*prev)(const multimap_iterator_t iterator);
     multimap_r_iterator_t (*rend)(const multimap_t* _this);
     multimap_r_iterator_t (*rbegin)(const multimap_t* _this);
-    multimap_r_iterator_t (*rnext)(const multimap_t* _this, const multimap_r_iterator_t r_iterator);
-    multimap_r_iterator_t (*rprev)(const multimap_t* _this, const multimap_r_iterator_t r_iterator);
+    multimap_r_iterator_t (*rnext)(const multimap_r_iterator_t r_iterator);
+    multimap_r_iterator_t (*rprev)(const multimap_r_iterator_t r_iterator);
     multimap_iterator_t (*find)(const multimap_t* _this, multimap_key_t key);
     multimap_iterator_t (*lower_bound)(const multimap_t* _this, multimap_key_t key);              /* >= key */
     multimap_iterator_t (*upper_bound)(const multimap_t* _this, multimap_key_t key);              /*  > key */

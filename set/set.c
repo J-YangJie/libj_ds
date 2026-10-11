@@ -23,9 +23,8 @@
 #include <_memory.h>
 #include <_compiler_inter.h>
 #include <linux/_types.h>
-#include <linux/rbtree.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator_inter.h>
+#include <iterator/rbtree_iterator.h>
 
 typedef struct set_node {
     set_key_t key;
@@ -70,6 +69,7 @@ set_count_t set_count(const set_t* _this, set_key_t key)
     return is_null(t) ? -1 : (__set_end(_this) == t ? 0 : 1);
 }
 
+#if 0
 static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 set_node_t* ___set_first(const set_t* _this)
 {
@@ -83,180 +83,9 @@ set_node_t* ___set_last(const set_t* _this)
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : set_entry(t);
 }
+#endif
 
-static JDSC_INLINE_FORCE
-set_node_t* __set_end(const set_t* _this)
-{
-    return (set_node_t*)iterator_end();
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* __set_begin(const set_t* _this)
-{
-    set_node_t* t = ___set_first(_this);
-    return is_null(t) ? __set_end(_this) : t;
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* _set_begin(const set_t* _this)
-{
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __set_begin(_this);
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* __set_next(const set_t* _this, const set_node_t* node)
-{
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-    JDSC_ASSERT(__set_end(_this) != node);
-
-#if JDSC_ITERATOR_ERR_NULL
-    if (unlikely(__set_end(_this) == node))
-        return NULL;
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_next(&node->node);
-    return is_null(t) ? __set_end(_this) : set_entry(t);
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* _set_next(const set_t* _this, const set_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __set_next(_this, node);
-}
-
-static JDSC_INLINE_FORCE_POLICY
-set_node_t* __set_prev(const set_t* _this, const set_node_t* node)
-{
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-
-    if (unlikely(__set_end(_this) == node))
-        return ___set_last(_this); /* Err: since the `ds` is non-empty, 
-                                            the return value includes the error case of `NULL` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_prev(&node->node);
-    JDSC_ASSERT(!is_null(t));
-
-#if JDSC_ITERATOR_ERR_NULL
-    return is_null(t) ? NULL : set_entry(t);
-#else
-    return set_entry(t);
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* _set_prev(const set_t* _this, const set_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __set_prev(_this, node);
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* __set_rend(const set_t* _this)
-{
-    return (set_node_t*)iterator_rend();
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* __set_rbegin(const set_t* _this)
-{
-    set_node_t* t = ___set_last(_this);
-    return is_null(t) ? __set_rend(_this) : t;
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* _set_rbegin(const set_t* _this)
-{
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __set_rbegin(_this);
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* __set_rnext(const set_t* _this, const set_node_t* node)
-{
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-    JDSC_ASSERT(__set_rend(_this) != node);
-
-#if JDSC_ITERATOR_ERR_NULL
-    if (unlikely(__set_rend(_this) == node))
-        return NULL;
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-    /* The input parameter is `reverse_iterator`, and there's no need 
-       to check whether it equals `end` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_prev(&node->node);
-    return is_null(t) ? __set_rend(_this) : set_entry(t);
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* _set_rnext(const set_t* _this, const set_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __set_rnext(_this, node);
-}
-
-static JDSC_INLINE_FORCE_POLICY
-set_node_t* __set_rprev(const set_t* _this, const set_node_t* node)
-{
-    struct rb_node* t;
-
-    JDSC_ASSERT(!RB_EMPTY_ROOT(&_this->root));
-
-    if (unlikely(__set_rend(_this) == node))
-        return ___set_first(_this); /* Err: since the `ds` is non-empty, 
-                                            the return value includes the error case of `NULL` */
-
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
-    JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
-
-    t = rb_next(&node->node);
-    JDSC_ASSERT(!is_null(t));
-
-#if JDSC_ITERATOR_ERR_NULL
-    return is_null(t) ? NULL : set_entry(t);
-#else
-    return set_entry(t);
-#endif /* JDSC_ITERATOR_ERR_NULL */
-
-}
-
-static JDSC_INLINE_FORCE
-set_node_t* _set_rprev(const set_t* _this, const set_node_t* node)
-{
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __set_rprev(_this, node);
-}
+__RBTREE_ITERATOR_TEMPLATE(set)
 
 static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 set_node_t* ___set_find(const set_t* _this, set_key_t key)
@@ -706,6 +535,7 @@ set_iterator_t cset_end(const set_t* _this)
 {
     set_iterator_t it;
     it.d = (set_data_t*)__set_end(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -713,20 +543,23 @@ set_iterator_t cset_begin(const set_t* _this)
 {
     set_iterator_t it;
     it.d = (set_data_t*)_set_begin(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
-set_iterator_t cset_next(const set_t* _this, const set_iterator_t iterator)
+set_iterator_t cset_next(const set_iterator_t iterator)
 {
     set_iterator_t it;
-    it.d = (set_data_t*)_set_next(_this, (const set_node_t*)iterator.d);
+    it.d = (set_data_t*)_set_next((const set_t*)iterator.private_data, (const set_node_t*)iterator.d);
+    it.private_data = iterator.private_data;
     return it;
 }
 
-set_iterator_t cset_prev(const set_t* _this, const set_iterator_t iterator)
+set_iterator_t cset_prev(const set_iterator_t iterator)
 {
     set_iterator_t it;
-    it.d = (set_data_t*)_set_prev(_this, (const set_node_t*)iterator.d);
+    it.d = (set_data_t*)_set_prev((const set_t*)iterator.private_data, (const set_node_t*)iterator.d);
+    it.private_data = iterator.private_data;
     return it;
 }
 
@@ -734,6 +567,7 @@ set_r_iterator_t cset_rend(const set_t* _this)
 {
     set_r_iterator_t it;
     it.d = (set_data_t*)__set_rend(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -741,20 +575,23 @@ set_r_iterator_t cset_rbegin(const set_t* _this)
 {
     set_r_iterator_t it;
     it.d = (set_data_t*)_set_rbegin(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
-set_r_iterator_t cset_rnext(const set_t* _this, const set_r_iterator_t r_iterator)
+set_r_iterator_t cset_rnext(const set_r_iterator_t r_iterator)
 {
     set_r_iterator_t it;
-    it.d = (set_data_t*)_set_rnext(_this, (const set_node_t*)r_iterator.d);
+    it.d = (set_data_t*)_set_rnext((const set_t*)r_iterator.private_data, (const set_node_t*)r_iterator.d);
+    it.private_data = r_iterator.private_data;
     return it;
 }
 
-set_r_iterator_t cset_rprev(const set_t* _this, const set_r_iterator_t r_iterator)
+set_r_iterator_t cset_rprev(const set_r_iterator_t r_iterator)
 {
     set_r_iterator_t it;
-    it.d = (set_data_t*)_set_rprev(_this, (const set_node_t*)r_iterator.d);
+    it.d = (set_data_t*)_set_rprev((const set_t*)r_iterator.private_data, (const set_node_t*)r_iterator.d);
+    it.private_data = r_iterator.private_data;
     return it;
 }
 
@@ -762,6 +599,7 @@ set_iterator_t cset_find(const set_t* _this, set_key_t key)
 {
     set_iterator_t it;
     it.d = (set_data_t*)set_find(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -769,6 +607,7 @@ set_iterator_t cset_lower_bound(const set_t* _this, set_key_t key)
 {
     set_iterator_t it;
     it.d = (set_data_t*)set_lower_bound(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -776,6 +615,7 @@ set_iterator_t cset_upper_bound(const set_t* _this, set_key_t key)
 {
     set_iterator_t it;
     it.d = (set_data_t*)set_upper_bound(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -783,6 +623,7 @@ set_iterator_t cset_insert(set_t* _this, set_key_t key)
 {
     set_iterator_t it;
     it.d = (set_data_t*)set_insert(_this, key);
+    it.private_data = _this;
     return it;
 }
 
@@ -790,6 +631,7 @@ set_iterator_t cset_erase(set_t* _this, set_iterator_t iterator)
 {
     set_iterator_t it;
     it.d = (set_data_t*)set_erase(_this, (set_node_t*)iterator.d);
+    it.private_data = _this;
     return it;
 }
 

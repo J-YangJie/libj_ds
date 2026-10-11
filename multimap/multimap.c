@@ -23,9 +23,8 @@
 #include <_memory.h>
 #include <_compiler_inter.h>
 #include <linux/_types.h>
-#include <linux/rbtree.h>
 #include <linux/_compiler.h>
-#include <iterator/iterator_inter.h>
+#include <iterator/rbtree_iterator.h>
 
 typedef struct multimap_node {
     multimap_key_t key;
@@ -101,6 +100,7 @@ multimap_count_t multimap_count(const multimap_t* _this, multimap_key_t key)
     return ret;
 }
 
+#if 0
 static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 multimap_node_t* ___multimap_first(const multimap_t* _this)
 {
@@ -114,7 +114,11 @@ multimap_node_t* ___multimap_last(const multimap_t* _this)
     struct rb_node* t = rb_last(&_this->root);
     return is_null(t) ? NULL : multimap_entry(t);
 }
+#endif
 
+#if 1
+__RBTREE_ITERATOR_TEMPLATE(multimap)
+#else
 static JDSC_INLINE_FORCE
 multimap_node_t* __multimap_end(const multimap_t* _this)
 {
@@ -288,6 +292,7 @@ multimap_node_t* _multimap_rprev(const multimap_t* _this, const multimap_node_t*
         return NULL;
     return __multimap_rprev(_this, node);
 }
+#endif
 
 static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 multimap_node_t* ___multimap_find(const multimap_t* _this, multimap_key_t key)
@@ -779,6 +784,7 @@ multimap_iterator_t cmultimap_end(const multimap_t* _this)
 {
     multimap_iterator_t it;
     it.d = (multimap_iterator_kv_t*)__multimap_end(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -786,20 +792,23 @@ multimap_iterator_t cmultimap_begin(const multimap_t* _this)
 {
     multimap_iterator_t it;
     it.d = (multimap_iterator_kv_t*)_multimap_begin(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
-multimap_iterator_t cmultimap_next(const multimap_t* _this, const multimap_iterator_t iterator)
+multimap_iterator_t cmultimap_next(const multimap_iterator_t iterator)
 {
     multimap_iterator_t it;
-    it.d = (multimap_iterator_kv_t*)_multimap_next(_this, (const multimap_node_t*)iterator.d);
+    it.d = (multimap_iterator_kv_t*)_multimap_next((const multimap_t*)iterator.private_data, (const multimap_node_t*)iterator.d);
+    it.private_data = iterator.private_data;
     return it;
 }
 
-multimap_iterator_t cmultimap_prev(const multimap_t* _this, const multimap_iterator_t iterator)
+multimap_iterator_t cmultimap_prev(const multimap_iterator_t iterator)
 {
     multimap_iterator_t it;
-    it.d = (multimap_iterator_kv_t*)_multimap_prev(_this, (const multimap_node_t*)iterator.d);
+    it.d = (multimap_iterator_kv_t*)_multimap_prev((const multimap_t*)iterator.private_data, (const multimap_node_t*)iterator.d);
+    it.private_data = iterator.private_data;
     return it;
 }
 
@@ -807,6 +816,7 @@ multimap_r_iterator_t cmultimap_rend(const multimap_t* _this)
 {
     multimap_r_iterator_t it;
     it.d = (multimap_r_iterator_kv_t*)__multimap_rend(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -814,20 +824,23 @@ multimap_r_iterator_t cmultimap_rbegin(const multimap_t* _this)
 {
     multimap_r_iterator_t it;
     it.d = (multimap_r_iterator_kv_t*)_multimap_rbegin(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
-multimap_r_iterator_t cmultimap_rnext(const multimap_t* _this, const multimap_r_iterator_t r_iterator)
+multimap_r_iterator_t cmultimap_rnext(const multimap_r_iterator_t r_iterator)
 {
     multimap_r_iterator_t it;
-    it.d = (multimap_r_iterator_kv_t*)_multimap_rnext(_this, (const multimap_node_t*)r_iterator.d);
+    it.d = (multimap_r_iterator_kv_t*)_multimap_rnext((const multimap_t*)r_iterator.private_data, (const multimap_node_t*)r_iterator.d);
+    it.private_data = r_iterator.private_data;
     return it;
 }
 
-multimap_r_iterator_t cmultimap_rprev(const multimap_t* _this, const multimap_r_iterator_t r_iterator)
+multimap_r_iterator_t cmultimap_rprev(const multimap_r_iterator_t r_iterator)
 {
     multimap_r_iterator_t it;
-    it.d = (multimap_r_iterator_kv_t*)_multimap_rprev(_this, (const multimap_node_t*)r_iterator.d);
+    it.d = (multimap_r_iterator_kv_t*)_multimap_rprev((const multimap_t*)r_iterator.private_data, (const multimap_node_t*)r_iterator.d);
+    it.private_data = r_iterator.private_data;
     return it;
 }
 
@@ -835,6 +848,7 @@ multimap_iterator_t cmultimap_find(const multimap_t* _this, multimap_key_t key)
 {
     multimap_iterator_t it;
     it.d = (multimap_iterator_kv_t*)multimap_find(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -842,6 +856,7 @@ multimap_iterator_t cmultimap_lower_bound(const multimap_t* _this, multimap_key_
 {
     multimap_iterator_t it;
     it.d = (multimap_iterator_kv_t*)multimap_lower_bound(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -849,6 +864,7 @@ multimap_iterator_t cmultimap_upper_bound(const multimap_t* _this, multimap_key_
 {
     multimap_iterator_t it;
     it.d = (multimap_iterator_kv_t*)multimap_upper_bound(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -856,6 +872,7 @@ multimap_iterator_t cmultimap_insert(multimap_t* _this, multimap_key_t key, mult
 {
     multimap_iterator_t it;
     it.d = (multimap_iterator_kv_t*)multimap_insert(_this, key, value);
+    it.private_data = _this;
     return it;
 }
 
@@ -863,6 +880,7 @@ multimap_iterator_t cmultimap_erase(multimap_t* _this, multimap_iterator_t itera
 {
     multimap_iterator_t it;
     it.d = (multimap_iterator_kv_t*)multimap_erase(_this, (multimap_node_t*)iterator.d);
+    it.private_data = _this;
     return it;
 }
 

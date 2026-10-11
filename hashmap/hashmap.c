@@ -1147,6 +1147,7 @@ hashmap_iterator_t chashmap_end(const hashmap_t* _this)
 {
     hashmap_iterator_t it;
     it.d = (hashmap_iterator_kv_t*)__hashmap_end(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -1154,20 +1155,23 @@ hashmap_iterator_t chashmap_begin(const hashmap_t* _this)
 {
     hashmap_iterator_t it;
     it.d = (hashmap_iterator_kv_t*)_hashmap_begin(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
-hashmap_iterator_t chashmap_next(const hashmap_t* _this, const hashmap_iterator_t iterator)
+hashmap_iterator_t chashmap_next(const hashmap_iterator_t iterator)
 {
     hashmap_iterator_t it;
-    it.d = (hashmap_iterator_kv_t*)_hashmap_next(_this, (const hashmap_bnode_t*)iterator.d);
+    it.d = (hashmap_iterator_kv_t*)_hashmap_next((const hashmap_t*)iterator.private_data, (const hashmap_bnode_t*)iterator.d);
+    it.private_data = iterator.private_data;
     return it;
 }
 
-hashmap_iterator_t chashmap_prev(const hashmap_t* _this, const hashmap_iterator_t iterator)
+hashmap_iterator_t chashmap_prev(const hashmap_iterator_t iterator)
 {
     hashmap_iterator_t it;
-    it.d = (hashmap_iterator_kv_t*)_hashmap_prev(_this, (const hashmap_bnode_t*)iterator.d);
+    it.d = (hashmap_iterator_kv_t*)_hashmap_prev((const hashmap_t*)iterator.private_data, (const hashmap_bnode_t*)iterator.d);
+    it.private_data = iterator.private_data;
     return it;
 }
 
@@ -1175,6 +1179,7 @@ hashmap_r_iterator_t chashmap_rend(const hashmap_t* _this)
 {
     hashmap_r_iterator_t it;
     it.d = (hashmap_r_iterator_kv_t*)__hashmap_rend(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -1182,20 +1187,23 @@ hashmap_r_iterator_t chashmap_rbegin(const hashmap_t* _this)
 {
     hashmap_r_iterator_t it;
     it.d = (hashmap_r_iterator_kv_t*)_hashmap_rbegin(_this);
+    it.private_data = (void*)_this;
     return it;
 }
 
-hashmap_r_iterator_t chashmap_rnext(const hashmap_t* _this, const hashmap_r_iterator_t r_iterator)
+hashmap_r_iterator_t chashmap_rnext(const hashmap_r_iterator_t r_iterator)
 {
     hashmap_r_iterator_t it;
-    it.d = (hashmap_r_iterator_kv_t*)_hashmap_rnext(_this, (const hashmap_bnode_t*)r_iterator.d);
+    it.d = (hashmap_r_iterator_kv_t*)_hashmap_rnext((const hashmap_t*)r_iterator.private_data, (const hashmap_bnode_t*)r_iterator.d);
+    it.private_data = r_iterator.private_data;
     return it;
 }
 
-hashmap_r_iterator_t chashmap_rprev(const hashmap_t* _this, const hashmap_r_iterator_t r_iterator)
+hashmap_r_iterator_t chashmap_rprev(const hashmap_r_iterator_t r_iterator)
 {
     hashmap_r_iterator_t it;
-    it.d = (hashmap_r_iterator_kv_t*)_hashmap_rprev(_this, (const hashmap_bnode_t*)r_iterator.d);
+    it.d = (hashmap_r_iterator_kv_t*)_hashmap_rprev((const hashmap_t*)r_iterator.private_data, (const hashmap_bnode_t*)r_iterator.d);
+    it.private_data = r_iterator.private_data;
     return it;
 }
 
@@ -1203,6 +1211,7 @@ hashmap_iterator_t chashmap_find(const hashmap_t* _this, hashmap_key_t key)
 {
     hashmap_iterator_t it;
     it.d = (hashmap_iterator_kv_t*)hashmap_find(_this, key);
+    it.private_data = (void*)_this;
     return it;
 }
 
@@ -1210,6 +1219,7 @@ hashmap_iterator_t chashmap_insert(hashmap_t* _this, hashmap_key_t key, hashmap_
 {
     hashmap_iterator_t it;
     it.d = (hashmap_iterator_kv_t*)hashmap_insert(_this, key, value);
+    it.private_data = _this;
     return it;
 }
 
@@ -1217,6 +1227,7 @@ hashmap_iterator_t chashmap_insert_replace(hashmap_t* _this, hashmap_key_t key, 
 {
     hashmap_iterator_t it;
     it.d = (hashmap_iterator_kv_t*)hashmap_insert_replace(_this, key, value);
+    it.private_data = _this;
     return it;
 }
 
@@ -1224,6 +1235,7 @@ hashmap_iterator_t chashmap_erase(hashmap_t* _this, hashmap_iterator_t iterator)
 {
     hashmap_iterator_t it;
     it.d = (hashmap_iterator_kv_t*)hashmap_erase(_this, (hashmap_bnode_t*)iterator.d);
+    it.private_data = _this;
     return it;
 }
 

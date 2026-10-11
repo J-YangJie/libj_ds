@@ -28,9 +28,9 @@
 #define _tok(x)  ((multiset_key_t)(x))
 #define _from(x) ((x) ? (x) : "null string")
 
-#define foreach()           { for (multiset_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("%zd", it_data_safe(it)); }
-#define foreach_kstring()   { for (multiset_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("%s", it_sdata_safe(it)); }
-#define foreach_r_kstring() { for (multiset_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it)) pr_test("%s", it_sdata_safe(it)); }
+#define foreach()           { for (multiset_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(it))  pr_test("%zd", it_data_safe(it)); }
+#define foreach_kstring()   { for (multiset_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(it))  pr_test("%s", it_sdata_safe(it)); }
+#define foreach_r_kstring() { for (multiset_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(it)) pr_test("%s", it_sdata_safe(it)); }
 
 static void demo_base_and_iterator(void)
 {
@@ -55,11 +55,11 @@ static void demo_base_and_iterator(void)
     pr_test("");
 
     {
-        for (multiset_iterator_t   it = cds->end(demo);    it_ne(cds->begin(demo), it); )  { it = cds->prev(demo, it);  pr_test("%zd", it_data_safe(it)); }
+        for (multiset_iterator_t   it = cds->end(demo);    it_ne(cds->begin(demo), it); )  { it = cds->prev(it);  pr_test("%zd", it_data_safe(it)); }
         pr_test("");             // [ 8, 7, 6, 6, 6, 5, 4, 3, 2, 1 ]
-        for (multiset_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(demo, it))       pr_test("%zd", it_data_safe(it));
+        for (multiset_r_iterator_t it = cds->rbegin(demo); it_ne(cds->rend(demo), it); it = cds->rnext(it))       pr_test("%zd", it_data_safe(it));
         pr_test("");             // [ 8, 7, 6, 6, 6, 5, 4, 3, 2, 1 ]
-        for (multiset_r_iterator_t it = cds->rend(demo);   it_ne(cds->rbegin(demo), it); ) { it = cds->rprev(demo, it); pr_test("%zd", it_data_safe(it)); }
+        for (multiset_r_iterator_t it = cds->rend(demo);   it_ne(cds->rbegin(demo), it); ) { it = cds->rprev(it); pr_test("%zd", it_data_safe(it)); }
         pr_test("");             // [ 1, 2, 3, 4, 5, 6, 6, 6, 7, 8 ]
     }
 
@@ -112,11 +112,11 @@ static void demo_about_erase(void)
         if (NULL != strstr(id[1], it_sdata_safe(it)))
             it = cds->erase(demo, it);
         else
-            it = cds->next(demo, it);
+            it = cds->next(it);
     }
     // after for [ '123', '123', '?混搭33*&', '?混搭33*&', 'test', 'test', 'yj', 'yj', '中文', '中文' ]
 
-    it = cds->erase(demo, cds->prev(demo, cds->end(demo))); // [ '123', '123', '?混搭33*&', '?混搭33*&', 'test', 'test', 'yj', 'yj', '中文' ], it -> end()
+    it = cds->erase(demo, cds->prev(cds->end(demo)));         // [ '123', '123', '?混搭33*&', '?混搭33*&', 'test', 'test', 'yj', 'yj', '中文' ], it -> end()
 
     ret = cds->remove(demo, _tok(id[0]));                     // [ '123', '123', '?混搭33*&', '?混搭33*&', 'test', 'test', '中文' ], return 2(2 element has been removed)
 
