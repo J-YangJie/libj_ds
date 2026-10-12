@@ -162,7 +162,7 @@ ifeq ($(WITH_VECTOR), y)
 # DEMO_BINS += demo/demo_vector_bin
 endif
 ifeq ($(WITH_LIST), y)
-DEMO_BINS += demo/demo_list_bin
+# DEMO_BINS += demo/demo_list_bin
 endif
 ifeq ($(WITH_DEQUE), y)
 # DEMO_BINS += demo/demo_deque_bin

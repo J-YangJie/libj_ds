@@ -25,7 +25,7 @@
 typedef struct class_list_ops {
     bool (*valid_data)(list_data_t data);                /* Return true if `data` is valid */
     bool (*__eq)(list_data_t left, list_data_t right);   /* Return true if [ `left` == `right` ]; `left` is the value sought by the caller, `right` is the address of the value stored in the node */
-    list_cmp_t __lt;                                     /* `merge`/`unique` use this as the container's own ordering; `sort` only falls back to it when the caller passes no comparator. Degenerates to a numeric `<` when it is null */
+    list_cmp_t __lt;                                     /* 容器自身的次序。注意 `sort` **不** 用它：sort 的比较规则完全由调用方通过 `list_cmp_t cmp` 给定（NULL / (list_cmp_t)1 = 普通数字升序，(list_cmp_t)2 = 降序，其它直接当比较器调用）。这一项留给 merge / unique，当前 list 里这两个尚未实现，暂时没人读它 */
     bool (*copy_data)(list_data_t in, list_data_t* out); /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_data` must also be implemented */
     void (*free_data)(list_data_t* data);                /* The function pointer can be null and manages memory on its own */
 } class_list_ops_t;

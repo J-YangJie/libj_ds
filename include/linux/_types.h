@@ -2,8 +2,14 @@
 #define __LINUX_TYPES_H
 
 struct list_head {
-    struct list_head* next;
-    struct list_head* prev;
+    union {
+        struct list_head* next;
+        struct list_head* rprev;
+    };
+    union {
+        struct list_head* prev;
+        struct list_head* rnext;
+    };
 };
 
 struct hlist_head {
