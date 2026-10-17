@@ -59,6 +59,17 @@ void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_
     }
 }
 
+/* checked —— 扩容 / 缩容时的缓冲区搬迁（ncap = 新容量，used = 现有元素数）。
+   默认档及以下直接转发 p_realloc（可能原地扩，零拷贝，和改动前一致）；
+   超对齐类型由 p_aligned_realloc 做 allocate + copy + free（没有平台提供对齐 realloc）。 */
+static
+uint8_t* __vector_realloc_buf(i_vector_t* _this, vector_size_t ncap, vector_size_t used)
+{
+    return (uint8_t*)p_aligned_realloc(_this->rend, _this->align,
+                                       (size_t)(ncap + 1) * _this->step,   /* 新字节数 */
+                                       (size_t)(used + 1) * _this->step);  /* 旧有效字节数：rend 槽 + 活元素 */
+}
+
 /* checked */
 bool __i_vector_reserve(i_vector_t* _this, vector_size_t n)
 {
@@ -77,7 +88,7 @@ bool __i_vector_reserve(i_vector_t* _this, vector_size_t n)
     if (unlikely((size_t)n >= (SIZE_MAX / step) - 1))
         return false;
 
-    nh = p_realloc(_this->rend, (n + 1) * step);
+    nh = __vector_realloc_buf(_this, n, size);
     if (is_null(nh))
         return false;
 
@@ -112,7 +123,7 @@ void __i_vector_shrink_to_fit(i_vector_t* _this)
     if (cap == ncap)
         return ;
 
-    nh = p_realloc(_this->rend, (ncap + 1) * step);
+    nh = __vector_realloc_buf(_this, ncap, used);
     if (is_null(nh))
         return ;
 
@@ -294,7 +305,7 @@ bool __vector_init(vector_t* vector)
 {
     vector_size_t alloc = vector->capacity_init > 0 ? vector->capacity_init + 1 : 1;
 
-    vector->rend  = (uint8_t*)p_malloc(alloc * vector->step);
+    vector->rend  = (uint8_t*)p_aligned_malloc(vector->align, alloc * vector->step);
     if (is_null(vector->rend))
         return false;
 
@@ -309,11 +320,11 @@ static
 void __vector_deinit(vector_t* vector)
 {
     i_vector_clear(vector);
-    p_free(vector->rend);
+    p_aligned_free(vector->rend);
 }
 
 /* checked */
-vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_size_t capacity_init)
+vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_size_t capacity_init, size_t align)
 {
     vector_t* vector;
 
@@ -325,6 +336,7 @@ vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector
         return NULL;
 
     vector->step = step;
+    vector->align = align;      /* 必须在 __vector_init 之前 —— 那里要分配第一块 */
     vector->capacity_init = 0 != capacity_init && capacity_init < _I_VECTOR_CAPACITY_INIT ? _I_VECTOR_CAPACITY_INIT : capacity_init;
     if (!__vector_init(vector))
         goto err;

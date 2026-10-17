@@ -4,6 +4,12 @@ DLIB_NAME := libj_ds.so
 SLIB_NAME := libj_ds.a
 
 
+# 超对齐支持开关（对应 C++17 的 aligned new / C++11 之前的行为）：
+#   WITH_ALIGN=n  默认。p_aligned_malloc 就是 p_malloc，只保证 max_align_t 那一档
+#                 （x86-64 上 16），和引入这个开关之前完全一致。
+#   WITH_ALIGN=y  对齐要求 > 默认档的元素改走 posix_memalign。
+WITH_ALIGN=n
+
 WITH_LIST=y
 WITH_VECTOR=y
 WITH_DEQUE=y
@@ -82,12 +88,18 @@ CFLAGS += -O2
 # CFLAGS += -DJDSC_DEBUG
 # CFLAGS += -g3
 CFLAGS += -Werror
+ifeq ($(WITH_ALIGN), y)
+CFLAGS += -DJDSC_ALIGN=1
+endif
 
 CXXFLAGS += -std=c++11
 CXXFLAGS += -Wall -fmessage-length=0 -fPIC -fno-common
 CXXFLAGS += -O2
 # CXXFLAGS += -g3
 CXXFLAGS += -Werror
+ifeq ($(WITH_ALIGN), y)
+CXXFLAGS += -DJDSC_ALIGN=1
+endif
 
 # Dynamic library name with version
 DLIB_NAME_WITHVER := $(DLIB_NAME).$(DLIB_VERSION)

@@ -134,17 +134,17 @@ typedef struct class_deque {
     deque_size_t (*clear)(deque_t* _this);
 } class_deque_t;
 
-deque_t* __deque_new(const class_deque_ops_t* ops, deque_step_t step);
+deque_t* __deque_new(const class_deque_ops_t* ops, deque_step_t step, size_t align);
 void     __deque_delete(deque_t** _this);
 const class_deque_t* class_deque_ins(void);
 #define g_class_deque()               class_deque_ins()
 #define cdeque                        g_class_deque()
-#define DEQUE_NEW()                   __deque_new(NULL, sizeof(deque_data_t))
-#define DEQUE_NEW_OPS(_ops)           __deque_new((_ops), sizeof(deque_data_t))
-#define DEQUE_NEW_T(_type)            __deque_new(NULL, sizeof(_type))
-#define DEQUE_NEW_OPS_T(_ops, _type)  __deque_new((_ops), sizeof(_type))
-#define DEQUE_NEW_CHAR()              __deque_new(g_class_deque_ops_string(), sizeof(deque_data_t))
-#define DEQUE_NEW_SSO()               __deque_new(g_class_deque_ops_sso(), sizeof(ds_sso_t))
+#define DEQUE_NEW()                   __deque_new(NULL, sizeof(deque_data_t), __alignof__(deque_data_t))
+#define DEQUE_NEW_OPS(_ops)           __deque_new((_ops), sizeof(deque_data_t), __alignof__(deque_data_t))
+#define DEQUE_NEW_T(_type)            __deque_new(NULL, sizeof(_type), __alignof__(_type))
+#define DEQUE_NEW_OPS_T(_ops, _type)  __deque_new((_ops), sizeof(_type), __alignof__(_type))
+#define DEQUE_NEW_CHAR()              __deque_new(g_class_deque_ops_string(), sizeof(deque_data_t), __alignof__(deque_data_t))
+#define DEQUE_NEW_SSO()               __deque_new(g_class_deque_ops_sso(), sizeof(ds_sso_t), __alignof__(ds_sso_t))
 #define DEQUE_NEW_STRING()            DEQUE_NEW_SSO()
 #define DEQUE_DELETE(_pptr)           do { __deque_delete((_pptr)); } while(0)
 

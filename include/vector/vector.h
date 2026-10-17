@@ -130,17 +130,17 @@ typedef struct class_vector {
     vector_size_t (*clear)(vector_t* _this);
 } class_vector_t;
 
-vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_size_t capacity_init);
+vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_size_t capacity_init, size_t align);
 void      __vector_delete(vector_t** _this);
 const class_vector_t* class_vector_ins(void);
 #define g_class_vector()              class_vector_ins()
 #define cvector                       g_class_vector()
-#define VECTOR_NEW()                  __vector_new(NULL, sizeof(vector_data_t), 0)
-#define VECTOR_NEW_OPS(_ops)          __vector_new((_ops), sizeof(vector_data_t), 0)
-#define VECTOR_NEW_T(_type)           __vector_new(NULL, sizeof(_type), 0)
-#define VECTOR_NEW_OPS_T(_ops, _type) __vector_new((_ops), sizeof(_type), 0)
-#define VECTOR_NEW_CHAR()             __vector_new(g_class_vector_ops_string(), sizeof(vector_data_t), 0)
-#define VECTOR_NEW_SSO()              __vector_new(g_class_vector_ops_sso(), sizeof(ds_sso_t), 0)
+#define VECTOR_NEW()                  __vector_new(NULL, sizeof(vector_data_t), 0, __alignof__(vector_data_t))
+#define VECTOR_NEW_OPS(_ops)          __vector_new((_ops), sizeof(vector_data_t), 0, __alignof__(vector_data_t))
+#define VECTOR_NEW_T(_type)           __vector_new(NULL, sizeof(_type), 0, __alignof__(_type))
+#define VECTOR_NEW_OPS_T(_ops, _type) __vector_new((_ops), sizeof(_type), 0, __alignof__(_type))
+#define VECTOR_NEW_CHAR()             __vector_new(g_class_vector_ops_string(), sizeof(vector_data_t), 0, __alignof__(vector_data_t))
+#define VECTOR_NEW_SSO()              __vector_new(g_class_vector_ops_sso(), sizeof(ds_sso_t), 0, __alignof__(ds_sso_t))
 #define VECTOR_NEW_STRING()           VECTOR_NEW_SSO()
 #define VECTOR_DELETE(_pptr)          do { __vector_delete((_pptr)); } while(0)
 

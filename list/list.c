@@ -60,18 +60,31 @@ list_data_t __i_dlist_slot_read(const i_list_t* _this, const uint8_t* slot)
     }
 }
 
+/* 超对齐时节点要整体后移 pad 字节，使 node + offsetof(list_node_t, data) 落在 align 边界上。
+   默认模式（JDSC_ALIGN = 0）下这是字面量 0 —— 展开成 base + 0 / node - 0，整条被折叠掉，
+   生成的机器码和引入对齐功能之前完全一样。 */
+#if JDSC_ALIGN
+#define __i_dlist_node_pad(_this)   ((_this)->pad)
+#else
+#define __i_dlist_node_pad(_this)   0
+#endif
+
 /* checked */
 static inline
 list_node_t* __i_dlist_make_list_node(const list_t* _this, list_data_t data)
 {
+    size_t       pad  = __i_dlist_node_pad(_this);
+    uint8_t*     base = (uint8_t*)p_aligned_malloc(_this->align,
+                                       pad + sizeof(list_node_t) + _this->step);
     list_node_t* n;
 
-    n = (list_node_t*)p_malloc(sizeof(list_node_t) + _this->step);
-    if (is_null(n))
+    if (is_null(base))
         return NULL;
 
+    n = (list_node_t*)(base + pad);     /* 默认模式 pad = 0，就是 base 本身 */
+
     if (!__i_dlist_slot_write(_this, n->data, data)) {
-        p_free(n);
+        p_aligned_free(base);
         return NULL;
     }
 
@@ -82,10 +95,13 @@ list_node_t* __i_dlist_make_list_node(const list_t* _this, list_data_t data)
 static inline
 void __i_dlist_destroy_list_node(const i_list_t* _this, list_node_t* node)
 {
+    size_t   pad  = __i_dlist_node_pad(_this);
+    uint8_t* base = (uint8_t*)node - pad;      /* 默认模式 pad = 0，就是 node 本身 */
+
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
         _this->ops->free_data((list_data_t*)node->data);
 
-    p_free(node);
+    p_aligned_free(base);
 }
 
 /* checked */
@@ -757,7 +773,7 @@ list_size_t i_dlist_clear(list_t* _this)
 }
 
 /* checked */
-list_t* __list_new(const class_list_ops_t* ops, list_step_t step)
+list_t* __list_new(const class_list_ops_t* ops, list_step_t step, size_t align)
 {
     list_t* list;
 
@@ -768,10 +784,17 @@ list_t* __list_new(const class_list_ops_t* ops, list_step_t step)
     if (is_null(list))
         return NULL;
 
-    list->ops  = ops;
+    list->ops   = ops;
     if (g_class_list_ops_sso() == list->ops)
         list->sso = true;
-    list->step = step;
+    list->step  = step;
+    list->align = align ? align : JDSC_ALIGN_DEFAULT;
+#if JDSC_ALIGN
+    /* 超对齐时节点整体后移这么多，使 data 落在 align 边界；默认档及以下为 0 */
+    list->pad   = (list->align > JDSC_ALIGN_DEFAULT)
+                    ? (list->align - offsetof(list_node_t, data))
+                    : 0;
+#endif
     INIT_LIST_HEAD(&list->head);
     return list;
 }

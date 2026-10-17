@@ -42,6 +42,8 @@ typedef struct i_list {
     struct list_head        head; /* 注：不能是最后一个，否则地址不合法 */
     list_size_t             size;
     bool                    sso;
+    size_t                  align;  /* 元素对齐要求（构造时定，之后不变） */
+    size_t                  pad;    /* 预计算：超对齐时节点整体后移的字节数，否则 0 */
 } i_list_t;
 
 /* checked */

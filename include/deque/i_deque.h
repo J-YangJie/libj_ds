@@ -40,6 +40,7 @@ typedef struct i_deque {
     deque_iterator_t begin;
     deque_iterator_t end;
     bool             sso;
+    size_t           align;   /* 元素对齐要求；bucket 走 p_aligned_malloc */
 } i_deque_t;
 
 static inline

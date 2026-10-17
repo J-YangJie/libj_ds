@@ -56,7 +56,8 @@ bool __i_deque_reserve(i_deque_t* _this)
 static JDSC_INLINE_FORCE
 uint8_t* i_deque_alloc_bkt(const i_deque_t* _this)
 {
-    return (uint8_t*)p_malloc(_this->bkt_size * _this->step);
+    /* 元素落在 bucket + i*step；sizeof 是 align 的倍数，所以 bucket 基址对齐就够 */
+    return (uint8_t*)p_aligned_malloc(_this->align, _this->bkt_size * _this->step);
 }
 
 uint8_t* __i_deque_push_back_bkt_alloc(i_deque_t* _this)
@@ -102,7 +103,7 @@ uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this)
 JDSC_INLINE
 void __i_deque_pop_back_bkt_free(i_deque_t* _this)
 {
-    p_free(_this->end.begin);
+    p_aligned_free(_this->end.begin);
     __i_deque_set_bkt_n(&_this->end, _this->end.bkt - 1, _this->bkt_size, _this->step);
     _this->end.cur = __i_deque_ptr_sub(_this->end.end, 1, _this->step);
 }
@@ -110,7 +111,7 @@ void __i_deque_pop_back_bkt_free(i_deque_t* _this)
 JDSC_INLINE
 void __i_deque_pop_front_bkt_free(i_deque_t* _this)
 {
-    p_free(_this->begin.begin);
+    p_aligned_free(_this->begin.begin);
     __i_deque_set_bkt_n(&_this->begin, _this->begin.bkt + 1, _this->bkt_size, _this->step);
     _this->begin.cur = _this->begin.begin;
 }
@@ -516,7 +517,7 @@ deque_size_t i_deque_remove(i_deque_t* _this, deque_data_t data)
     if (0 != ret) {
         r = l;
         while (end.bkt != r.bkt++)
-            p_free(*r.bkt);
+            p_aligned_free(*r.bkt);
 
         __i_deque_set_bkt_n(&_this->end, l.bkt, _this->bkt_size, _this->step);
         _this->end.cur = l.cur;
@@ -560,7 +561,7 @@ deque_size_t i_deque_remove_if(i_deque_t* _this, remove_if_condition cond)
     if (0 != ret) {
         r = l;
         while (end.bkt != r.bkt++)
-            p_free(*r.bkt);
+            p_aligned_free(*r.bkt);
 
         __i_deque_set_bkt_n(&_this->end, l.bkt, _this->bkt_size, _this->step);
         _this->end.cur = l.cur;
@@ -604,7 +605,7 @@ deque_size_t i_deque_clear(i_deque_t* _this)
                 _this->ops->free_data((deque_data_t*)i);
 
             if (_this->begin.bkt != bkt)
-                p_free(*bkt);
+                p_aligned_free(*bkt);
         }
     } else {
         for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
@@ -614,7 +615,7 @@ deque_size_t i_deque_clear(i_deque_t* _this)
             ret += __i_deque_ptr_diff(l, i, _this->step);
 
             if (_this->begin.bkt != bkt)
-                p_free(*bkt);
+                p_aligned_free(*bkt);
         }
     }
 
@@ -659,11 +660,11 @@ static
 void __deque_deinit(deque_t* deque)
 {
     i_deque_clear(deque);
-    p_free(*deque->begin.bkt);
+    p_aligned_free(*deque->begin.bkt);
     p_free(deque->bkt);
 }
 
-deque_t* __deque_new(const class_deque_ops_t* ops, deque_step_t step)
+deque_t* __deque_new(const class_deque_ops_t* ops, deque_step_t step, size_t align)
 {
     deque_t* deque;
 
@@ -675,6 +676,7 @@ deque_t* __deque_new(const class_deque_ops_t* ops, deque_step_t step)
         return NULL;
 
     deque->step     = step;
+    deque->align    = align;    /* 必须在 __deque_init 之前 —— 那里会分配第一个 bucket */
     deque->bkt_size = step < (_I_DEQUE_BKT_BYTES / _I_DEQUE_BKT_SIZE_MIN)
                         ? _I_DEQUE_BKT_BYTES / step
                         : _I_DEQUE_BKT_SIZE_MIN;

@@ -139,17 +139,17 @@ typedef struct class_list {
     list_size_t (*clear)(list_t* _this);
 } class_list_t;
 
-list_t* __list_new(const class_list_ops_t* ops, list_step_t step);
+list_t* __list_new(const class_list_ops_t* ops, list_step_t step, size_t align);
 void    __list_delete(list_t** _this);
 const class_list_t* class_list_ins(void);
 #define g_class_list()                class_list_ins()
 #define clist                         g_class_list()
-#define LIST_NEW()                    __list_new(NULL, sizeof(list_data_t))
-#define LIST_NEW_OPS(_ops)            __list_new((_ops), sizeof(list_data_t))
-#define LIST_NEW_T(_type)             __list_new(NULL, sizeof(_type))
-#define LIST_NEW_OPS_T(_ops, _type)   __list_new((_ops), sizeof(_type))
-#define LIST_NEW_CHAR()               __list_new(g_class_list_ops_string(), sizeof(list_data_t))
-#define LIST_NEW_SSO()                __list_new(g_class_list_ops_sso(), sizeof(ds_sso_t))
+#define LIST_NEW()                    __list_new(NULL, sizeof(list_data_t), __alignof__(list_data_t))
+#define LIST_NEW_OPS(_ops)            __list_new((_ops), sizeof(list_data_t), __alignof__(list_data_t))
+#define LIST_NEW_T(_type)             __list_new(NULL, sizeof(_type), __alignof__(_type))
+#define LIST_NEW_OPS_T(_ops, _type)   __list_new((_ops), sizeof(_type), __alignof__(_type))
+#define LIST_NEW_CHAR()               __list_new(g_class_list_ops_string(), sizeof(list_data_t), __alignof__(list_data_t))
+#define LIST_NEW_SSO()                __list_new(g_class_list_ops_sso(), sizeof(ds_sso_t), __alignof__(ds_sso_t))
 #define LIST_NEW_STRING()             LIST_NEW_SSO()
 #define LIST_DELETE(_pptr)            do { __list_delete((_pptr)); } while(0)
 

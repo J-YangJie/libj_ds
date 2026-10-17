@@ -38,6 +38,7 @@ typedef struct i_vector {
     uint8_t*      end;
     uint8_t*      end_of_storage;
     bool          sso;
+    size_t        align;   /* 元素对齐要求；数组走 p_aligned_malloc */
 } i_vector_t;
 
 /* checked */
