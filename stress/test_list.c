@@ -229,7 +229,6 @@ const class_stress_slow_interface_t* class_stress_slow_list_ins(void)
         .pop_front      = pop_front,
         .remove         = remove,
         .remove_if      = remove_if,
-        .sort           = NULL,
         .clear          = clear,
     };
     return &ins;

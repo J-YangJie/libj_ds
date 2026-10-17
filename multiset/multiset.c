@@ -343,7 +343,7 @@ multiset_node_t* multiset_insert(multiset_t* _this, multiset_key_t key)
     return t;
 
 err:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key) && !is_null(_this->ops->copy_key))
         _this->ops->free_key(&t->key);
 err_key:
     p_free(t);

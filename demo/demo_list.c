@@ -26,17 +26,10 @@
 
 #define _to(x)   ((list_data_t)(x))
 
-/* sort 的第三分支：用户自己给的比较器（这里就是升序，等价于 LIST_SORT_ASC） */
+/* merge 用的整型比较器 */
 static bool demo_int_lt(list_data_t left, list_data_t right)
 {
     return left < right;
-}
-
-/* SSO 链的比较器：槽里是 ds_sso_t。cmp 传 NULL/1/2 是按 list_data_t 数值排，
-   对字符串链没意义，所以这里自己给一个。 */
-static bool demo_sso_lt(list_data_t left, list_data_t right)
-{
-    return 0 > ds_sso_cmp((const ds_sso_t*)left, (const ds_sso_t*)right);
 }
 
 #define foreach()          { for (list_iterator_t it = cds->begin(demo);    it_ne(cds->end(demo), it);  it = cds->next(demo, it))  pr_test("%zd", it_data_safe(it)); }
@@ -145,23 +138,11 @@ static void demo_about_algorithms(void)
 {
     list_t* demo  = LIST_NEW();
     list_t* other = LIST_NEW();
-    int     a[] = { 5, 1, 4, 2, 8, 8, 3, 7, 1 };
-    int     b[] = { 6, 0, 9 };
+    int     a[] = { 1, 1, 2, 3, 4, 5, 7, 8, 8 };
+    int     b[] = { 0, 6, 9 };
 
     for (size_t i = 0; i < sizeof(a) / sizeof(a[0]); ++i)
         cds->push_back(demo, a[i]);
-    foreach(); // [ 5, 1, 4, 2, 8, 8, 3, 7, 1 ]
-    pr_test("");
-
-    cds->sort(demo, LIST_SORT_ASC);  // 升序：carry + tmp[64] 的 64 路归并，元素一个都不搬（传 NULL 等价）
-    foreach(); // [ 1, 1, 2, 3, 4, 5, 7, 8, 8 ]
-    pr_test("");
-
-    cds->sort(demo, LIST_SORT_DESC); // 降序：魔术数字 2
-    foreach(); // [ 8, 8, 7, 5, 4, 3, 2, 1, 1 ]
-    pr_test("");
-
-    cds->sort(demo, demo_int_lt);    // 第三分支：直接给比较器，效果同升序
     foreach(); // [ 1, 1, 2, 3, 4, 5, 7, 8, 8 ]
     pr_test("");
 
@@ -175,9 +156,8 @@ static void demo_about_algorithms(void)
     cds->reverse(demo);
 
     for (size_t i = 0; i < sizeof(b) / sizeof(b[0]); ++i)
-        cds->push_back(other, b[i]);
-    cds->sort(other, LIST_SORT_ASC); // [ 0, 6, 9 ]
-    cds->merge(demo, other);   // 两条有序链归并，other 被搬空
+        cds->push_back(other, b[i]); /* other 已按升序给值：[ 0, 6, 9 ] */
+    cds->merge(demo, other, demo_int_lt);   /* 两条有序链归并，other 被搬空 */
     foreach(); // [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
     pr_test("");
 
@@ -245,7 +225,6 @@ static void demo_about_sso(void)
         pr_test("%-24s len=%-3zu %s", s->p, s->len, s->p == s->buf ? "local (no extra malloc)" : "heap");
     }
 
-    cds->sort(demo, demo_sso_lt); // 大小串混排；SSO 的比较器得自己给
     foreach_string();
     pr_test("");
 

@@ -782,10 +782,10 @@ bucket_node_t* bucket_insert(bucket_t* _this, const class_bucket_ops_t* ops, buc
     return t;
 
 err:
-    if (!is_null(ops) && !is_null(ops->free_value))
+    if (!is_null(ops) && !is_null(ops->free_value) && !is_null(ops->copy_value))
         ops->free_value(&t->value);
 err_value:
-    if (!is_null(ops) && !is_null(ops->free_key))
+    if (!is_null(ops) && !is_null(ops->free_key) && !is_null(ops->copy_key))
         ops->free_key(&t->key);
 err_key:
     p_free(t);
@@ -839,10 +839,10 @@ bucket_node_t* bucket_insert_has_checked_valid(bucket_t* _this, const class_buck
     return t;
 
 err:
-    if (!is_null(ops) && !is_null(ops->free_value))
+    if (!is_null(ops) && !is_null(ops->free_value) && !is_null(ops->copy_value))
         ops->free_value(&t->value);
 err_value:
-    if (!is_null(ops) && !is_null(ops->free_key))
+    if (!is_null(ops) && !is_null(ops->free_key) && !is_null(ops->copy_key))
         ops->free_key(&t->key);
 err_key:
     p_free(t);
@@ -915,10 +915,10 @@ bucket_node_t* bucket_insert_replace(bucket_t* _this, const class_bucket_ops_t* 
     return t;
 
 err:
-    if (!is_null(ops) && !is_null(ops->free_value))
+    if (!is_null(ops) && !is_null(ops->free_value) && !is_null(ops->copy_value))
         ops->free_value(&t->value);
 err_value:
-    if (!is_null(ops) && !is_null(ops->free_key))
+    if (!is_null(ops) && !is_null(ops->free_key) && !is_null(ops->copy_key))
         ops->free_key(&t->key);
 err_key:
     p_free(t);
@@ -988,10 +988,10 @@ bucket_node_t* bucket_insert_replace_has_checked_valid(bucket_t* _this, const cl
     return t;
 
 err:
-    if (!is_null(ops) && !is_null(ops->free_value))
+    if (!is_null(ops) && !is_null(ops->free_value) && !is_null(ops->copy_value))
         ops->free_value(&t->value);
 err_value:
-    if (!is_null(ops) && !is_null(ops->free_key))
+    if (!is_null(ops) && !is_null(ops->free_key) && !is_null(ops->copy_key))
         ops->free_key(&t->key);
 err_key:
     p_free(t);

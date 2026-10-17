@@ -87,14 +87,13 @@ static inline void               clist_pop_back(list_t* _this)                  
 static inline void               clist_pop_front(list_t* _this)                                                                 { i_dlist_pop_front(_this); }
 static inline list_size_t        clist_remove(list_t* _this, list_data_t data)                                                  { return i_dlist_remove(_this, data); }
 static inline list_size_t        clist_remove_if(list_t* _this, remove_if_condition cond)                                       { return i_dlist_remove_if(_this, cond); }
-// static inline list_size_t        clist_unique(list_t* _this)                                             { return i_list_unique(_this); }
-// static inline void               clist_reverse(list_t* _this)                                            { i_list_reverse(_this); }
-static inline void               clist_sort(list_t* _this, list_cmp_t cmp)                               { i_clist_sort(_this, cmp); }
-// static inline void               clist_merge(list_t* _this, list_t* other)                               { i_list_merge(_this, other); }
-// static inline void               clist_splice(list_t* _this, list_iterator_t iterator, list_t* other)    { i_list_splice(_this, iterator, other); }
-// static inline void               clist_splice_range(list_t* _this, list_iterator_t iterator, list_t* other, list_iterator_t iterator_begin, list_iterator_t iterator_end) { i_list_splice_range(_this, iterator, other, iterator_begin, iterator_end); }
+static inline list_size_t        clist_unique(list_t* _this)                                             { return i_dlist_unique(_this); }
+static inline void               clist_reverse(list_t* _this)                                            { i_dlist_reverse(_this); }
+static inline void               clist_merge(list_t* _this, list_t* other, list_cmp_t cmp)              { i_dlist_merge(_this, other, cmp); }
+static inline void               clist_splice(list_t* _this, list_iterator_t iterator, list_t* other)    { i_dlist_splice(_this, iterator, other); }
+static inline void               clist_splice_range(list_t* _this, list_iterator_t iterator, list_t* other, list_iterator_t iterator_begin, list_iterator_t iterator_end) { i_dlist_splice_range(_this, iterator, other, iterator_begin, iterator_end); }
 static inline bool               clist_resize(list_t* _this, list_size_t n, list_data_t default_data)                           { return i_dlist_resize(_this, n, default_data); }
-// static inline void               clist_swap(list_t* _this, list_t* other)                                { i_list_swap(_this, other); }
+static inline void               clist_swap(list_t* _this, list_t* other)                                { i_dlist_swap(_this, other); }
 static inline list_size_t        clist_assign(list_t* _this, list_size_t n, list_data_t data)                                   { return i_dlist_assign(_this, n, data); }
 static inline list_size_t        clist_clear(list_t* _this)                                                                     { return i_dlist_clear(_this); }
 
@@ -128,16 +127,13 @@ typedef struct class_list {
     void (*pop_front)(list_t* _this);
     list_size_t (*remove)(list_t* _this, list_data_t data);
     list_size_t (*remove_if)(list_t* _this, remove_if_condition cond);
-    void (*sort)(list_t* _this, list_cmp_t cmp);                                                                   /* STL: ds->sort()，carry + tmp[] 的 64 路归并。`cmp` 定方向：NULL 或 (list_cmp_t)1 = 普通数字升序，(list_cmp_t)2 = 普通数字降序，其它直接当比较器调用 */
-    /* TODO: 尚未移植到新节点 API，暂时摘掉：
-       list_size_t (*unique)(list_t* _this);
-       void        (*reverse)(list_t* _this);
-       void        (*merge)(list_t* _this, list_t* other);
-       void        (*splice)(list_t* _this, list_iterator_t iterator, list_t* other);
-       void        (*splice_range)(list_t* _this, list_iterator_t iterator, list_t* other,
-                                   list_iterator_t iterator_begin, list_iterator_t iterator_end);
-       void        (*swap)(list_t* _this, list_t* other);
-       旧实现在 HEAD 的 include/list/i_list.h 里。 */
+    list_size_t (*unique)(list_t* _this);                                                                          /* STL: ds->unique()，删除连续重复元素，返回删除个数 */
+    void (*reverse)(list_t* _this);                                                                                /* STL: ds->reverse()，原地翻转节点链接 */
+    void (*splice)(list_t* _this, list_iterator_t iterator, list_t* other);                                        /* STL: ds->splice(pos, other)，整条链搬到 pos 之前 */
+    void (*splice_range)(list_t* _this, list_iterator_t iterator, list_t* other,
+                         list_iterator_t iterator_begin, list_iterator_t iterator_end);                            /* STL: ds->splice(pos, other, first, last)，[first, last) 搬到 pos 之前 */
+    void (*merge)(list_t* _this, list_t* other, list_cmp_t cmp);                                                   /* STL: ds->merge(other, cmp)，两条有序链归并；cmp 必须非空 */
+    void (*swap)(list_t* _this, list_t* other);                                                                    /* STL: ds->swap(other)，交换两条链的内容（要求 step/ops 一致） */
     bool (*resize)(list_t* _this, list_size_t n, list_data_t default_data);
     list_size_t (*assign)(list_t* _this, list_size_t n, list_data_t data);                                         /* STL: ds->assign(n, data) */
     list_size_t (*clear)(list_t* _this);
@@ -156,10 +152,5 @@ const class_list_t* class_list_ins(void);
 #define LIST_NEW_SSO()                __list_new(g_class_list_ops_sso(), sizeof(ds_sso_t))
 #define LIST_NEW_STRING()             LIST_NEW_SSO()
 #define LIST_DELETE(_pptr)            do { __list_delete((_pptr)); } while(0)
-
-/* clist_sort 的 cmp 参数用的两个魔术数字（内核 lib/sort.c 那套约定的简化版）：
-   NULL / LIST_SORT_ASC 是同一件事 —— 对普通数字升序。要用别的次序，传自己的 list_cmp_t。 */
-#define LIST_SORT_ASC                 ((list_cmp_t)(uintptr_t)1)
-#define LIST_SORT_DESC                ((list_cmp_t)(uintptr_t)2)
 
 #endif /* __J_LIST_H */

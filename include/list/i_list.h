@@ -41,6 +41,7 @@ typedef struct i_list {
     list_step_t             step;
     struct list_head        head; /* 注：不能是最后一个，否则地址不合法 */
     list_size_t             size;
+    bool                    sso;
 } i_list_t;
 
 /* checked */
@@ -327,6 +328,13 @@ list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data);
 list_count_t i_dlist_count(const i_list_t* _this, list_data_t data);
 list_size_t i_dlist_remove(i_list_t* _this, list_data_t data);
 list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond);
+list_size_t i_dlist_unique(i_list_t* _this);
+void i_dlist_reverse(i_list_t* _this);
+void i_dlist_splice(i_list_t* _this, list_iterator_t iterator, i_list_t* other);
+void i_dlist_splice_range(i_list_t* _this, list_iterator_t iterator, i_list_t* other,
+                          list_iterator_t iterator_begin, list_iterator_t iterator_end);
+void i_dlist_merge(i_list_t* _this, i_list_t* other, list_cmp_t cmp);
+void i_dlist_swap(i_list_t* _this, i_list_t* other);
 bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data);
 list_size_t i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data);
 list_size_t i_dlist_clear(i_list_t* _this);
@@ -369,49 +377,6 @@ list_iterator_t i_clist_erase_range(i_list_t* _this, list_iterator_t iterator_be
                                    __i_dlist_it_to_lnode(iterator_end)));
 }
 
-/* ============================================================================
- * sort —— STL: list::sort()，carry + tmp[64] 的 64 路归并。
- * 排序对象是节点里存的值（step > 8 时就是槽位地址，例如 ds_sso_t*），
- * 读法同 __i_dlist_slot_read，也就是和 ops->__eq 的 right 一致。
- *
- * cmp 的约定：
- *   NULL 或者 (list_cmp_t)1  -> 对普通数字升序（不看 ops）
- *   (list_cmp_t)2            -> 对普通数字降序（不看 ops）
- *   其它                      -> 直接当比较器调用
- * 便捷宏见 list/list.h 的 LIST_SORT_ASC / LIST_SORT_DESC。
- * ========================================================================== */
-/* checked */
-static inline
-bool __i_dlist_lt_num_asc(list_data_t left, list_data_t right)
-{
-    return left < right;
-}
-
-/* checked */
-static inline
-bool __i_dlist_lt_num_desc(list_data_t left, list_data_t right)
-{
-    return left > right;
-}
-
-void __i_dlist_swap_head(i_list_t* _this, i_list_t* other);
-void __i_dlist_merge_run(i_list_t* _this, i_list_t* other, list_cmp_t cmp);
-void __i_dlist_sort(i_list_t* _this, list_cmp_t cmp);
-
-/* checked */
-static inline
-void i_clist_sort(i_list_t* _this, list_cmp_t cmp)
-{
-    if (is_null(_this))
-        return ;
-
-    if (is_null(cmp) || (uintptr_t)cmp == 1)
-        cmp = __i_dlist_lt_num_asc;
-    else if ((uintptr_t)cmp == 2)
-        cmp = __i_dlist_lt_num_desc;
-
-    __i_dlist_sort(_this, cmp);
-}
 
 
 

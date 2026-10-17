@@ -534,10 +534,10 @@ multimap_node_t* multimap_insert(multimap_t* _this, multimap_key_t key, multimap
     return t;
 
 err:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_value) && !is_null(_this->ops->copy_value))
         _this->ops->free_value(&t->value);
 err_value:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key) && !is_null(_this->ops->copy_key))
         _this->ops->free_key(&t->key);
 err_key:
     p_free(t);

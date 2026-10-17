@@ -179,64 +179,6 @@ I_VECTOR_SORT_DEFINE(sort_vt_ides, vector_data_t, VT_MOVE_NUM, VT_GT_NUM)
 I_VECTOR_SORT_DEFINE(sort_vt_str,  VT_STR_T,      VT_MOVE_STR, VT_LT_STR)
 I_VECTOR_SORT_DEFINE(sort_vt_sdes, VT_STR_T,      VT_MOVE_STR, VT_GT_STR)
 
-
-#ifdef TEST_LIST
-/* list 的 sort 自己要一个比较器参数：不传（NULL）或传 LIST_SORT_ASC/DESC 是按
-   list_data_t 数值排，对字符串链没意义。所以 SSO 这边升/降序各给一个真的比较器。
-   两侧都是「节点里存的值」的地址，SSO 槽里就是 ds_sso_t。 */
-static inline bool list_sso_lt(list_data_t left, list_data_t right)
-{
-    return 0 > ds_sso_cmp((const ds_sso_t*)left, (const ds_sso_t*)right);
-}
-
-static inline bool list_sso_gt(list_data_t left, list_data_t right)
-{
-    return 0 < ds_sso_cmp((const ds_sso_t*)left, (const ds_sso_t*)right);
-}
-
-/* list 迭代器要带容器，所以这两条自己走一遍；it_data/it_sdata 的语义和基准里一致 */
-static inline list_iterator_t list_it_from_back(list_t* _this, int n)
-{
-    list_iterator_t it = DSL(clist, end)(_this);
-
-    while (n-- > 0)
-        it = DSL(clist, prev)(_this, it);
-    return it;
-}
-
-static inline int list_sorted_num(list_t* _this, int desc)
-{
-    list_data_t prev  = 0;
-    int         first = 1;
-    int         ok    = 1;
-
-    for (list_iterator_t it = DSL(clist, begin)(_this); it_ne(DSL(clist, end)(_this), it); it = DSL(clist, next)(_this, it)) {
-        list_data_t cur = it_data(it);
-
-        if (!first && (desc ? cur > prev : cur < prev)) { ok = 0; break; }
-        prev  = cur;
-        first = 0;
-    }
-    return ok;
-}
-
-static inline int list_sorted_str(list_t* _this, int desc)
-{
-    const char* prev = NULL;
-    int         ok   = 1;
-
-    for (list_iterator_t it = DSL(clist, begin)(_this); it_ne(DSL(clist, end)(_this), it); it = DSL(clist, next)(_this, it)) {
-        const char* cur = it_sdata(it);
-
-        /* 升序违例：prev > cur（strcmp > 0）；降序违例：prev < cur（strcmp < 0） */
-        if (NULL != prev && (desc ? 0 > strcmp(prev, cur) : 0 < strcmp(prev, cur))) { ok = 0; break; }
-        prev = cur;
-    }
-    return ok;
-}
-#endif /* TEST_LIST */
-
-
 static void test_i_for(void)
 {
     struct timeval time_begin, time_end;
@@ -1105,14 +1047,14 @@ static void test_i_rand(void)
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
-            list_iterator_t it = list_it_from_back(ds_list_i, 10);
+            list_iterator_t it = __clist_it(ds_list_i, DSL(clist, size)(ds_list_i) - 10);
             GET_DURATION({ DSL(clist, insert)(ds_list_i, it, rand() % TIMES_FIND); }, time_list);
         }
         printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
-            list_iterator_t it = list_it_from_back(ds_list_i, 10);
+            list_iterator_t it = __clist_it(ds_list_i, DSL(clist, size)(ds_list_i) - 10);
             GET_DURATION({ DSL(clist, erase)(ds_list_i, it); }, time_list);
         }
         printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), DSL(clist, size)(ds_list_i));
@@ -1165,29 +1107,6 @@ static void test_i_rand(void)
             GET_DURATION({ removed = DSL(clist, remove)(ds_list_i, 9); }, time_list);
             printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), removed, DSL(clist, size)(ds_list_i));
         }
-
-
-        /* sort: 升序 —— cmp 传 NULL（等同 LIST_SORT_ASC）：对普通数字升序，不看 ops */
-        srand(SORT_SEED);
-        DSL(clist, clear)(ds_list_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
-
-        time_list = 0;
-        GET_DURATION({ DSL(clist, sort)(ds_list_i, LIST_SORT_ASC); }, time_list);
-        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_list / 1000),
-               list_sorted_num(ds_list_i, 0),
-               DSL(clist, size)(ds_list_i));
-
-        /* sort: 降序 —— 方向由 cmp 决定，魔术数字 2 就是普通数字降序，不用再另开一条链 */
-        srand(SORT_SEED);
-        DSL(clist, clear)(ds_list_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
-
-        time_list = 0;
-        GET_DURATION({ DSL(clist, sort)(ds_list_i, LIST_SORT_DESC); }, time_list);
-        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_list / 1000),
-               list_sorted_num(ds_list_i, 1),
-               DSL(clist, size)(ds_list_i));
     }
 #endif
 
@@ -1954,14 +1873,14 @@ static void test_s_rand(void)
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
-            list_iterator_t it = list_it_from_back(ds_list_s, 10);
+            list_iterator_t it = __clist_it(ds_list_s, DSL(clist, size)(ds_list_s) - 10);
             GET_DURATION({ DSL(clist, insert)(ds_list_s, it, DS_ARG()); }, time_list);
         }
         printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
-            list_iterator_t it = list_it_from_back(ds_list_s, 10);
+            list_iterator_t it = __clist_it(ds_list_s, DSL(clist, size)(ds_list_s) - 10);
             GET_DURATION({ DSL(clist, erase)(ds_list_s, it); }, time_list);
         }
         printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), DSL(clist, size)(ds_list_s));
@@ -2015,29 +1934,6 @@ static void test_s_rand(void)
             GET_DURATION({ removed = DSL(clist, remove)(ds_list_s, (list_data_t)fixbuf); }, time_list);
             printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), removed, DSL(clist, size)(ds_list_s));
         }
-
-
-        /* sort: 升序 —— 显式传字符串比较器（cmp 不传就会按指针数值排，对字符串链没意义）*/
-        srand(SORT_SEED);
-        DSL(clist, clear)(ds_list_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
-
-        time_list = 0;
-        GET_DURATION({ DSL(clist, sort)(ds_list_s, list_sso_lt); }, time_list);
-        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_list / 1000),
-               list_sorted_str(ds_list_s, 0),
-               DSL(clist, size)(ds_list_s));
-
-        /* sort: 降序 —— 同一个容器，换个比较器就行 */
-        srand(SORT_SEED);
-        DSL(clist, clear)(ds_list_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
-
-        time_list = 0;
-        GET_DURATION({ DSL(clist, sort)(ds_list_s, list_sso_gt); }, time_list);
-        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_list / 1000),
-               list_sorted_str(ds_list_s, 1),
-               DSL(clist, size)(ds_list_s));
 #undef DS_ARG
     }
 #endif

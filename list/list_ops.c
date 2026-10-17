@@ -27,7 +27,6 @@
     static const class_list_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_string,
         .__eq       = __ds_ops_eq_default_string,
-        .__lt       = __ds_ops_lt_default_string,
         .copy_data  = ds_ops_copy_data_default_string,
         .free_data  = ds_ops_free_data_default_string,
     };
@@ -39,7 +38,6 @@
     static const class_list_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_sso,
         .__eq       = __ds_ops_eq_default_sso,
-        .__lt       = __ds_ops_lt_default_sso,
         .copy_data  = ds_ops_copy_data_default_sso,
         .free_data  = ds_ops_free_data_default_sso,
     };

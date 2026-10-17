@@ -448,6 +448,242 @@ list_size_t i_dlist_remove_if(list_t* _this, remove_if_condition cond)
 
 /* checked */
 static inline
+bool __i_dlist_value_eq_stored(const i_list_t* _this, list_data_t left, list_data_t right)
+{
+    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
+        return left == right;
+    } else if (_this->sso) {
+        return __ds_ops_eq_stored_default_sso(left, right);
+    } else {
+        return _this->ops->__eq(left, right);
+    }
+}
+
+/* checked */
+list_size_t i_dlist_unique(i_list_t* _this)
+{
+    list_size_t ret = 0;
+    list_node_t* first;
+    list_node_t* next;
+
+    if (unlikely(is_null(_this)))
+        return -1;
+
+    if (__i_dlist_size(_this) < 2)
+        return 0;
+
+    first = __i_dlist_begin(_this);
+    next  = __i_dlist_next(_this, first);
+
+    while (__i_dlist_end(_this) != next) {
+        if (__i_dlist_value_eq_stored(_this,
+                __i_dlist_slot_read(_this, first->data),
+                __i_dlist_slot_read(_this, next->data))) {
+            next = __i_dlist_erase(_this, next);
+            ret++;
+        } else {
+            first = next;
+            next  = __i_dlist_next(_this, next);
+        }
+    }
+
+    return ret;
+}
+
+/* checked */
+static inline
+void __i_dlist_reverse_self(i_list_t* _this)
+{
+    struct list_head* p;
+
+    if (__i_dlist_size(_this) < 2)
+        return ;
+
+    p = &_this->head;
+    do {
+        struct list_head* t = p->next;
+
+        p->next = p->prev;
+        p->prev = t;
+        p = p->prev;
+    } while (p != &_this->head);
+}
+
+/* checked */
+void i_dlist_reverse(i_list_t* _this)
+{
+    if (unlikely(is_null(_this)))
+        return ;
+
+    __i_dlist_reverse_self(_this);
+}
+
+/* checked */
+static inline
+void __i_dlist_transfer(struct list_head* pos, struct list_head* first, struct list_head* last)
+{
+    struct list_head* tmp;
+
+    if (pos == last)
+        return ;
+
+    /* Remove [first, last) from its old position. */
+    last->prev->next  = pos;
+    first->prev->next = last;
+    pos->prev->next   = first;
+
+    /* Splice [first, last) into its new position. */
+    tmp         = pos->prev;
+    pos->prev   = last->prev;
+    last->prev  = first->prev;
+    first->prev = tmp;
+}
+
+/* checked */
+void i_dlist_splice(i_list_t* _this, list_iterator_t iterator, i_list_t* other)
+{
+    list_node_t* pos;
+
+    if (unlikely(is_null(_this) || is_null(other) || is_null(iterator.d)))
+        return ;
+
+    if (_this == other || __i_dlist_empty(other))
+        return ;
+
+    pos = __i_dlist_it_to_lnode(iterator);
+    __i_dlist_transfer(&pos->node, other->head.next, &other->head);
+
+    _this->size += other->size;
+    other->size = 0;
+}
+
+/* checked */
+void i_dlist_splice_range(i_list_t* _this, list_iterator_t iterator, i_list_t* other,
+                          list_iterator_t iterator_begin, list_iterator_t iterator_end)
+{
+    list_node_t* pos;
+    list_node_t* first;
+    list_node_t* last;
+    list_node_t* it;
+    list_size_t n = 0;
+
+    if (unlikely(is_null(_this) || is_null(other)
+                 || is_null(iterator.d) || is_null(iterator_begin.d) || is_null(iterator_end.d)))
+        return ;
+
+    if (__i_dlist_empty(other) || iterator_begin.d == iterator_end.d)
+        return ;
+
+    pos   = __i_dlist_it_to_lnode(iterator);
+    first = __i_dlist_it_to_lnode(iterator_begin);
+    last  = __i_dlist_it_to_lnode(iterator_end);
+
+    for (it = first; __i_dlist_end(other) != it && it != last && n <= other->size; it = __i_dlist_next(other, it)) {
+        if (_this == other && it == pos)
+            return ;
+        n++;
+    }
+
+    if (it != last) /* `last` is not reachable from `first` in `other` */
+        return ;
+
+    __i_dlist_transfer(&pos->node, &first->node, &last->node);
+
+    _this->size += n;
+    other->size -= n;
+}
+
+/* checked */
+void i_dlist_merge(i_list_t* _this, i_list_t* other, list_cmp_t cmp)
+{
+    struct list_head* first1;
+    struct list_head* last1;
+    struct list_head* first2;
+    struct list_head* last2;
+
+    if (unlikely(is_null(_this) || is_null(other) || is_null(cmp)))
+        return ;
+
+    if (_this == other || __i_dlist_empty(other))
+        return ;
+
+    JDSC_ASSERT(_this->step == other->step);
+
+    first1 = _this->head.next;
+    last1  = &_this->head;
+    first2 = other->head.next;
+    last2  = &other->head;
+
+    while (first1 != last1 && first2 != last2) {
+        if (cmp(__i_dlist_slot_read(_this, ((list_node_t*)(void*)first2)->data),
+                __i_dlist_slot_read(_this, ((list_node_t*)(void*)first1)->data))) {
+            struct list_head* next = first2->next;
+
+            __i_dlist_transfer(first1, first2, next);
+            first2 = next;
+        } else {
+            first1 = first1->next;
+        }
+    }
+
+    if (first2 != last2)
+        __i_dlist_transfer(last1, first2, last2);
+
+    _this->size += other->size;
+    other->size = 0;
+}
+
+/* checked */
+void __i_dlist_swap_head(i_list_t* _this, i_list_t* other)
+{
+    struct list_head* a = &_this->head;
+    struct list_head* b = &other->head;
+    list_size_t s;
+
+    if (a->next != a) {
+        if (b->next != b) {
+            struct list_head* t;
+
+            t = a->next; a->next = b->next; b->next = t;
+            t = a->prev; a->prev = b->prev; b->prev = t;
+            a->next->prev = a;
+            a->prev->next = a;
+            b->next->prev = b;
+            b->prev->next = b;
+        } else {
+            b->next = a->next;
+            b->prev = a->prev;
+            b->next->prev = b;
+            b->prev->next = b;
+            INIT_LIST_HEAD(a);
+        }
+    } else if (b->next != b) {
+        a->next = b->next;
+        a->prev = b->prev;
+        a->next->prev = a;
+        a->prev->next = a;
+        INIT_LIST_HEAD(b);
+    }
+
+    s = _this->size;
+    _this->size = other->size;
+    other->size = s;
+}
+
+/* checked */
+void i_dlist_swap(i_list_t* _this, i_list_t* other)
+{
+    if (unlikely(is_null(_this) || is_null(other) || _this == other))
+        return ;
+
+    if (_this->step != other->step || _this->ops != other->ops)
+        return ;
+
+    __i_dlist_swap_head(_this, other);
+}
+
+/* checked */
+static inline
 bool __i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data)
 {
     list_size_t size = __i_dlist_size(_this);
@@ -520,168 +756,6 @@ list_size_t i_dlist_clear(list_t* _this)
     return __i_dlist_clear(_this);
 }
 
-/* ============================================================================
- * sort —— STL: list::sort()，carry + tmp[] 的 64 路归并
- *
- * 每次从原链摘一个节点进 carry，然后跟 tmp[] 里长度递增的已序段两两归并，
- * 像二进制加法一样往上进位。全程只改指针，元素一次都不搬。
- * i_clist_sort（i_list.h）把 cmp 的魔术数字归一化之后再调到这里。
- * ========================================================================== */
-#define _I_DLIST_SORT_TMP  64
-
-/* 由 struct list_head* 找回 list_node_t*（node 恒在 offset 0） */
-#define __i_dlist_node_entry(_ptr)  ((list_node_t*)(void*)(_ptr))
-
-/* checked —— 纯改指针，不碰 size，也允许跨容器（first/last 属于源链、pos 属于目标链） */
-static inline
-void __i_dlist_transfer(struct list_head* pos, struct list_head* first, struct list_head* last)
-{
-    struct list_head* tmp;
-
-    if (pos == last)
-        return ;
-
-    /* Remove [first, last) from its old position. */
-    last->prev->next  = pos;
-    first->prev->next = last;
-    pos->prev->next   = first;
-
-    /* Splice [first, last) into its new position. */
-    tmp         = pos->prev;
-    pos->prev   = last->prev;
-    last->prev  = first->prev;
-    first->prev = tmp;
-}
-
-/* checked —— 两个节点里存的值做比较，只看调用方给的 cmp。
-   不经 ops->__lt：i_clist_sort 已经把 NULL / 1 / 2 归一化成具体比较器了，走不到这里；
-   留着那条分支只会让人以为「传 NULL 会用容器自己的次序」，其实不会。 */
-static inline
-bool __i_dlist_value_lt(const i_list_t* _this, list_cmp_t cmp, const list_node_t* l, const list_node_t* r)
-{
-    list_data_t lv = __i_dlist_slot_read(_this, l->data);
-    list_data_t rv = __i_dlist_slot_read(_this, r->data);
-
-    return is_null(cmp) ? (lv < rv) : cmp(lv, rv);
-}
-
-/* checked —— 让 shell 变成「和 proto 同配置的空链表」，给 sort 的 tmp[] 用 */
-static inline
-void __i_dlist_init_shell(i_list_t* shell, const i_list_t* proto)
-{
-    shell->ops  = proto->ops;
-    shell->step = proto->step;
-    shell->size = 0;
-    INIT_LIST_HEAD(&shell->head);
-}
-
-/* ---------------------------------------------------------------------------
- * STL: _List_node_base::swap(__x, __y) —— 换的是两条链的「头」，元素一个都不动
- * ------------------------------------------------------------------------- */
-/* checked */
-void __i_dlist_swap_head(i_list_t* _this, i_list_t* other)
-{
-    struct list_head* a = &_this->head;
-    struct list_head* b = &other->head;
-    list_size_t       s;
-
-    if (a->next != a) {
-        if (b->next != b) {
-            struct list_head* t;
-
-            t = a->next; a->next = b->next; b->next = t;
-            t = a->prev; a->prev = b->prev; b->prev = t;
-            a->next->prev = a;
-            a->prev->next = a;
-            b->next->prev = b;
-            b->prev->next = b;
-        } else {
-            b->next = a->next;
-            b->prev = a->prev;
-            b->next->prev = b;
-            b->prev->next = b;
-            INIT_LIST_HEAD(a);
-        }
-    } else if (b->next != b) {
-        a->next = b->next;
-        a->prev = b->prev;
-        a->next->prev = a;
-        a->prev->next = a;
-        INIT_LIST_HEAD(b);
-    }
-
-    s = _this->size;
-    _this->size = other->size;
-    other->size = s;
-}
-
-/* ---------------------------------------------------------------------------
- * STL: list::merge(list& __x) —— 纯搬链，不碰 size，size 由调用方负责
- * ------------------------------------------------------------------------- */
-/* checked */
-void __i_dlist_merge_run(i_list_t* _this, i_list_t* other, list_cmp_t cmp)
-{
-    struct list_head* first1 = _this->head.next;
-    struct list_head* last1  = &_this->head;
-    struct list_head* first2 = other->head.next;
-    struct list_head* last2  = &other->head;
-
-    while (first1 != last1 && first2 != last2) {
-        if (__i_dlist_value_lt(_this, cmp, __i_dlist_node_entry(first2), __i_dlist_node_entry(first1))) {
-            struct list_head* next = first2->next;
-
-            __i_dlist_transfer(first1, first2, next);
-            first2 = next;
-        } else {
-            first1 = first1->next;
-        }
-    }
-
-    if (first2 != last2)
-        __i_dlist_transfer(last1, first2, last2);
-}
-
-/* ---------------------------------------------------------------------------
- * STL: list::sort()
- * ------------------------------------------------------------------------- */
-/* checked */
-void __i_dlist_sort(i_list_t* _this, list_cmp_t cmp)
-{
-    i_list_t    carry;
-    i_list_t    tmp[_I_DLIST_SORT_TMP];
-    i_list_t*   fill;
-    i_list_t*   counter;
-    list_size_t n = _this->size;
-    int         i;
-
-    if (n < 2)
-        return ;
-
-    __i_dlist_init_shell(&carry, _this);
-    for (i = 0; i < _I_DLIST_SORT_TMP; ++i)
-        __i_dlist_init_shell(&tmp[i], _this);
-
-    fill = tmp;
-    do {
-        /* carry.splice(carry.begin(), *this, this->begin()) */
-        __i_dlist_transfer(&carry.head, _this->head.next, _this->head.next->next);
-
-        for (counter = tmp; counter != fill && !list_empty(&counter->head); ++counter) {
-            __i_dlist_merge_run(counter, &carry, cmp);
-            __i_dlist_swap_head(counter, &carry);
-        }
-        __i_dlist_swap_head(counter, &carry);
-        if (counter == fill)
-            ++fill;
-    } while (!list_empty(&_this->head));
-
-    for (counter = tmp + 1; counter != fill; ++counter)
-        __i_dlist_merge_run(counter, counter - 1, cmp);
-
-    __i_dlist_swap_head(_this, fill - 1);
-    _this->size = n; /* swap_head 只换「头」，size 得自己找回来 */
-}
-
 /* checked */
 list_t* __list_new(const class_list_ops_t* ops, list_step_t step)
 {
@@ -695,6 +769,8 @@ list_t* __list_new(const class_list_ops_t* ops, list_step_t step)
         return NULL;
 
     list->ops  = ops;
+    if (g_class_list_ops_sso() == list->ops)
+        list->sso = true;
     list->step = step;
     INIT_LIST_HEAD(&list->head);
     return list;
@@ -741,9 +817,12 @@ const class_list_t* class_list_ins(void)
         .pop_front    = clist_pop_front,
         .remove       = clist_remove,
         .remove_if    = clist_remove_if,
-        .sort         = clist_sort,
-        /* TODO: unique / reverse / merge / splice / splice_range / swap 尚未移植到新的节点 API，
-                 暂时从 vtable 里摘掉，等补上实现再加回来（旧实现在 HEAD 的 include/list/i_list.h 里）。 */
+        .unique       = clist_unique,
+        .reverse      = clist_reverse,
+        .splice       = clist_splice,
+        .splice_range = clist_splice_range,
+        .merge        = clist_merge,
+        .swap         = clist_swap,
         .resize       = clist_resize,
         .assign       = clist_assign,
         .clear        = clist_clear,

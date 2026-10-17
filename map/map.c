@@ -434,10 +434,10 @@ map_node_t* map_insert(map_t* _this, map_key_t key, map_value_t value)
     return t;
 
 err:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_value))
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_value) && !is_null(_this->ops->copy_value))
         _this->ops->free_value(&t->value);
 err_value:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key) && !is_null(_this->ops->copy_key))
         _this->ops->free_key(&t->key);
 err_key:
     p_free(t);
@@ -502,7 +502,7 @@ map_node_t* map_insert_replace(map_t* _this, map_key_t key, map_value_t value)
     return t;
 
 err_value:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key) && !is_null(_this->ops->copy_key))
         _this->ops->free_key(&t->key);
 err_key:
     p_free(t);

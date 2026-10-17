@@ -311,7 +311,7 @@ set_node_t* set_insert(set_t* _this, set_key_t key)
     return t;
 
 err:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_key))
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_key) && !is_null(_this->ops->copy_key))
         _this->ops->free_key(&t->key);
 err_key:
     p_free(t);
