@@ -75,10 +75,10 @@ static inline vector_r_iterator_t cvector_rend(const vector_t* _this)           
 static inline vector_r_iterator_t cvector_rbegin(const vector_t* _this)                                        { return i_vector_rbegin(_this); }
 static inline vector_r_iterator_t cvector_rnext(vector_r_iterator_t r_iterator)                                { return i_vector_rnext(r_iterator); }
 static inline vector_r_iterator_t cvector_rprev(vector_r_iterator_t r_iterator)                                { return i_vector_rprev(r_iterator); }
-static inline vector_iterator_t   __cvector_it(const vector_t* _this, vector_size_t n)                         { return __i_vector_iterator(_this, n); }
-static inline vector_iterator_t   cvector_it(const vector_t* _this, vector_size_t n)                           { return i_vector_iterator(_this, n); }
-static inline vector_value_t      __cvector_at(const vector_t* _this, vector_size_t n)                         { return __i_vector_at(_this, n); }
-static inline vector_value_t      cvector_at(const vector_t* _this, vector_size_t n)                           { return i_vector_at(_this, n); }
+static inline vector_iterator_t   __cvector_it(const vector_t* _this, vector_index_t index)                    { return __i_vector_iterator(_this, index); }
+static inline vector_iterator_t   cvector_it(const vector_t* _this, vector_index_t index)                      { return i_vector_iterator(_this, index); }
+static inline vector_value_t      __cvector_at(const vector_t* _this, vector_index_t index)                    { return __i_vector_at(_this, index); }
+static inline vector_value_t      cvector_at(const vector_t* _this, vector_index_t index)                      { return i_vector_at(_this, index); }
 static inline vector_value_t      cvector_back(const vector_t* _this)                                          { return i_vector_back(_this); }
 static inline vector_value_t      cvector_front(const vector_t* _this)                                         { return i_vector_front(_this); }
 static inline vector_iterator_t   cvector_find(const vector_t* _this, vector_data_t data)                      { return i_vector_find(_this, data); }
@@ -109,10 +109,10 @@ typedef struct class_vector {
     vector_r_iterator_t (*rbegin)(const vector_t* _this);
     vector_r_iterator_t (*rnext)(vector_r_iterator_t r_iterator);
     vector_r_iterator_t (*rprev)(vector_r_iterator_t r_iterator);
-    vector_iterator_t (*__it)(const vector_t* _this, vector_size_t n);
-    vector_iterator_t (*it)(const vector_t* _this, vector_size_t n);
-    vector_value_t (*__at)(const vector_t* _this, vector_size_t n);
-    vector_value_t (*at)(const vector_t* _this, vector_size_t n);
+    vector_iterator_t (*__it)(const vector_t* _this, vector_index_t index);
+    vector_iterator_t (*it)(const vector_t* _this, vector_index_t index);
+    vector_value_t (*__at)(const vector_t* _this, vector_index_t index);
+    vector_value_t (*at)(const vector_t* _this, vector_index_t index);
     vector_value_t (*back)(const vector_t* _this);
     vector_value_t (*front)(const vector_t* _this);
     vector_iterator_t (*find)(const vector_t* _this, vector_data_t data);
@@ -130,17 +130,17 @@ typedef struct class_vector {
     vector_size_t (*clear)(vector_t* _this);
 } class_vector_t;
 
-vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_size_t capacity_init, size_t align);
+vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_align_t align, vector_size_t capacity_init);
 void      __vector_delete(vector_t** _this);
 const class_vector_t* class_vector_ins(void);
 #define g_class_vector()              class_vector_ins()
 #define cvector                       g_class_vector()
-#define VECTOR_NEW()                  __vector_new(NULL, sizeof(vector_data_t), 0, __alignof__(vector_data_t))
-#define VECTOR_NEW_OPS(_ops)          __vector_new((_ops), sizeof(vector_data_t), 0, __alignof__(vector_data_t))
-#define VECTOR_NEW_T(_type)           __vector_new(NULL, sizeof(_type), 0, __alignof__(_type))
-#define VECTOR_NEW_OPS_T(_ops, _type) __vector_new((_ops), sizeof(_type), 0, __alignof__(_type))
-#define VECTOR_NEW_CHAR()             __vector_new(g_class_vector_ops_string(), sizeof(vector_data_t), 0, __alignof__(vector_data_t))
-#define VECTOR_NEW_SSO()              __vector_new(g_class_vector_ops_sso(), sizeof(ds_sso_t), 0, __alignof__(ds_sso_t))
+#define VECTOR_NEW()                  __vector_new(NULL,   sizeof(vector_data_t), __alignof__(vector_data_t), 0)
+#define VECTOR_NEW_OPS(_ops)          __vector_new((_ops), sizeof(vector_data_t), __alignof__(vector_data_t), 0)
+#define VECTOR_NEW_T(_type)           __vector_new(NULL,   sizeof(_type), __alignof__(_type), 0)
+#define VECTOR_NEW_OPS_T(_ops, _type) __vector_new((_ops), sizeof(_type), __alignof__(_type), 0)
+#define VECTOR_NEW_CHAR()             __vector_new(g_class_vector_ops_string(), sizeof(vector_data_t), __alignof__(vector_data_t), 0)
+#define VECTOR_NEW_SSO()              __vector_new(g_class_vector_ops_sso(),    sizeof(ds_sso_t),      __alignof__(ds_sso_t),      0)
 #define VECTOR_NEW_STRING()           VECTOR_NEW_SSO()
 #define VECTOR_DELETE(_pptr)          do { __vector_delete((_pptr)); } while(0)
 

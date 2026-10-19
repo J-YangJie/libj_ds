@@ -39,6 +39,7 @@ typedef bool (*__cmp)(ds_data_t left, ds_data_t right);
 
 /* list */
 typedef size_t     list_step_t;
+typedef size_t     list_align_t;
 typedef size_t     list_index_t;
 typedef ds_data_t  list_data_t;
 typedef ds_size_t  list_size_t;
@@ -47,6 +48,7 @@ typedef bool (*list_cmp_t)(list_data_t left, list_data_t right); /* Return true 
 
 /* vector */
 typedef size_t     vector_step_t;
+typedef size_t     vector_align_t;
 typedef size_t     vector_index_t;
 typedef ds_data_t  vector_data_t;
 typedef ds_size_t  vector_size_t;
@@ -54,6 +56,7 @@ typedef ds_count_t vector_count_t;
 
 /* deque */
 typedef size_t     deque_step_t;
+typedef size_t     deque_align_t;
 typedef size_t     deque_index_t;
 typedef ds_data_t  deque_data_t;
 typedef ds_size_t  deque_size_t;

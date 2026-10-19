@@ -23,49 +23,86 @@
 #include <_types.h>
 #include <string.h>
 
-#define DS_SSO_LOCAL_CAP 15
+#define __DS_SSO_LOCAL_CAP 15
 typedef struct ds_sso {
     char*  p;
     size_t len;
     union {
-        char   buf[DS_SSO_LOCAL_CAP + 1];
+        char   buf[__DS_SSO_LOCAL_CAP + 1];
         size_t cap;
     };
 } ds_sso_t;
 
-bool ds_ops_valid_data_default_sso(ds_data_t data);              /* SSO type: judge the validity of the `data`(whether the pointer is null and whether the length is greater than 0),
-                                                                              without limiting the length */
-bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right);   /* SSO type: return true if [ `left` == `right` ]; `left` is the user's `char*`, `right` is the address of a `ds_sso_t` */
-bool __ds_ops_eq_stored_default_sso(ds_data_t left, ds_data_t right); /* SSO type: return true if two stored values are equal; both sides are the address of a `ds_sso_t` */
-bool __ds_ops_lt_default_sso(ds_data_t left, ds_data_t right);   /* SSO type: return true if [ `left` < `right` ]; both sides are the address of a `ds_sso_t` */
-bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out); /* SSO type: deep copy `in` and use `out` to receive the copied memory */
-void ds_ops_free_data_default_sso(ds_data_t* data);              /* SSO type: release the `data` and set `data` to `NULL` */
+static inline
+bool ds_ops_valid_data_default_sso(ds_data_t data)
+{
+    const char* s = (char*)data;
+    return s && 0 != s[0];
+}
+
+static inline
+int __ds_ops_cmp_sso(const ds_sso_t* l, const ds_sso_t* r)
+{
+    size_t m = l->len < r->len ? l->len : r->len;
+    int c = memcmp(l->p, r->p, m);
+    if (0 != c) return c;
+    return l->len < r->len ? -1 : l->len > r->len ? 1 : 0;
+}
+
+static inline
+bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right)
+{
+    return 0 == __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right);
+}
+
+static inline
+bool __ds_ops_lt_default_sso(ds_data_t left, ds_data_t right)
+{
+    return __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right) < 0;
+}
+
+static inline
+bool __ds_ops_gt_default_sso(ds_data_t left, ds_data_t right)
+{
+    return __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right) > 0;
+}
+
+bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out);
+void ds_ops_free_data_default_sso(ds_data_t* data);
 
 
-static inline void __ds_ops_fix_sso(ds_data_t data)
+
+
+
+static inline
+bool __ds_ops_is_local_sso(const ds_sso_t* s)
+{
+    return s->p == s->buf;
+}
+
+static inline
+void __ds_ops_move_sso(ds_sso_t* dst, const ds_sso_t* src)
+{
+    *dst = *src;
+    if (__ds_ops_is_local_sso(src))
+        dst->p = dst->buf;
+}
+
+static inline
+bool __ds_ops_eq_sso(ds_data_t left, ds_data_t right)
+{
+    const char*     l = (const char*)left;
+    const ds_sso_t* r = (const ds_sso_t*)right;
+    size_t llen = strlen(l);
+    return llen == r->len && 0 == memcmp(l, r->p, llen);
+}
+
+static inline
+void __ds_ops_fix_sso(ds_data_t data)
 {
     ds_sso_t* s = (ds_sso_t*)data;
-    if (s->len <= DS_SSO_LOCAL_CAP)
+    if (s->len <= __DS_SSO_LOCAL_CAP)
         s->p = s->buf;
-}
-
-static inline int ds_sso_cmp(const ds_sso_t* a, const ds_sso_t* b)
-{
-    size_t m = a->len < b->len ? a->len : b->len;
-    int    r = memcmp(a->p, b->p, m);
-
-    if (0 != r)
-        return r;
-    return a->len < b->len ? -1 : (a->len > b->len ? 1 : 0);
-}
-
-static inline void ds_sso_move(ds_sso_t* dst, const ds_sso_t* src)
-{
-    bool local = (src->p == src->buf);
-
-    *dst = *src;
-    if (local)
-        dst->p = dst->buf;
 }
 
 #endif /* __J_DS_OPS_SSO_H */

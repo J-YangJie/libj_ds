@@ -136,9 +136,9 @@
 #define DQ_GT_NUM(_a, _b)     ((_a) > (_b))
 
 #ifdef DEQUE_STR_SSO
-#define DQ_MOVE_STR(_d, _s)   ds_sso_move((_d), (_s))
-#define DQ_LT_STR(_a, _b)     (0 > ds_sso_cmp(&(_a), &(_b)))
-#define DQ_GT_STR(_a, _b)     (0 < ds_sso_cmp(&(_a), &(_b)))
+#define DQ_MOVE_STR(_d, _s)   __ds_ops_move_sso((_d), (_s))
+#define DQ_LT_STR(_a, _b)     (0 > __ds_ops_cmp_sso(&(_a), &(_b)))
+#define DQ_GT_STR(_a, _b)     (0 < __ds_ops_cmp_sso(&(_a), &(_b)))
 #define DQ_STR_T              ds_sso_t
 #else
 #define DQ_MOVE_STR(_d, _s)   (*(_d) = *(_s))
@@ -163,9 +163,9 @@ I_DEQUE_SORT_DEFINE(sort_dq_sdes, DQ_STR_T,     DQ_MOVE_STR, DQ_GT_STR)
    SSO 版元素是 ds_sso_t，char* 版元素是 char*。
    注意 I_VECTOR_SORT_DEFINE 的 _IT 是裸 _T*，排序调用要拿迭代器的 .cur。 */
 #ifdef DEQUE_STR_SSO
-#define VT_MOVE_STR(_d, _s)   ds_sso_move((_d), (_s))
-#define VT_LT_STR(_a, _b)     (0 > ds_sso_cmp(&(_a), &(_b)))
-#define VT_GT_STR(_a, _b)     (0 < ds_sso_cmp(&(_a), &(_b)))
+#define VT_MOVE_STR(_d, _s)   __ds_ops_move_sso((_d), (_s))
+#define VT_LT_STR(_a, _b)     (0 > __ds_ops_cmp_sso(&(_a), &(_b)))
+#define VT_GT_STR(_a, _b)     (0 < __ds_ops_cmp_sso(&(_a), &(_b)))
 #define VT_STR_T              ds_sso_t
 #else
 #define VT_MOVE_STR(_d, _s)   (*(_d) = *(_s))

@@ -38,12 +38,12 @@ typedef struct list_node {
 
 typedef struct i_list {
     const class_list_ops_t* ops;
-    list_step_t             step;
-    struct list_head        head; /* 注：不能是最后一个，否则地址不合法 */
-    list_size_t             size;
-    bool                    sso;
-    size_t                  align;  /* 元素对齐要求（构造时定，之后不变） */
-    size_t                  pad;    /* 预计算：超对齐时节点整体后移的字节数，否则 0 */
+    list_step_t      step;
+    list_align_t     align;
+    size_t           pad;
+    struct list_head head; /* 注：不能是最后一个，否则地址不合法 */
+    list_size_t      size;
+    bool             sso;
 } i_list_t;
 
 /* checked */
@@ -418,7 +418,8 @@ list_node_t* __i_dlist_it_list_node(const i_list_t* _this, list_index_t index)
     list_node_t* it;
     list_size_t size = __i_dlist_size(_this);
 
-    if (index < size) {
+    // if (index < size) {
+    {
         if (index * 2 >= size) {
             index = size - index;
             it = __i_dlist_end(_this);
@@ -429,23 +430,21 @@ list_node_t* __i_dlist_it_list_node(const i_list_t* _this, list_index_t index)
         }
         return it;
     }
-
-    return NULL;
+    // return NULL;
 }
 
 /* checked */
 static inline
 list_iterator_t __i_dlist_iterator(const i_list_t* _this, list_index_t index)
 {
-    list_node_t* it = __i_dlist_it_list_node(_this, index);
-    return is_null(it) ? i_dlist_null_iterator() : __i_dlist_make_iterator(it->data);
+    return __i_dlist_make_iterator(__i_dlist_it_list_node(_this, index)->data);
 }
 
 /* checked */
 static inline
 list_iterator_t i_dlist_iterator(const i_list_t* _this, list_index_t index)
 {
-    if (!is_null(_this))
+    if (!is_null(_this) && index < __i_dlist_size(_this))
         return __i_dlist_iterator(_this, index);
     return i_dlist_null_iterator();
 }
@@ -461,7 +460,7 @@ list_value_t __i_dlist_at(const i_list_t* _this, list_index_t index)
 static inline
 list_value_t i_dlist_at(const i_list_t* _this, list_index_t index)
 {
-    if (!is_null(_this))
+    if (!is_null(_this) && index < __i_dlist_size(_this))
         return __i_dlist_at(_this, index);
     return (list_value_t){ .u8 = NULL, };
 }

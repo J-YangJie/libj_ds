@@ -31,14 +31,14 @@
 
 typedef struct i_vector {
     const class_vector_ops_t* ops;
-    vector_step_t step;
-    vector_size_t capacity_init;
-    uint8_t*      rend;
-    uint8_t*      begin;
-    uint8_t*      end;
-    uint8_t*      end_of_storage;
-    bool          sso;
-    size_t        align;   /* 元素对齐要求；数组走 p_aligned_malloc */
+    vector_step_t  step;
+    vector_align_t align;
+    vector_size_t  capacity_init;
+    uint8_t*       rend;
+    uint8_t*       begin;
+    uint8_t*       end;
+    uint8_t*       end_of_storage;
+    bool           sso;
 } i_vector_t;
 
 /* checked */
@@ -347,33 +347,33 @@ vector_r_iterator_t i_vector_rprev(vector_r_iterator_t rit)
 
 /* checked */
 static inline
-vector_iterator_t __i_vector_iterator(const i_vector_t* _this, vector_size_t n)
+vector_iterator_t __i_vector_iterator(const i_vector_t* _this, vector_index_t index)
 {
-    return __i_vector_make_iterator(_this->step, __i_vector_ptr_add(_this->begin, n, _this->step));
+    return __i_vector_make_iterator(_this->step, __i_vector_ptr_add(_this->begin, index, _this->step));
 }
 
 /* checked */
 static inline
-vector_iterator_t i_vector_iterator(const i_vector_t* _this, vector_size_t n)
+vector_iterator_t i_vector_iterator(const i_vector_t* _this, vector_index_t index)
 {
-    if (!is_null(_this) && n >= 0 && n < __i_vector_size(_this))
-        return __i_vector_iterator(_this, n);
+    if (!is_null(_this) && index < __i_vector_size(_this))
+        return __i_vector_iterator(_this, index);
     return i_vector_null_iterator();
 }
 
 /* checked */
 static inline
-vector_value_t __i_vector_at(const i_vector_t* _this, vector_size_t n)
+vector_value_t __i_vector_at(const i_vector_t* _this, vector_index_t index)
 {
-    return (vector_value_t){ .u8 = __i_vector_iterator(_this, n).cur, };
+    return (vector_value_t){ .u8 = __i_vector_iterator(_this, index).cur, };
 }
 
 /* checked */
 static inline
-vector_value_t i_vector_at(const i_vector_t* _this, vector_size_t n)
+vector_value_t i_vector_at(const i_vector_t* _this, vector_index_t index)
 {
-    if (!is_null(_this) && n >= 0 && n < __i_vector_size(_this))
-        return __i_vector_at(_this, n);
+    if (!is_null(_this) && index < __i_vector_size(_this))
+        return __i_vector_at(_this, index);
     return (vector_value_t){ .u8 = NULL, };
 }
 
@@ -561,6 +561,11 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
             if (data == __i_vector_slot_read(_this, p))
                 return __i_vector_make_iterator(_this->step, p);
         }
+    } else if (_this->sso) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
+            if (__ds_ops_eq_sso(data, __i_vector_slot_read(_this, p)))
+                return __i_vector_make_iterator(_this->step, p);
+        }
     } else {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
             if (_this->ops->__eq(data, __i_vector_slot_read(_this, p)))
@@ -588,6 +593,11 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
             if (data == __i_vector_slot_read(_this, p))
                 ret++;
         }
+    } else if (_this->sso) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
+            if (__ds_ops_eq_sso(data, __i_vector_slot_read(_this, p)))
+                ret++;
+        }
     } else {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
             if (_this->ops->__eq(data, __i_vector_slot_read(_this, p)))
@@ -607,9 +617,7 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
     uint8_t* end;
 
     if (is_null(_this)
-        || (!is_null(_this->ops)
-            && !is_null(_this->ops->valid_data)
-            && !_this->ops->valid_data(data)))
+        || (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
     const vector_step_t step = _this->step;
@@ -619,6 +627,17 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
             if (data != __i_vector_slot_read(_this, r)) {
+                __i_vector_slot_move(_this, l, r);
+                l = __i_vector_ptr_add(l, 1, step);
+            } else {
+                if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+                    _this->ops->free_data((vector_data_t*)r);
+                ret++;
+            }
+        }
+    } else if (_this->sso) {
+        for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+            if (!__ds_ops_eq_sso(data, __i_vector_slot_read(_this, r))) {
                 __i_vector_slot_move(_this, l, r);
                 l = __i_vector_ptr_add(l, 1, step);
             } else {

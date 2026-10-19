@@ -59,15 +59,12 @@ void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_
     }
 }
 
-/* checked —— 扩容 / 缩容时的缓冲区搬迁（ncap = 新容量，used = 现有元素数）。
-   默认档及以下直接转发 p_realloc（可能原地扩，零拷贝，和改动前一致）；
-   超对齐类型由 p_aligned_realloc 做 allocate + copy + free（没有平台提供对齐 realloc）。 */
-static
+static JDSC_INLINE_FORCE
 uint8_t* __vector_realloc_buf(i_vector_t* _this, vector_size_t ncap, vector_size_t used)
 {
     return (uint8_t*)p_aligned_realloc(_this->rend, _this->align,
-                                       (size_t)(ncap + 1) * _this->step,   /* 新字节数 */
-                                       (size_t)(used + 1) * _this->step);  /* 旧有效字节数：rend 槽 + 活元素 */
+                                       (size_t)(ncap + 1) * _this->step,
+                                       (size_t)(used + 1) * _this->step);
 }
 
 /* checked */
@@ -324,7 +321,7 @@ void __vector_deinit(vector_t* vector)
 }
 
 /* checked */
-vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_size_t capacity_init, size_t align)
+vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_align_t align, vector_size_t capacity_init)
 {
     vector_t* vector;
 
@@ -336,12 +333,12 @@ vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector
         return NULL;
 
     vector->step = step;
-    vector->align = align;      /* 必须在 __vector_init 之前 —— 那里要分配第一块 */
+    vector->align = align;
     vector->capacity_init = 0 != capacity_init && capacity_init < _I_VECTOR_CAPACITY_INIT ? _I_VECTOR_CAPACITY_INIT : capacity_init;
     if (!__vector_init(vector))
         goto err;
 
-    vector->capacity_init = 0 == vector->capacity_init ? _I_VECTOR_CAPACITY_INIT : vector->capacity_init;
+    // vector->capacity_init = 0 == vector->capacity_init ? _I_VECTOR_CAPACITY_INIT : vector->capacity_init;
 
     vector->ops = ops;
     if (g_class_vector_ops_sso() == vector->ops)

@@ -32,15 +32,15 @@
 
 typedef struct i_deque {
     const class_deque_ops_t* ops;
-    deque_step_t   step;
-    deque_size_t   bkt_size;
-    uint8_t**      bkt;
-    deque_bcount_t bkt_count;
-    deque_bcount_t bkt_count_init;
+    deque_step_t     step;
+    deque_align_t    align;
+    deque_size_t     bkt_size;
+    uint8_t**        bkt;
+    deque_bcount_t   bkt_count;
+    deque_bcount_t   bkt_count_init;
     deque_iterator_t begin;
     deque_iterator_t end;
     bool             sso;
-    size_t           align;   /* 元素对齐要求；bucket 走 p_aligned_malloc */
 } i_deque_t;
 
 static inline
@@ -426,30 +426,30 @@ deque_r_iterator_t i_deque_rprev(deque_r_iterator_t rit)
 
 
 static inline
-deque_iterator_t __i_deque_iterator(const i_deque_t* _this, deque_size_t n)
+deque_iterator_t __i_deque_iterator(const i_deque_t* _this, deque_index_t index)
 {
-    return __i_deque_advance(_this->begin, n);
+    return __i_deque_advance(_this->begin, index);
 }
 
 static inline
-deque_iterator_t i_deque_iterator(const i_deque_t* _this, deque_size_t n)
+deque_iterator_t i_deque_iterator(const i_deque_t* _this, deque_index_t index)
 {
-    if (!is_null(_this) && n >= 0 && n < __i_deque_size(_this))
-        return __i_deque_advance(_this->begin, n);
+    if (!is_null(_this) && index < __i_deque_size(_this))
+        return __i_deque_advance(_this->begin, index);
     return i_deque_null_iterator();
 }
 
 static inline
-deque_value_t __i_deque_at(const i_deque_t* _this, deque_size_t n)
+deque_value_t __i_deque_at(const i_deque_t* _this, deque_index_t index)
 {
-    return (deque_value_t){ .u8 = __i_deque_advance(_this->begin, n).cur, };
+    return (deque_value_t){ .u8 = __i_deque_advance(_this->begin, index).cur, };
 }
 
 static inline
-deque_value_t i_deque_at(const i_deque_t* _this, deque_size_t n)
+deque_value_t i_deque_at(const i_deque_t* _this, deque_index_t index)
 {
-    if (!is_null(_this) && n >= 0 && n < __i_deque_size(_this))
-        return __i_deque_at(_this, n);
+    if (!is_null(_this) && index < __i_deque_size(_this))
+        return __i_deque_at(_this, index);
     return (deque_value_t){ .u8 = NULL, };
 }
 

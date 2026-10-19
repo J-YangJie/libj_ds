@@ -60,9 +60,6 @@ list_data_t __i_dlist_slot_read(const i_list_t* _this, const uint8_t* slot)
     }
 }
 
-/* 超对齐时节点要整体后移 pad 字节，使 node + offsetof(list_node_t, data) 落在 align 边界上。
-   默认模式（JDSC_ALIGN = 0）下这是字面量 0 —— 展开成 base + 0 / node - 0，整条被折叠掉，
-   生成的机器码和引入对齐功能之前完全一样。 */
 #if JDSC_ALIGN
 #define __i_dlist_node_pad(_this)   ((_this)->pad)
 #else
@@ -71,17 +68,16 @@ list_data_t __i_dlist_slot_read(const i_list_t* _this, const uint8_t* slot)
 
 /* checked */
 static inline
-list_node_t* __i_dlist_make_list_node(const list_t* _this, list_data_t data)
+list_node_t* __i_dlist_make_list_node(const i_list_t* _this, list_data_t data)
 {
-    size_t       pad  = __i_dlist_node_pad(_this);
-    uint8_t*     base = (uint8_t*)p_aligned_malloc(_this->align,
-                                       pad + sizeof(list_node_t) + _this->step);
+    size_t pad = __i_dlist_node_pad(_this);
+    uint8_t* base = (uint8_t*)p_aligned_malloc(_this->align, pad + sizeof(list_node_t) + _this->step);
     list_node_t* n;
 
     if (is_null(base))
         return NULL;
 
-    n = (list_node_t*)(base + pad);     /* 默认模式 pad = 0，就是 base 本身 */
+    n = (list_node_t*)(base + pad);
 
     if (!__i_dlist_slot_write(_this, n->data, data)) {
         p_aligned_free(base);
@@ -95,8 +91,8 @@ list_node_t* __i_dlist_make_list_node(const list_t* _this, list_data_t data)
 static inline
 void __i_dlist_destroy_list_node(const i_list_t* _this, list_node_t* node)
 {
-    size_t   pad  = __i_dlist_node_pad(_this);
-    uint8_t* base = (uint8_t*)node - pad;      /* 默认模式 pad = 0，就是 node 本身 */
+    size_t pad = __i_dlist_node_pad(_this);
+    uint8_t* base = (uint8_t*)node - pad;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
         _this->ops->free_data((list_data_t*)node->data);
@@ -158,7 +154,7 @@ bool i_dlist_push_front(i_list_t* _this, list_data_t data)
 
 /* checked */
 static inline
-list_node_t* ___i_dlist_insert(list_t* _this, list_node_t* pos, list_node_t* node)
+list_node_t* ___i_dlist_insert(i_list_t* _this, list_node_t* pos, list_node_t* node)
 {
     __list_add(&node->node, pos->node.prev, &pos->node);
     _this->size++;
@@ -236,7 +232,7 @@ list_node_t* i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, 
 
 /* checked */
 static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
-void ___i_dlist_erase(list_t* _this, list_node_t* pos)
+void ___i_dlist_erase(i_list_t* _this, list_node_t* pos)
 {
     list_del_init(&pos->node);
     _this->size--;
@@ -340,13 +336,18 @@ list_node_t* i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_
 
 /* checked */
 static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
-list_node_t* ___i_dlist_find(const list_t* _this, list_data_t data)
+list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
 {
     list_node_t* n;
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry(n, &_this->head, node) {
             if (__i_dlist_slot_read(_this, n->data) == data)
+                return n;
+        }
+    } else if (_this->sso) {
+        list_for_each_entry(n, &_this->head, node) {
+            if (__ds_ops_eq_sso(data, __i_dlist_slot_read(_this, n->data)))
                 return n;
         }
     } else {
@@ -359,7 +360,7 @@ list_node_t* ___i_dlist_find(const list_t* _this, list_data_t data)
 }
 
 /* checked */
-list_node_t* i_dlist_find(const list_t* _this, list_data_t data)
+list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data)
 {
     list_node_t* n;
 
@@ -375,7 +376,7 @@ list_node_t* i_dlist_find(const list_t* _this, list_data_t data)
 
 /* checked */
 static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
-list_count_t ___i_dlist_count(const list_t* _this, list_data_t data)
+list_count_t ___i_dlist_count(const i_list_t* _this, list_data_t data)
 {
     list_size_t ret = 0;
     list_node_t* t, * n;
@@ -383,6 +384,11 @@ list_count_t ___i_dlist_count(const list_t* _this, list_data_t data)
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
             if (__i_dlist_slot_read(_this, n->data) == data)
+                ret++;
+        }
+    } else if (_this->sso) {
+        list_for_each_entry_safe(n, t, &_this->head, node) {
+            if (__ds_ops_eq_sso(data, __i_dlist_slot_read(_this, n->data)))
                 ret++;
         }
     } else {
@@ -395,7 +401,7 @@ list_count_t ___i_dlist_count(const list_t* _this, list_data_t data)
 }
 
 /* checked */
-list_count_t i_dlist_count(const list_t* _this, list_data_t data)
+list_count_t i_dlist_count(const i_list_t* _this, list_data_t data)
 {
     if (unlikely(is_null(_this)))
         return -1;
@@ -407,7 +413,7 @@ list_count_t i_dlist_count(const list_t* _this, list_data_t data)
 }
 
 /* checked */
-list_size_t i_dlist_remove(list_t* _this, list_data_t data)
+list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
 {
     list_size_t ret = 0;
     list_node_t* t, *n;
@@ -421,6 +427,15 @@ list_size_t i_dlist_remove(list_t* _this, list_data_t data)
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
             if (__i_dlist_slot_read(_this, n->data) != data)
+                continue;
+
+            ___i_dlist_erase(_this, n);
+            __i_dlist_destroy_list_node(_this, n);
+            ret++;
+        }
+    } else if (_this->sso) {
+        list_for_each_entry_safe(n, t, &_this->head, node) {
+            if (!__ds_ops_eq_sso(data, __i_dlist_slot_read(_this, n->data)))
                 continue;
 
             ___i_dlist_erase(_this, n);
@@ -442,7 +457,7 @@ list_size_t i_dlist_remove(list_t* _this, list_data_t data)
 }
 
 /* checked */
-list_size_t i_dlist_remove_if(list_t* _this, remove_if_condition cond)
+list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond)
 {
     list_size_t ret = 0;
     list_node_t* t, *n;
@@ -469,7 +484,7 @@ bool __i_dlist_value_eq_stored(const i_list_t* _this, list_data_t left, list_dat
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         return left == right;
     } else if (_this->sso) {
-        return __ds_ops_eq_stored_default_sso(left, right);
+        return __ds_ops_eq_default_sso(left, right);
     } else {
         return _this->ops->__eq(left, right);
     }
@@ -765,7 +780,7 @@ list_size_t __i_dlist_clear(i_list_t* _this)
 }
 
 /* checked */
-list_size_t i_dlist_clear(list_t* _this)
+list_size_t i_dlist_clear(i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
         return -1;
@@ -790,9 +805,8 @@ list_t* __list_new(const class_list_ops_t* ops, list_step_t step, size_t align)
     list->step  = step;
     list->align = align ? align : JDSC_ALIGN_DEFAULT;
 #if JDSC_ALIGN
-    /* 超对齐时节点整体后移这么多，使 data 落在 align 边界；默认档及以下为 0 */
-    list->pad   = (list->align > JDSC_ALIGN_DEFAULT)
-                    ? (list->align - offsetof(list_node_t, data))
+    list->pad   = list->align > JDSC_ALIGN_DEFAULT
+                    ? list->align - offsetof(list_node_t, data)
                     : 0;
 #endif
     INIT_LIST_HEAD(&list->head);

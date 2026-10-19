@@ -19,39 +19,10 @@
 
 #include <operations/ds_ops_sso.h>
 
-#include <string.h>
 #include <_memory.h>
 #include <_compiler_inter.h>
 
 JDSC_STATIC_ASSERT(offsetof(ds_sso_t, p) == 0, "p must stay at offset 0: the container reads the first 8 bytes of the slot as the user's char*");
-
-JDSC_INLINE
-bool ds_ops_valid_data_default_sso(ds_data_t data)
-{
-    const char* s = (char*)data;
-    return !is_null(s) && 0 != s[0];
-}
-
-JDSC_INLINE
-bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right)
-{
-    const char*     l = (const char*)left;
-    const ds_sso_t* r = (const ds_sso_t*)right;
-    size_t llen = strlen(l);
-    return llen == r->len && 0 == memcmp(l, r->p, llen);
-}
-
-JDSC_INLINE
-bool __ds_ops_eq_stored_default_sso(ds_data_t left, ds_data_t right)
-{
-    return 0 == ds_sso_cmp((const ds_sso_t*)left, (const ds_sso_t*)right);
-}
-
-JDSC_INLINE
-bool __ds_ops_lt_default_sso(ds_data_t left, ds_data_t right)
-{
-    return ds_sso_cmp((const ds_sso_t*)left, (const ds_sso_t*)right) < 0;
-}
 
 JDSC_INLINE
 bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out)
@@ -60,7 +31,7 @@ bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out)
     ds_sso_t*   o = (ds_sso_t*)out;
     size_t len = strlen(i);
 
-    if (len <= DS_SSO_LOCAL_CAP) {
+    if (len <= __DS_SSO_LOCAL_CAP) {
         memcpy(o->buf, i, len + 1);
         o->p = o->buf;
         o->len = len;
@@ -77,17 +48,10 @@ bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out)
     }
 }
 
-static JDSC_INLINE
-bool __ds_ops_is_local_default_sso(const ds_sso_t* s)
-{
-    return s->p == s->buf;
-}
-
 JDSC_INLINE
 void ds_ops_free_data_default_sso(ds_data_t* data)
 {
     ds_sso_t* s = (ds_sso_t*)data;
-
-    if (!__ds_ops_is_local_default_sso(s))
+    if (!__ds_ops_is_local_sso(s))
         p_free(s->p);
 }

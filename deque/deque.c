@@ -54,10 +54,15 @@ bool __i_deque_reserve(i_deque_t* _this)
 }
 
 static JDSC_INLINE_FORCE
-uint8_t* i_deque_alloc_bkt(const i_deque_t* _this)
+uint8_t* __i_deque_alloc_bkt(const i_deque_t* _this)
 {
-    /* 元素落在 bucket + i*step；sizeof 是 align 的倍数，所以 bucket 基址对齐就够 */
     return (uint8_t*)p_aligned_malloc(_this->align, _this->bkt_size * _this->step);
+}
+
+static JDSC_INLINE_FORCE
+void __i_deque_free_bkt(uint8_t** bkt)
+{
+    p_aligned_free(*bkt);
 }
 
 uint8_t* __i_deque_push_back_bkt_alloc(i_deque_t* _this)
@@ -71,7 +76,7 @@ uint8_t* __i_deque_push_back_bkt_alloc(i_deque_t* _this)
     }
 
     bkt = _this->end.bkt + 1;
-    *bkt = i_deque_alloc_bkt(_this);
+    *bkt = __i_deque_alloc_bkt(_this);
     if (is_null(*bkt))
         return NULL;
 
@@ -91,7 +96,7 @@ uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this)
     }
 
     bkt = _this->begin.bkt - 1;
-    *bkt = i_deque_alloc_bkt(_this);
+    *bkt = __i_deque_alloc_bkt(_this);
     if (is_null(*bkt))
         return NULL;
 
@@ -103,7 +108,7 @@ uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this)
 JDSC_INLINE
 void __i_deque_pop_back_bkt_free(i_deque_t* _this)
 {
-    p_aligned_free(_this->end.begin);
+    __i_deque_free_bkt(&_this->end.begin);
     __i_deque_set_bkt_n(&_this->end, _this->end.bkt - 1, _this->bkt_size, _this->step);
     _this->end.cur = __i_deque_ptr_sub(_this->end.end, 1, _this->step);
 }
@@ -111,7 +116,7 @@ void __i_deque_pop_back_bkt_free(i_deque_t* _this)
 JDSC_INLINE
 void __i_deque_pop_front_bkt_free(i_deque_t* _this)
 {
-    p_aligned_free(_this->begin.begin);
+    __i_deque_free_bkt(&_this->begin.begin);
     __i_deque_set_bkt_n(&_this->begin, _this->begin.bkt + 1, _this->bkt_size, _this->step);
     _this->begin.cur = _this->begin.begin;
 }
@@ -427,6 +432,16 @@ deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data)
                     return __i_deque_make_iterator(_this, bkt, i);
             }
         }
+    } else if (_this->sso) {
+        for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
+            uint8_t* i = __i_deque_bkt_begin(_this, bkt);
+            uint8_t* l = __i_deque_bkt_end(_this, bkt);
+
+            for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
+                if (__ds_ops_eq_sso(data, __i_deque_slot_read(_this, i)))
+                    return __i_deque_make_iterator(_this, bkt, i);
+            }
+        }
     } else {
         for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
             uint8_t* i = __i_deque_bkt_begin(_this, bkt);
@@ -459,6 +474,16 @@ deque_count_t i_deque_count(const i_deque_t* _this, deque_data_t data)
 
             for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
                 if (__i_deque_slot_read(_this, i) == data)
+                    ret++;
+            }
+        }
+    } else if (_this->sso) {
+        for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
+            uint8_t* i = __i_deque_bkt_begin(_this, bkt);
+            uint8_t* l = __i_deque_bkt_end(_this, bkt);
+
+            for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
+                if (__ds_ops_eq_sso(data, __i_deque_slot_read(_this, i)))
                     ret++;
             }
         }
@@ -501,6 +526,17 @@ deque_size_t i_deque_remove(i_deque_t* _this, deque_data_t data)
                 ret++;
             }
         }
+    } else if (_this->sso) {
+        for ( ; end.cur != r.cur; r = __i_deque_next(r)) {
+            if (!__ds_ops_eq_sso(data, __i_deque_slot_read(_this, r.cur))) {
+                __i_deque_slot_move(_this, l.cur, r.cur);
+                l = __i_deque_next(l);
+            } else {
+                if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+                    _this->ops->free_data((deque_data_t*)r.cur);
+                ret++;
+            }
+        }
     } else {
         for ( ; end.cur != r.cur; r = __i_deque_next(r)) {
             if (!_this->ops->__eq(data, __i_deque_slot_read(_this, r.cur))) {
@@ -517,7 +553,7 @@ deque_size_t i_deque_remove(i_deque_t* _this, deque_data_t data)
     if (0 != ret) {
         r = l;
         while (end.bkt != r.bkt++)
-            p_aligned_free(*r.bkt);
+            __i_deque_free_bkt(r.bkt);
 
         __i_deque_set_bkt_n(&_this->end, l.bkt, _this->bkt_size, _this->step);
         _this->end.cur = l.cur;
@@ -561,7 +597,7 @@ deque_size_t i_deque_remove_if(i_deque_t* _this, remove_if_condition cond)
     if (0 != ret) {
         r = l;
         while (end.bkt != r.bkt++)
-            p_aligned_free(*r.bkt);
+            __i_deque_free_bkt(r.bkt);
 
         __i_deque_set_bkt_n(&_this->end, l.bkt, _this->bkt_size, _this->step);
         _this->end.cur = l.cur;
@@ -605,7 +641,7 @@ deque_size_t i_deque_clear(i_deque_t* _this)
                 _this->ops->free_data((deque_data_t*)i);
 
             if (_this->begin.bkt != bkt)
-                p_aligned_free(*bkt);
+                __i_deque_free_bkt(bkt);
         }
     } else {
         for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
@@ -615,7 +651,7 @@ deque_size_t i_deque_clear(i_deque_t* _this)
             ret += __i_deque_ptr_diff(l, i, _this->step);
 
             if (_this->begin.bkt != bkt)
-                p_aligned_free(*bkt);
+                __i_deque_free_bkt(bkt);
         }
     }
 
@@ -642,7 +678,7 @@ bool __deque_init(deque_t* deque)
     if (is_null(deque->bkt))
         return false;
 
-    deque->bkt[m] = i_deque_alloc_bkt(deque);
+    deque->bkt[m] = __i_deque_alloc_bkt(deque);
     if (is_null(deque->bkt[m]))
         goto err;
 
@@ -660,7 +696,7 @@ static
 void __deque_deinit(deque_t* deque)
 {
     i_deque_clear(deque);
-    p_aligned_free(*deque->begin.bkt);
+    __i_deque_free_bkt(deque->begin.bkt);
     p_free(deque->bkt);
 }
 
@@ -676,7 +712,7 @@ deque_t* __deque_new(const class_deque_ops_t* ops, deque_step_t step, size_t ali
         return NULL;
 
     deque->step     = step;
-    deque->align    = align;    /* 必须在 __deque_init 之前 —— 那里会分配第一个 bucket */
+    deque->align    = align;
     deque->bkt_size = step < (_I_DEQUE_BKT_BYTES / _I_DEQUE_BKT_SIZE_MIN)
                         ? _I_DEQUE_BKT_BYTES / step
                         : _I_DEQUE_BKT_SIZE_MIN;
