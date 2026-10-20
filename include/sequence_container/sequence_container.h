@@ -24,10 +24,6 @@
 #include <_compiler.h>
 #include <sequence_container/operations/ds_ops_sso.h>
 
-#define __SEQUENCE_CONTAINER_BASE_VECTOR 1
-#define __SEQUENCE_CONTAINER_BASE_DEQUE  2
-#define __SEQUENCE_CONTAINER_BASE_LIST   3
-
 #ifndef BIT
 #define BIT(n) (1UL << (n))
 #endif /* BIT */

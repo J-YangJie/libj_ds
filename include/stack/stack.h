@@ -20,7 +20,7 @@
 #ifndef __J_STACK_H
 #define __J_STACK_H
 
-#include <sequence_container/sequence_container.h>
+#include <container_adaptor/container_adaptor.h>
 
 typedef sequence_container_value_t     stack_value_t;
 typedef class_sequence_container_ops_t class_stack_ops_t;
@@ -32,9 +32,9 @@ typedef i_stack_t stack_t;
 /* Method 1 */
 static inline stack_size_t  cstack_size(const stack_t* _this)              { return i_stack_size(_this); }
 static inline bool          __cstack_empty(const stack_t* _this)           { return __i_stack_empty(_this); }
+static inline bool          cstack_push(stack_t* _this, stack_data_t data) { return i_stack_push(_this, data); }
 static inline stack_value_t __cstack_top(const stack_t* _this)             { return __i_stack_top(_this); }
 static inline stack_value_t cstack_top(const stack_t* _this)               { return i_stack_top(_this); }
-static inline bool          cstack_push(stack_t* _this, stack_data_t data) { return i_stack_push(_this, data); }
 static inline void          cstack_pop(stack_t* _this)                     { i_stack_pop(_this); }
 static inline void          cstack_swap(stack_t* _this, stack_t* other)    { i_stack_swap(_this, other); }
 static inline stack_size_t  cstack_clear(stack_t* _this)                   { return i_stack_clear(_this); }
@@ -43,8 +43,9 @@ static inline stack_size_t  cstack_clear(stack_t* _this)                   { ret
 typedef struct class_stack {
     stack_size_t (*size)(const stack_t* _this);
     bool (*__empty)(const stack_t* _this);
-    stack_value_t (*top)(const stack_t* _this);
     bool (*push)(stack_t* _this, stack_data_t data);
+    stack_value_t (*__top)(const stack_t* _this);
+    stack_value_t (*top)(const stack_t* _this);
     void (*pop)(stack_t* _this);
     void (*swap)(stack_t* _this, stack_t* other);
     stack_size_t (*clear)(stack_t* _this);
@@ -57,11 +58,11 @@ typedef struct class_stack {
 #define STACK_DEQUE_NEW_OPS_T(_ops, _type, _capacity_init)                    DEQUE_NEW_OPS_T((_ops), _type)
 #define STACK_LIST_NEW_OPS_T(_ops, _type, _capacity_init)                     LIST_NEW_OPS_T((_ops), _type)
 #define _STACK_NEW_OPS_COMPLATE(_ops, _type_id, _type, _BASE_NAME, _capacity_init) \
-        __stack_new((__SEQUENCE_CONTAINER_BASE_##_BASE_NAME), STACK_##_BASE_NAME##_NEW_OPS_COMPLATE((_ops), (_type_id), _type, (_capacity_init)))
+        __stack_new((__CONTAINER_ADAPTOR_BASE_##_BASE_NAME), STACK_##_BASE_NAME##_NEW_OPS_COMPLATE((_ops), (_type_id), _type, (_capacity_init)))
 #define _STACK_NEW_OPS_T(_ops, _type, _BASE_NAME, _capacity_init) \
-        __stack_new((__SEQUENCE_CONTAINER_BASE_##_BASE_NAME), STACK_##_BASE_NAME##_NEW_OPS_T((_ops), _type, (_capacity_init)))
+        __stack_new((__CONTAINER_ADAPTOR_BASE_##_BASE_NAME), STACK_##_BASE_NAME##_NEW_OPS_T((_ops), _type, (_capacity_init)))
 
-stack_t* __stack_new(uint8_t id, void* base);
+stack_t* __stack_new(container_adaptor_base_t id, void* base);
 void     __stack_delete(stack_t** _this);
 const class_stack_t* class_stack_ins(void);
 #define g_class_stack()                           class_stack_ins()

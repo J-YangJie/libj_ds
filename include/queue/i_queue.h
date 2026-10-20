@@ -24,7 +24,7 @@
 #include <list/list.h>
 
 typedef struct i_queue {
-    uint8_t id;
+    container_adaptor_base_t id;
     union {
         deque_t* d;
         list_t*  l;
@@ -37,8 +37,8 @@ queue_size_t i_queue_size(const i_queue_t* _this)
 {
     if (!is_null(_this)) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_DEQUE: return cdeque_size(_this->d);
-        case __SEQUENCE_CONTAINER_BASE_LIST:  return clist_size(_this->l);
+        case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_size(_this->d);
+        case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_size(_this->l);
         default:                              break;
         }
     }
@@ -49,18 +49,31 @@ static inline
 bool __i_queue_empty(const i_queue_t* _this)
 {
     switch (_this->id) {
-    case __SEQUENCE_CONTAINER_BASE_DEQUE: return __cdeque_empty(_this->d);
-    case __SEQUENCE_CONTAINER_BASE_LIST:  return __clist_empty(_this->l);
+    case __CONTAINER_ADAPTOR_BASE_DEQUE: return __cdeque_empty(_this->d);
+    case __CONTAINER_ADAPTOR_BASE_LIST:  return __clist_empty(_this->l);
     default:                              return false;
     }
+}
+
+static inline
+bool i_queue_push(i_queue_t* _this, queue_data_t data)
+{
+    if (!is_null(_this)) {
+        switch (_this->id) {
+        case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_push_back(_this->d, data);
+        case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_push_back(_this->l, data);
+        default:                              break;
+        }
+    }
+    return false;
 }
 
 static inline
 queue_value_t __i_queue_back(const i_queue_t* _this)
 {
     switch (_this->id) {
-    case __SEQUENCE_CONTAINER_BASE_DEQUE: return __cdeque_back(_this->d);
-    case __SEQUENCE_CONTAINER_BASE_LIST:  return __clist_back(_this->l);
+    case __CONTAINER_ADAPTOR_BASE_DEQUE: return __cdeque_back(_this->d);
+    case __CONTAINER_ADAPTOR_BASE_LIST:  return __clist_back(_this->l);
     default:                              return (queue_value_t){ .u8 = NULL };
     }
 }
@@ -70,8 +83,8 @@ queue_value_t i_queue_back(const i_queue_t* _this)
 {
     if (!is_null(_this)) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_DEQUE: return cdeque_back(_this->d);
-        case __SEQUENCE_CONTAINER_BASE_LIST:  return clist_back(_this->l);
+        case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_back(_this->d);
+        case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_back(_this->l);
         default:                              break;
         }
     }
@@ -82,8 +95,8 @@ static inline
 queue_value_t __i_queue_front(const i_queue_t* _this)
 {
     switch (_this->id) {
-    case __SEQUENCE_CONTAINER_BASE_DEQUE: return __cdeque_front(_this->d);
-    case __SEQUENCE_CONTAINER_BASE_LIST:  return __clist_front(_this->l);
+    case __CONTAINER_ADAPTOR_BASE_DEQUE: return __cdeque_front(_this->d);
+    case __CONTAINER_ADAPTOR_BASE_LIST:  return __clist_front(_this->l);
     default:                              return (queue_value_t){ .u8 = NULL };
     }
 }
@@ -93,8 +106,8 @@ queue_value_t i_queue_front(const i_queue_t* _this)
 {
     if (!is_null(_this)) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_DEQUE: return cdeque_front(_this->d);
-        case __SEQUENCE_CONTAINER_BASE_LIST:  return clist_front(_this->l);
+        case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_front(_this->d);
+        case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_front(_this->l);
         default:                              break;
         }
     }
@@ -102,25 +115,12 @@ queue_value_t i_queue_front(const i_queue_t* _this)
 }
 
 static inline
-bool i_queue_push(i_queue_t* _this, queue_data_t data)
-{
-    if (!is_null(_this)) {
-        switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_DEQUE: return cdeque_push_back(_this->d, data);
-        case __SEQUENCE_CONTAINER_BASE_LIST:  return clist_push_back(_this->l, data);
-        default:                              break;
-        }
-    }
-    return false;
-}
-
-static inline
 void i_queue_pop(i_queue_t* _this)
 {
     if (!is_null(_this)) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_DEQUE: cdeque_pop_front(_this->d); break;
-        case __SEQUENCE_CONTAINER_BASE_LIST:  clist_pop_front(_this->l);  break;
+        case __CONTAINER_ADAPTOR_BASE_DEQUE: cdeque_pop_front(_this->d); break;
+        case __CONTAINER_ADAPTOR_BASE_LIST:  clist_pop_front(_this->l);  break;
         default:                              break;
         }
     }
@@ -133,13 +133,13 @@ void i_queue_swap(i_queue_t* _this, i_queue_t* other)
 
     if (!is_null(_this) && !is_null(other) && _this != other && _this->id == other->id) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_DEQUE:
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:
             JDSC_ASSERT(   _this->d->ops   == other->d->ops /* Include sso */
                         && __sequence_container_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
                         && _this->d->step  == other->d->step 
                         && _this->d->align == other->d->align);
             break;
-        case __SEQUENCE_CONTAINER_BASE_LIST:
+        case __CONTAINER_ADAPTOR_BASE_LIST:
             JDSC_ASSERT(   _this->l->ops   == other->l->ops /* Include sso */
                         && __sequence_container_dtype_swap_compatible(_this->l->dtype, other->l->dtype)
                         && _this->l->step  == other->l->step 
@@ -161,8 +161,8 @@ queue_size_t i_queue_clear(i_queue_t* _this)
 {
     if (!is_null(_this)) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_DEQUE: return cdeque_clear(_this->d);
-        case __SEQUENCE_CONTAINER_BASE_LIST:  return clist_clear(_this->l);
+        case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_clear(_this->d);
+        case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_clear(_this->l);
         default:                              break;
         }
     }

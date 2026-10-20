@@ -28,7 +28,7 @@
 
 #define TAG "[priority_queue]"
 
-#define __i_priority_queue_fix_sso(p)   __ds_ops_fix_sso((priority_queue_data_t)(p))
+#define __i_priority_queue_fix_sso(p)  __ds_ops_fix_sso((priority_queue_data_t)(p))
 
 #define __i_priority_queue_define_heap(name, type, prep, __at, size, pop_back) \
 static                                                                  \
@@ -44,7 +44,7 @@ void __i_priority_queue_rise_##name(i_priority_queue_t* _this,          \
     priority_queue_size_t __i = index;                                  \
                                                                         \
     if (__i <= 0)                                                       \
-        return;                                                         \
+        return ;                                                        \
                                                                         \
     __hp = __at(__i);                                                   \
     __t = *__hp;                                                        \
@@ -90,7 +90,7 @@ void __i_priority_queue_heapify_##name(i_priority_queue_t* _this,       \
     priority_queue_size_t __i = index;                                  \
                                                                         \
     if (__i >= __size)                                                  \
-        return;                                                         \
+        return ;                                                        \
                                                                         \
     __hp = __at(__i);                                                   \
     __t = *__hp;                                                        \
@@ -149,7 +149,7 @@ void __i_priority_queue_pop_##name(i_priority_queue_t* _this)           \
     const priority_queue_size_t __size = size;                          \
                                                                         \
     if (__size <= 0)                                                    \
-        return;                                                         \
+        return ;                                                        \
     if (__size > 1) {                                                   \
         type* __ap = __at(0);                                           \
         type* __bp = __at(__size - 1);                                  \
@@ -166,13 +166,12 @@ void __i_priority_queue_pop_##name(i_priority_queue_t* _this)           \
 
 
 
-
 /* Vector */
 #define __i_pq_vec_prep       i_vector_t* __v = _this->v;
 
 
 
-/* vector number */
+/* Vector Number */
 #define __i_pq_vec_at_u8(i)   ((uint8_t*)__v->begin + (i))
 #define __i_pq_vec_at_u16(i)  ((uint16_t*)__v->begin + (i))
 #define __i_pq_vec_at_u32(i)  ((uint32_t*)__v->begin + (i))
@@ -200,7 +199,7 @@ __i_priority_queue_define_heap(vector_s64,  int64_t,   __i_pq_vec_prep, __i_pq_v
 
 
 
-/* vector sso */
+/* Vector SSO */
 static
 void __i_priority_queue_rise_vector_sso(i_priority_queue_t* _this, priority_queue_size_t index)
 {
@@ -211,7 +210,7 @@ void __i_priority_queue_rise_vector_sso(i_priority_queue_t* _this, priority_queu
     priority_queue_size_t __i = index;
 
     if (__i <= 0)
-        return;
+        return ;
 
     __hp = ((ds_sso_t*)__v->begin + __i);
     __t  = *__hp;
@@ -303,12 +302,12 @@ void __i_priority_queue_pop_vector_sso(i_priority_queue_t* _this)
 
 
 
-/* vector struct/union */
+/* Vector Struct/Union */
 static
 void __i_priority_queue_rise_vector_addr(i_priority_queue_t* _this, priority_queue_size_t index)
 {
     i_vector_t* __v = _this->v;
-    const vector_step_t step = __v->step;
+    const vector_step_t __step = __v->step;
     bool (*__lt)(priority_queue_data_t, priority_queue_data_t) = _this->ops->__lt;
     void (*__move)(priority_queue_data_t, priority_queue_data_t) = is_null(__v->ops) || is_null(__v->ops->__move) ? NULL : __v->ops->__move;
     uint8_t* __hp;
@@ -316,30 +315,30 @@ void __i_priority_queue_rise_vector_addr(i_priority_queue_t* _this, priority_que
     priority_queue_size_t __i = index;
 
     if (__i <= 0)
-        return;
+        return ;
 
-    __hp = __i_vector_ptr_add(__v->begin, __i, step);
+    __hp = __i_vector_ptr_add(__v->begin, __i, __step);
     if (is_null(__move)) {
-        memmove(__t, __hp, step);
+        memmove(__t, __hp, __step);
 
         while (__i > 0) {
             priority_queue_size_t __parent = (__i - 1) >> 1;
-            uint8_t* __pp = __i_vector_ptr_add(__v->begin, __parent, step);
+            uint8_t* __pp = __i_vector_ptr_add(__v->begin, __parent, __step);
 
             if (!__lt((priority_queue_data_t)__pp, (priority_queue_data_t)__t))
                 break;
 
-            memmove(__hp, __pp, step);
+            memmove(__hp, __pp, __step);
             __hp = __pp;
             __i  = __parent;
         }
-        memmove(__hp, __t, step);
+        memmove(__hp, __t, __step);
     } else {
         __move((priority_queue_data_t)__t, (priority_queue_data_t)__hp);
 
         while (__i > 0) {
             priority_queue_size_t __parent = (__i - 1) >> 1;
-            uint8_t* __pp = __i_vector_ptr_add(__v->begin, __parent, step);
+            uint8_t* __pp = __i_vector_ptr_add(__v->begin, __parent, __step);
 
             if (!__lt((priority_queue_data_t)__pp, (priority_queue_data_t)__t))
                 break;
@@ -356,7 +355,7 @@ static
 void __i_priority_queue_heapify_vector_addr(i_priority_queue_t* _this, priority_queue_size_t index)
 {
     i_vector_t* __v = _this->v;
-    const vector_step_t step = __v->step;
+    const vector_step_t __step = __v->step;
     bool (*__lt)(priority_queue_data_t, priority_queue_data_t) = _this->ops->__lt;
     void (*__move)(priority_queue_data_t, priority_queue_data_t) = is_null(__v->ops) || is_null(__v->ops->__move) ? NULL : __v->ops->__move;
     priority_queue_size_t __size = __i_vector_size(__v);
@@ -367,18 +366,18 @@ void __i_priority_queue_heapify_vector_addr(i_priority_queue_t* _this, priority_
     if (__i >= __size)
         return ;
 
-    __hp = __i_vector_ptr_add(__v->begin, __i, step);
+    __hp = __i_vector_ptr_add(__v->begin, __i, __step);
     if (is_null(__move)) {
-        memmove(__t, __hp, step);
+        memmove(__t, __hp, __step);
 
         while (((__i << 1) + 1) < __size) {
             priority_queue_size_t __l = (__i << 1) + 1;
             priority_queue_size_t __r = __l + 1;
             priority_queue_size_t __m = __l;
-            uint8_t* __mp = __i_vector_ptr_add(__v->begin, __l, step);
+            uint8_t* __mp = __i_vector_ptr_add(__v->begin, __l, __step);
 
             if (__r < __size) {
-                uint8_t* __rp = __i_vector_ptr_add(__v->begin, __r, step);
+                uint8_t* __rp = __i_vector_ptr_add(__v->begin, __r, __step);
 
                 if (__lt((priority_queue_data_t)__mp, (priority_queue_data_t)__rp)) {
                     __m  = __r;
@@ -389,11 +388,11 @@ void __i_priority_queue_heapify_vector_addr(i_priority_queue_t* _this, priority_
             if (!__lt((priority_queue_data_t)__t, (priority_queue_data_t)__mp))
                 break;
 
-            memmove(__hp, __mp, step);
+            memmove(__hp, __mp, __step);
             __hp = __mp;
             __i  = __m;
         }
-        memmove(__hp, __t, step);
+        memmove(__hp, __t, __step);
     } else {
         __move((priority_queue_data_t)__t, (priority_queue_data_t)__hp);
 
@@ -401,10 +400,10 @@ void __i_priority_queue_heapify_vector_addr(i_priority_queue_t* _this, priority_
             priority_queue_size_t __l = (__i << 1) + 1;
             priority_queue_size_t __r = __l + 1;
             priority_queue_size_t __m = __l;
-            uint8_t* __mp = __i_vector_ptr_add(__v->begin, __l, step);
+            uint8_t* __mp = __i_vector_ptr_add(__v->begin, __l, __step);
 
             if (__r < __size) {
-                uint8_t* __rp = __i_vector_ptr_add(__v->begin, __r, step);
+                uint8_t* __rp = __i_vector_ptr_add(__v->begin, __r, __step);
 
                 if (__lt((priority_queue_data_t)__mp, (priority_queue_data_t)__rp)) {
                     __m  = __r;
@@ -427,7 +426,7 @@ static
 void __i_priority_queue_pop_vector_addr(i_priority_queue_t* _this)
 {
     i_vector_t* __v = _this->v;
-    const vector_step_t step = __v->step;
+    const vector_step_t __step = __v->step;
     void (*__move)(priority_queue_data_t, priority_queue_data_t) = is_null(__v->ops) || is_null(__v->ops->__move) ? NULL : __v->ops->__move;
     priority_queue_size_t __size = __i_vector_size(__v);
 
@@ -435,14 +434,14 @@ void __i_priority_queue_pop_vector_addr(i_priority_queue_t* _this)
         return ;
 
     if (__size > 1) {
-        uint8_t* __ap = __i_vector_ptr_add(__v->begin, 0, step);
-        uint8_t* __bp = __i_vector_ptr_add(__v->begin, __size - 1, step);
+        uint8_t* __ap = __i_vector_ptr_add(__v->begin, 0, __step);
+        uint8_t* __bp = __i_vector_ptr_add(__v->begin, __size - 1, __step);
         uint8_t* __t  = __v->rend;
 
         if (is_null(__move)) {
-            memmove(__t,  __ap, step);
-            memmove(__ap, __bp, step);
-            memmove(__bp, __t,  step);
+            memmove(__t,  __ap, __step);
+            memmove(__ap, __bp, __step);
+            memmove(__bp, __t,  __step);
         } else {
             __move((priority_queue_data_t)__t,  (priority_queue_data_t)__ap);
             __move((priority_queue_data_t)__ap, (priority_queue_data_t)__bp);
@@ -474,7 +473,7 @@ void __i_priority_queue_pop_vector_addr(i_priority_queue_t* _this)
 
 
 
-/* deque number */
+/* Deque Number */
 static JDSC_INLINE
 uint8_t* __i_priority_queue_deque_slot_addr_pow2(const i_deque_t* deque, deque_size_t i, deque_size_t mask, int bkt_shift, int elem_shift)
 {
@@ -498,7 +497,7 @@ uint8_t* __i_priority_queue_deque_slot_addr_pow2(const i_deque_t* deque, deque_s
 #endif /* JDSC_64BIT */
 
 #if 1
-static inline
+static JDSC_INLINE
 deque_size_t __i_priority_queue_deque_size_pow2(const i_deque_t* deque, int elem_shift)
 {
     const ptrdiff_t off_b = (deque->begin.cur - deque->begin.begin) >> elem_shift;
@@ -527,7 +526,7 @@ __i_priority_queue_define_heap(deque_s64,  int64_t,   __i_pq_deq_prep, __i_pq_de
 
 
 
-/* deque sso 64bit */
+/* Deque SSO 64BIT */
 #define __i_pq_deq_at_pow2_sso(i)  __i_pq_deq_at_pow2(ds_sso_t, (i), __es)
 
 static
@@ -541,7 +540,7 @@ void __i_priority_queue_rise_deque_sso(i_priority_queue_t* _this, priority_queue
     priority_queue_size_t __i = index;
 
     if (__i <= 0)
-        return;
+        return ;
 
     __hp = __i_pq_deq_at_pow2_sso(__i);
     __t  = *__hp;
@@ -575,7 +574,7 @@ void __i_priority_queue_heapify_deque_sso(i_priority_queue_t* _this, priority_qu
     priority_queue_size_t __i = index;
 
     if (__i >= __size)
-        return;
+        return ;
 
     __hp = __i_pq_deq_at_pow2_sso(__i);
     __t  = *__hp;
@@ -615,7 +614,7 @@ void __i_priority_queue_pop_deque_sso(i_priority_queue_t* _this)
     priority_queue_size_t __size = __i_pq_deq_size_pow2(__es);
 
     if (__size <= 0)
-        return;
+        return ;
 
     if (__size > 1) {
         ds_sso_t* __ap = __i_pq_deq_at_pow2_sso(0);
@@ -636,8 +635,8 @@ void __i_priority_queue_pop_deque_sso(i_priority_queue_t* _this)
 
 
 
-/* deque sso 32bit */
-static inline
+/* Deque SSO 32BIT */
+static JDSC_INLINE
 uint8_t* __i_priority_queue_deque_slot_addr_fast(const i_deque_t* deque, ptrdiff_t off, deque_size_t i, deque_size_t mask, int bkt_shift, deque_step_t step)
 {
     const ptrdiff_t total = off + (ptrdiff_t)i;
@@ -655,7 +654,7 @@ void __i_priority_queue_rise_deque_sso_generic(i_priority_queue_t* _this, priori
     priority_queue_size_t __i = index;
 
     if (__i <= 0)
-        return;
+        return ;
 
     __hp = __i_pq_deq_at_fast_sso(__i);
     __t  = *__hp;
@@ -688,7 +687,7 @@ void __i_priority_queue_heapify_deque_sso_generic(i_priority_queue_t* _this, pri
     priority_queue_size_t __i = index;
 
     if (__i >= __size)
-        return;
+        return ;
 
     __hp = __i_pq_deq_at_fast_sso(__i);
     __t  = *__hp;
@@ -727,7 +726,7 @@ void __i_priority_queue_pop_deque_sso_generic(i_priority_queue_t* _this)
     priority_queue_size_t __size = __i_deque_size(__d);
 
     if (__size <= 0)
-        return;
+        return ;
 
     if (__size > 1) {
         ds_sso_t* __ap = __i_pq_deq_at_fast_sso(0);
@@ -748,7 +747,7 @@ void __i_priority_queue_pop_deque_sso_generic(i_priority_queue_t* _this)
 
 
 
-/* deque struct/union */
+/* Deque Struct/Union */
 #define __i_pq_deq_at_fast_stun(i)  __i_priority_queue_deque_slot_addr_fast(__d, __off, (i), __mask, __shift, __step)
 
 static
@@ -757,12 +756,12 @@ void __i_priority_queue_rise_deque_addr(i_priority_queue_t* _this, priority_queu
     __i_pq_deq_prep_fast
     bool (*__lt)(priority_queue_data_t, priority_queue_data_t) = _this->ops->__lt;
     void (*__move)(priority_queue_data_t, priority_queue_data_t) = is_null(__d->ops) || is_null(__d->ops->__move) ? NULL : __d->ops->__move;
-    uint8_t* __t = _this->swap;
     uint8_t* __hp;
+    uint8_t* __t = _this->swap;
     priority_queue_size_t __i = index;
 
     if (__i <= 0)
-        return;
+        return ;
 
     __hp = __i_pq_deq_at_fast_stun(__i);
     if (is_null(__move)) {
@@ -805,13 +804,13 @@ void __i_priority_queue_heapify_deque_addr(i_priority_queue_t* _this, priority_q
     __i_pq_deq_prep_fast
     bool (*__lt)(priority_queue_data_t, priority_queue_data_t) = _this->ops->__lt;
     void (*__move)(priority_queue_data_t, priority_queue_data_t) = is_null(__d->ops) || is_null(__d->ops->__move) ? NULL : __d->ops->__move;
-    priority_queue_size_t __size = cdeque_size(__d);
-    uint8_t* __t = _this->swap;
+    priority_queue_size_t __size = __i_deque_size(__d);
     uint8_t* __hp;
+    uint8_t* __t = _this->swap;
     priority_queue_size_t __i = index;
 
     if (__i >= __size)
-        return;
+        return ;
 
     __hp = __i_pq_deq_at_fast_stun(__i);
     if (is_null(__move)) {
@@ -873,10 +872,10 @@ void __i_priority_queue_pop_deque_addr(i_priority_queue_t* _this)
 {
     __i_pq_deq_prep_fast
     void (*__move)(priority_queue_data_t, priority_queue_data_t) = is_null(__d->ops) || is_null(__d->ops->__move) ? NULL : __d->ops->__move;
-    priority_queue_size_t __size = cdeque_size(__d);
+    priority_queue_size_t __size = __i_deque_size(__d);
 
     if (__size <= 0)
-        return;
+        return ;
 
     if (__size > 1) {
         uint8_t* __ap = __i_pq_deq_at_fast_stun(0);
@@ -914,17 +913,17 @@ void i_priority_queue_pop(i_priority_queue_t* _this)
     if (unlikely(is_null(_this)))
         return ;
 
-    if (__SEQUENCE_CONTAINER_BASE_VECTOR == _this->id) {
+    if (__CONTAINER_ADAPTOR_BASE_VECTOR == _this->id) {
         i_vector_t* v = _this->v;
 
         if (v->sso) {
             __i_priority_queue_pop_vector_sso(_this);
-            return;
+            return ;
         }
 
         if (SEQ_CNTR_DTYPE_PTR == v->dtype) {
             __i_priority_queue_pop_vector_iptr(_this);
-            return;
+            return ;
         }
 
         switch (v->dtype)
@@ -947,7 +946,7 @@ void i_priority_queue_pop(i_priority_queue_t* _this)
         case SEQ_CNTR_DTYPE_UNION:   __i_priority_queue_pop_vector_addr(_this);    return ;
         default: return ;
         }
-    } else if (__SEQUENCE_CONTAINER_BASE_DEQUE == _this->id) {
+    } else if (__CONTAINER_ADAPTOR_BASE_DEQUE == _this->id) {
         i_deque_t* d = _this->d;
 
         if (d->sso) {
@@ -955,12 +954,12 @@ void i_priority_queue_pop(i_priority_queue_t* _this)
                 __i_priority_queue_pop_deque_sso(_this);
             else
                 __i_priority_queue_pop_deque_sso_generic(_this);
-            return;
+            return ;
         }
 
         if (SEQ_CNTR_DTYPE_PTR == d->dtype) {
             __i_priority_queue_pop_deque_iptr(_this);
-            return;
+            return ;
         }
 
         switch (d->dtype)
@@ -991,7 +990,7 @@ bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data
     if (unlikely(is_null(_this)))
         return false;
 
-    if (__SEQUENCE_CONTAINER_BASE_VECTOR == _this->id) {
+    if (__CONTAINER_ADAPTOR_BASE_VECTOR == _this->id) {
         i_vector_t* v = _this->v;
         const priority_queue_size_t index = __i_vector_size(v);
 
@@ -1030,7 +1029,7 @@ bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data
         case SEQ_CNTR_DTYPE_UNION:   __i_priority_queue_rise_vector_addr(_this, index);    return true;
         default: return false;
         }
-    } else if (__SEQUENCE_CONTAINER_BASE_DEQUE == _this->id) {
+    } else if (__CONTAINER_ADAPTOR_BASE_DEQUE == _this->id) {
         i_deque_t* d = _this->d;
         priority_queue_size_t index = __i_deque_size(d);
 
@@ -1078,79 +1077,102 @@ bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data
     return false;
 }
 
-priority_queue_t* __priority_queue_new(uint8_t id, void* pbase, const class_priority_queue_ops_t* ops)
+priority_queue_t* __priority_queue_new(container_adaptor_base_t id, void* pbase, const class_priority_queue_ops_t* ops)
 {
     priority_queue_t* priority_queue;
 
-    if (is_null(pbase))
+    if (is_null(pbase)) {
+        JDSC_ASSERT_NEW(0, "%s: The `pbase` must not be NULL!", __func__);
         return NULL;
-
-    priority_queue = (priority_queue_t*)p_calloc(1, sizeof(priority_queue_t));
-    if (!is_null(priority_queue)) {
-        priority_queue->p   = pbase;
-        priority_queue->id  = id;
-        priority_queue->ops = ops;
-        if (g_class_priority_queue_ops_sso() == ops) {
-            priority_queue->sso = true;
-            switch (id) {
-            case __SEQUENCE_CONTAINER_BASE_VECTOR: priority_queue->v->sso = true; break;
-            case __SEQUENCE_CONTAINER_BASE_DEQUE:  priority_queue->d->sso = true; break;
-            default: break;
-            }
-        }
-
-        {
-            size_t dtype = 0;
-
-            switch (id) {
-            case __SEQUENCE_CONTAINER_BASE_VECTOR: dtype = priority_queue->v->dtype; break;
-            case __SEQUENCE_CONTAINER_BASE_DEQUE:  dtype = priority_queue->d->dtype;  break;
-            default: break;
-            }
-
-            if ((dtype & SEQ_CNTR_DTYPE_MASK_STUN) && !priority_queue->sso
-                && (is_null(ops) || is_null(ops->__lt))) {
-                pr_err("%s: struct/union priority_queue requires __lt!", __func__);
-                p_free(priority_queue);
-                priority_queue = NULL;
-            }
-        }
-
-        if (!is_null(priority_queue)) {
-            size_t step  = 0;
-            size_t align = 0;
-
-            switch (id) {
-            case __SEQUENCE_CONTAINER_BASE_VECTOR:
-                step  = priority_queue->v->step;
-                align = priority_queue->v->align;
-                break;
-            case __SEQUENCE_CONTAINER_BASE_DEQUE:
-                step  = priority_queue->d->step;
-                align = priority_queue->d->align;
-                break;
-            default:
-                break;
-            }
-
-            (void)align; /* p_aligned_malloc ignores it when JDSC_ALIGN == 0 */
-
-            if (step > 0) {
-                priority_queue->swap = (uint8_t*)p_aligned_malloc(align, step);
-                if (is_null(priority_queue->swap)) {
-                    p_free(priority_queue);
-                    priority_queue = NULL;
-                }
-            }
-        }
-
-        if (!is_null(priority_queue))
-            return priority_queue;
     }
 
+    priority_queue = (priority_queue_t*)p_calloc(1, sizeof(priority_queue_t));
+    if (is_null(priority_queue)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for priority_queue!",
+                        __func__, sizeof(priority_queue_t));
+        goto free_pbase;
+    }
+
+    priority_queue->p   = pbase;
+    priority_queue->id  = id;
+    priority_queue->ops = ops;
+
+    {
+        ds_dtype_t dtype = 0;
+
+        switch (id) {
+        case __CONTAINER_ADAPTOR_BASE_VECTOR: dtype = priority_queue->v->dtype; break;
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:  dtype = priority_queue->d->dtype; break;
+        default:
+            JDSC_ASSERT_NEW(0, "%s: Unsupported container base id %u (expected VECTOR or DEQUE)!",
+                            __func__, (unsigned)id);
+            goto free_priority_queue;
+        }
+
+        if ((dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(ops) || is_null(ops->__lt))) {
+            JDSC_ASSERT_NEW(0, "%s: The `ops->__lt` is required for struct/union element types!",
+                            __func__);
+            goto free_priority_queue;
+        }
+    }
+
+    if (!is_null(ops) && !is_null(ops->copy_data) && is_null(ops->free_data)) {
+        JDSC_ASSERT_NEW(0, "%s: The `ops->free_data` is required when `ops->copy_data` is set!",
+                        __func__);
+        goto free_priority_queue;
+    }
+
+    {
+        ds_step_t  step  = 0;
+        ds_align_t align = 0;
+
+        switch (id) {
+        case __CONTAINER_ADAPTOR_BASE_VECTOR:
+            step  = priority_queue->v->step;
+            align = priority_queue->v->align;
+            break;
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:
+            step  = priority_queue->d->step;
+            align = priority_queue->d->align;
+            break;
+        default:
+            JDSC_ASSERT_NEW(0, "%s: Unsupported container base id %u (expected VECTOR or DEQUE)!",
+                            __func__, (unsigned)id);
+            goto free_priority_queue;
+        }
+
+        if (step <= 0) {
+            JDSC_ASSERT_NEW(0, "%s: Invalid element step %zu (must be greater than zero)!",
+                            __func__, step);
+            goto free_priority_queue;
+        }
+
+        (void)align;
+        priority_queue->swap = (uint8_t*)p_aligned_malloc(align, step);
+        if (is_null(priority_queue->swap)) {
+            JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for swap buffer!",
+                            __func__, step);
+            goto free_priority_queue;
+        }
+    }
+
+    if (g_class_priority_queue_ops_sso() == priority_queue->ops) {
+        priority_queue->sso = true;
+        switch (id) {
+        case __CONTAINER_ADAPTOR_BASE_VECTOR: priority_queue->v->sso = true; break;
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:  priority_queue->d->sso = true; break;
+        default: break;
+        }
+    }
+
+    return priority_queue;
+
+free_priority_queue:
+    p_free(priority_queue);
+free_pbase:
     switch (id) {
-    case __SEQUENCE_CONTAINER_BASE_VECTOR: VECTOR_DELETE((vector_t**)&pbase); break;
-    case __SEQUENCE_CONTAINER_BASE_DEQUE:  DEQUE_DELETE((deque_t**)&pbase);   break;
+    case __CONTAINER_ADAPTOR_BASE_VECTOR: VECTOR_DELETE((vector_t**)&pbase); break;
+    case __CONTAINER_ADAPTOR_BASE_DEQUE:  DEQUE_DELETE((deque_t**)&pbase);   break;
     default: break;
     }
     return NULL;
@@ -1159,14 +1181,24 @@ priority_queue_t* __priority_queue_new(uint8_t id, void* pbase, const class_prio
 void __priority_queue_delete(priority_queue_t** _this)
 {
     if (unlikely(is_null(_this) || is_null(*_this)))
-        return;
+        return ;
 
-    if (!is_null((*_this)->swap))
-        p_aligned_free((*_this)->swap);
+    if (!is_null((*_this)->swap)) {
+        ds_align_t align = 0;
+
+        switch ((*_this)->id) {
+        case __CONTAINER_ADAPTOR_BASE_VECTOR: align = (*_this)->v->align; break;
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:  align = (*_this)->d->align; break;
+        default: break;
+        }
+
+        (void)align;
+        p_aligned_free((*_this)->swap, align);
+    }
 
     switch ((*_this)->id) {
-    case __SEQUENCE_CONTAINER_BASE_VECTOR: VECTOR_DELETE(&(*_this)->v); break;
-    case __SEQUENCE_CONTAINER_BASE_DEQUE:  DEQUE_DELETE(&(*_this)->d);  break;
+    case __CONTAINER_ADAPTOR_BASE_VECTOR: VECTOR_DELETE(&(*_this)->v); break;
+    case __CONTAINER_ADAPTOR_BASE_DEQUE:  DEQUE_DELETE(&(*_this)->d);  break;
     default: break;
     }
 

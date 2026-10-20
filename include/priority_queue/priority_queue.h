@@ -21,7 +21,7 @@
 #ifndef __J_PRIORITY_QUEUE_H
 #define __J_PRIORITY_QUEUE_H
 
-#include <sequence_container/sequence_container.h>
+#include <container_adaptor/container_adaptor.h>
 #include <priority_queue/priority_queue_ops.h>
 
 typedef sequence_container_value_t priority_queue_value_t;
@@ -45,6 +45,7 @@ typedef struct class_priority_queue {
     priority_queue_size_t (*size)(const priority_queue_t* _this);
     bool (*__empty)(const priority_queue_t* _this);
     bool (*push)(priority_queue_t* _this, priority_queue_data_t data);
+    priority_queue_value_t (*__top)(const priority_queue_t* _this);
     priority_queue_value_t (*top)(const priority_queue_t* _this);
     void (*pop)(priority_queue_t* _this);
     void (*swap)(priority_queue_t* _this, priority_queue_t* other);
@@ -56,11 +57,11 @@ typedef struct class_priority_queue {
 #define PRIORITY_QUEUE_VECTOR_NEW_OPS_T(_ops, _type, _capacity_init)                   VECTOR_NEW_OPS_T((const class_vector_ops_t*)(_ops), _type)
 #define PRIORITY_QUEUE_DEQUE_NEW_OPS_T(_ops, _type, _capacity_init)                    DEQUE_NEW_OPS_T((const class_deque_ops_t*)(_ops), _type)
 #define _PRIORITY_QUEUE_NEW_OPS_COMPLATE(_ops, _type_id, _type, _BASE_NAME, _capacity_init) \
-        __priority_queue_new((__SEQUENCE_CONTAINER_BASE_##_BASE_NAME), PRIORITY_QUEUE_##_BASE_NAME##_NEW_OPS_COMPLATE((_ops), (_type_id), _type, (_capacity_init)), (_ops))
+        __priority_queue_new((__CONTAINER_ADAPTOR_BASE_##_BASE_NAME), PRIORITY_QUEUE_##_BASE_NAME##_NEW_OPS_COMPLATE((_ops), (_type_id), _type, (_capacity_init)), (_ops))
 #define _PRIORITY_QUEUE_NEW_OPS_T(_ops, _type, _BASE_NAME, _capacity_init) \
-        __priority_queue_new((__SEQUENCE_CONTAINER_BASE_##_BASE_NAME), PRIORITY_QUEUE_##_BASE_NAME##_NEW_OPS_T((_ops), _type, (_capacity_init)), (_ops))
+        __priority_queue_new((__CONTAINER_ADAPTOR_BASE_##_BASE_NAME), PRIORITY_QUEUE_##_BASE_NAME##_NEW_OPS_T((_ops), _type, (_capacity_init)), (_ops))
 
-priority_queue_t* __priority_queue_new(uint8_t id, void* base, const class_priority_queue_ops_t* ops);
+priority_queue_t* __priority_queue_new(container_adaptor_base_t id, void* base, const class_priority_queue_ops_t* ops);
 void              __priority_queue_delete(priority_queue_t** _this);
 const class_priority_queue_t* class_priority_queue_ins(void);
 #define g_class_priority_queue()                           class_priority_queue_ins()

@@ -159,9 +159,9 @@ uint8_t* __i_deque_alloc_bkt(const i_deque_t* _this)
 }
 
 static JDSC_INLINE_FORCE
-void __i_deque_free_bkt(uint8_t** bkt)
+void __i_deque_free_bkt(const i_deque_t* _this, uint8_t** bkt)
 {
-    p_aligned_free(*bkt);
+    p_aligned_free(*bkt, _this->align);
 }
 
 uint8_t* __i_deque_push_back_bkt_alloc(i_deque_t* _this)
@@ -207,7 +207,7 @@ uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this)
 JDSC_INLINE
 void __i_deque_pop_back_bkt_free(i_deque_t* _this)
 {
-    __i_deque_free_bkt(&_this->end.begin);
+    __i_deque_free_bkt(_this, &_this->end.begin);
     __i_deque_set_bkt_n(&_this->end, _this->end.bkt - 1, _this->bkt_size, _this->step);
     _this->end.cur = __i_deque_ptr_sub(_this->end.end, 1, _this->step);
 }
@@ -215,7 +215,7 @@ void __i_deque_pop_back_bkt_free(i_deque_t* _this)
 JDSC_INLINE
 void __i_deque_pop_front_bkt_free(i_deque_t* _this)
 {
-    __i_deque_free_bkt(&_this->begin.begin);
+    __i_deque_free_bkt(_this, &_this->begin.begin);
     __i_deque_set_bkt_n(&_this->begin, _this->begin.bkt + 1, _this->bkt_size, _this->step);
     _this->begin.cur = _this->begin.begin;
 }
@@ -572,7 +572,7 @@ deque_size_t i_deque_remove(i_deque_t* _this, deque_data_t data)
     if (0 != ret) {
         r = l;
         while (end.bkt != r.bkt++)
-            __i_deque_free_bkt(r.bkt);
+            __i_deque_free_bkt(_this, r.bkt);
 
         __i_deque_set_bkt_n(&_this->end, l.bkt, _this->bkt_size, _this->step);
         _this->end.cur = l.cur;
@@ -616,7 +616,7 @@ deque_size_t i_deque_remove_if(i_deque_t* _this, remove_if_condition cond)
     if (0 != ret) {
         r = l;
         while (end.bkt != r.bkt++)
-            __i_deque_free_bkt(r.bkt);
+            __i_deque_free_bkt(_this, r.bkt);
 
         __i_deque_set_bkt_n(&_this->end, l.bkt, _this->bkt_size, _this->step);
         _this->end.cur = l.cur;
@@ -660,7 +660,7 @@ deque_size_t i_deque_clear(i_deque_t* _this)
                 _this->ops->free_data((deque_data_t*)i);
 
             if (_this->begin.bkt != bkt)
-                __i_deque_free_bkt(bkt);
+                __i_deque_free_bkt(_this, bkt);
         }
     } else {
         for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
@@ -670,7 +670,7 @@ deque_size_t i_deque_clear(i_deque_t* _this)
             ret += __i_deque_ptr_diff(l, i, _this->step);
 
             if (_this->begin.bkt != bkt)
-                __i_deque_free_bkt(bkt);
+                __i_deque_free_bkt(_this, bkt);
         }
     }
 
@@ -694,12 +694,18 @@ bool __deque_init(deque_t* deque)
     deque->bkt_count_init = DEQUE_CAPACITY_INIT;
     deque->bkt_count      = deque->bkt_count_init;
     deque->bkt            = (uint8_t**)p_calloc(deque->bkt_count, sizeof(uint8_t*));
-    if (is_null(deque->bkt))
+    if (is_null(deque->bkt)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for deque bucket map!",
+                        __func__, (size_t)deque->bkt_count * sizeof(uint8_t*));
         return false;
+    }
 
     deque->bkt[m] = __i_deque_alloc_bkt(deque);
-    if (is_null(deque->bkt[m]))
+    if (is_null(deque->bkt[m])) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for deque bucket!",
+                        __func__, (size_t)deque->bkt_size * deque->step);
         goto err;
+    }
 
     __i_deque_set_bkt_n(&deque->begin, &deque->bkt[m], deque->bkt_size, deque->step);
     deque->begin.cur = deque->begin.begin;
@@ -715,11 +721,11 @@ static
 void __deque_deinit(deque_t* deque)
 {
     i_deque_clear(deque);
-    __i_deque_free_bkt(deque->begin.bkt);
+    __i_deque_free_bkt(deque, deque->begin.bkt);
     p_free(deque->bkt);
 }
 
-static inline
+static JDSC_INLINE
 deque_size_t __i_deque_bkt_size(deque_step_t step)
 {
     deque_size_t target = (deque_size_t)(_I_DEQUE_BKT_BYTES / step);
@@ -738,43 +744,48 @@ deque_t* __deque_new(const class_deque_ops_t* ops, deque_dtype_t data_type, dequ
     deque_t* deque;
     size_t   width;
 
-    JDSC_ASSERT(0 != step);
-    if (0 == step) {
-        pr_err("%s: invalid step [ %zu ]!", __func__, step);
+    if (step <= 0) {
+        JDSC_ASSERT_NEW(0, "%s: Invalid element step %zu (must be greater than zero)!",
+                        __func__, step);
         return NULL;
     }
 
-    JDSC_ASSERT(__sequence_container_dtype_valid(data_type));
     if (!__sequence_container_dtype_valid(data_type)) {
-        pr_err("%s: invalid data type [ %zu ]!", __func__, data_type);
+        JDSC_ASSERT_NEW(0, "%s: Invalid data type %zu!", __func__, data_type);
         return NULL;
     }
 
     width = __sequence_container_dtype_width(data_type);
-    JDSC_ASSERT(0 == width || width == step);
     if (0 != width && width != step) {
-        pr_err("%s: data type width [ %zu ] does not match step [ %zu ]!", __func__, width, step);
+        JDSC_ASSERT_NEW(0, "%s: Data type width %zu does not match step %zu!",
+                        __func__, width, step);
         return NULL;
     }
 
-    JDSC_ASSERT(!(data_type & SEQ_CNTR_DTYPE_MASK_STUN)
-                || (!is_null(ops) && !is_null(ops->copy_data)));
     if ((data_type & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(ops) || is_null(ops->copy_data))) {
-        pr_err("%s: aggregate data type requires copy_data!", __func__);
+        JDSC_ASSERT_NEW(0, "%s: The `ops->copy_data` is required for struct/union element types!",
+                        __func__);
         return NULL;
     }
 
-    JDSC_ASSERT(g_class_deque_ops_sso() != ops
-                || (SEQ_CNTR_DTYPE_SSO == data_type && sizeof(ds_sso_t) == step));
-    if (g_class_deque_ops_sso() == ops
-        && (SEQ_CNTR_DTYPE_SSO != data_type || sizeof(ds_sso_t) != step)) {
-        pr_err("%s: SSO ops require SSO data type and sizeof(ds_sso_t) step!", __func__);
+    if (!is_null(ops) && !is_null(ops->copy_data) && is_null(ops->free_data)) {
+        JDSC_ASSERT_NEW(0, "%s: The `ops->free_data` is required when `ops->copy_data` is set!",
+                        __func__);
+        return NULL;
+    }
+
+    if (g_class_deque_ops_sso() == ops && (SEQ_CNTR_DTYPE_SSO != data_type || sizeof(ds_sso_t) != step)) {
+        JDSC_ASSERT_NEW(0, "%s: SSO ops require the SSO data type and a step of sizeof(ds_sso_t) (got %zu)!",
+                        __func__, step);
         return NULL;
     }
 
     deque = (deque_t*)p_calloc(1, sizeof(deque_t));
-    if (is_null(deque))
+    if (is_null(deque)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for deque!",
+                        __func__, sizeof(deque_t));
         return NULL;
+    }
 
     deque->dtype    = data_type;
     deque->step     = step;

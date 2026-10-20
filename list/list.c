@@ -98,7 +98,7 @@ bool __i_dlist_slot_equal(list_step_t step, list_data_t data, const uint8_t* slo
     }
 }
 
-#if JDSC_ALIGN
+#if JDSC_ALIGNMEM
 #define __i_dlist_node_pad(_this)   ((_this)->pad)
 #else
 #define __i_dlist_node_pad(_this)   0
@@ -118,7 +118,7 @@ list_node_t* __i_dlist_make_list_node(const i_list_t* _this, list_data_t data)
     n = (list_node_t*)(base + pad);
 
     if (!__i_dlist_slot_write(_this, n->data, data)) {
-        p_aligned_free(base);
+        p_aligned_free(base, _this->align);
         return NULL;
     }
 
@@ -135,7 +135,7 @@ void __i_dlist_destroy_list_node(const i_list_t* _this, list_node_t* node)
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
         _this->ops->free_data((list_data_t*)node->data);
 
-    p_aligned_free(base);
+    p_aligned_free(base, _this->align);
 }
 
 /* checked */
@@ -861,43 +861,48 @@ list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_ste
     list_t* list;
     size_t  width;
 
-    JDSC_ASSERT(0 != step);
-    if (0 == step) {
-        pr_err("%s: invalid step [ %zu ]!", __func__, step);
+    if (step <= 0) {
+        JDSC_ASSERT_NEW(0, "%s: Invalid element step %zu (must be greater than zero)!",
+                        __func__, step);
         return NULL;
     }
 
-    JDSC_ASSERT(__sequence_container_dtype_valid(data_type));
     if (!__sequence_container_dtype_valid(data_type)) {
-        pr_err("%s: invalid data type [ %zu ]!", __func__, data_type);
+        JDSC_ASSERT_NEW(0, "%s: Invalid data type %zu!", __func__, data_type);
         return NULL;
     }
 
     width = __sequence_container_dtype_width(data_type);
-    JDSC_ASSERT(0 == width || width == step);
     if (0 != width && width != step) {
-        pr_err("%s: data type width [ %zu ] does not match step [ %zu ]!", __func__, width, step);
+        JDSC_ASSERT_NEW(0, "%s: Data type width %zu does not match step %zu!",
+                        __func__, width, step);
         return NULL;
     }
 
-    JDSC_ASSERT(!(data_type & SEQ_CNTR_DTYPE_MASK_STUN)
-                || (!is_null(ops) && !is_null(ops->copy_data)));
     if ((data_type & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(ops) || is_null(ops->copy_data))) {
-        pr_err("%s: aggregate data type requires copy_data!", __func__);
+        JDSC_ASSERT_NEW(0, "%s: The `ops->copy_data` is required for struct/union element types!",
+                        __func__);
         return NULL;
     }
 
-    JDSC_ASSERT(g_class_list_ops_sso() != ops
-                || (SEQ_CNTR_DTYPE_SSO == data_type && sizeof(ds_sso_t) == step));
-    if (g_class_list_ops_sso() == ops
-        && (SEQ_CNTR_DTYPE_SSO != data_type || sizeof(ds_sso_t) != step)) {
-        pr_err("%s: SSO ops require SSO data type and sizeof(ds_sso_t) step!", __func__);
+    if (!is_null(ops) && !is_null(ops->copy_data) && is_null(ops->free_data)) {
+        JDSC_ASSERT_NEW(0, "%s: The `ops->free_data` is required when `ops->copy_data` is set!",
+                        __func__);
+        return NULL;
+    }
+
+    if (g_class_list_ops_sso() == ops && (SEQ_CNTR_DTYPE_SSO != data_type || sizeof(ds_sso_t) != step)) {
+        JDSC_ASSERT_NEW(0, "%s: SSO ops require the SSO data type and a step of sizeof(ds_sso_t) (got %zu)!",
+                        __func__, step);
         return NULL;
     }
 
     list = (list_t*)p_calloc(1, sizeof(list_t));
-    if (is_null(list))
+    if (is_null(list)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for list!",
+                        __func__, sizeof(list_t));
         return NULL;
+    }
 
     list->ops   = ops;
     if (g_class_list_ops_sso() == list->ops)
@@ -905,7 +910,7 @@ list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_ste
     list->dtype = data_type;
     list->step  = step;
     list->align = align ? align : JDSC_ALIGN_DEFAULT;
-#if JDSC_ALIGN
+#if JDSC_ALIGNMEM
     list->pad   = list->align > JDSC_ALIGN_DEFAULT
                     ? list->align - offsetof(list_node_t, data)
                     : 0;

@@ -1,6 +1,7 @@
 /*
   About compiler
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -26,15 +27,14 @@
 
 #if defined(JDSC_DEBUG)
 #include <assert.h>
-#define JDSC_ASSERT(expr) assert(expr)
+#define JDSC_ASSERT(expr)                assert(expr)
+#define JDSC_ASSERT_NEW(expr, fmt, ...)  do { if (!(expr)) { pr_err(fmt, ##__VA_ARGS__); assert(0); } } while (0)
 #else
-#define JDSC_ASSERT(expr) do { (void)0; } while(0)
+#define JDSC_ASSERT(expr)                do { (void)0; } while(0)
+#define JDSC_ASSERT_NEW(expr, fmt, ...)  do { if (!(expr)) { pr_err(fmt, ##__VA_ARGS__); } } while(0)
 #endif /* JDSC_DEBUG */
 
-/*
- * Exactly one of JDSC_32BIT / JDSC_64BIT is defined. The slot code keeps the
- * 8-byte paths only for JDSC_64BIT, where a 64-bit value fits in ds_data_t.
- */
+
 #if defined(__SIZEOF_POINTER__)
 #   if 4 == __SIZEOF_POINTER__
 #       define JDSC_32BIT 1

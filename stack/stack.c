@@ -25,24 +25,42 @@
 
 #define TAG "[stack]"
 
-stack_t* __stack_new(uint8_t id, void* pbase)
+stack_t* __stack_new(container_adaptor_base_t id, void* pbase)
 {
     stack_t* stack;
 
-    if (is_null(pbase))
+    if (is_null(pbase)) {
+        JDSC_ASSERT_NEW(0, "%s: The `pbase` must not be NULL!", __func__);
         return NULL;
-
-    stack = (stack_t*)p_calloc(1, sizeof(stack_t));
-    if (!is_null(stack)) {
-        stack->p  = pbase;
-        stack->id = id;
-        return stack;
     }
 
     switch (id) {
-    case __SEQUENCE_CONTAINER_BASE_VECTOR: VECTOR_DELETE((vector_t**)&pbase); break;
-    case __SEQUENCE_CONTAINER_BASE_DEQUE:  DEQUE_DELETE((deque_t**)&pbase);  break;
-    case __SEQUENCE_CONTAINER_BASE_LIST:   LIST_DELETE((list_t**)&pbase);   break;
+    case __CONTAINER_ADAPTOR_BASE_VECTOR:
+    case __CONTAINER_ADAPTOR_BASE_DEQUE:
+    case __CONTAINER_ADAPTOR_BASE_LIST:
+        break;
+    default:
+        JDSC_ASSERT_NEW(0, "%s: Unsupported container base id %u (expected VECTOR, DEQUE or LIST)!",
+                        __func__, (unsigned)id);
+        goto free_pbase;
+    }
+
+    stack = (stack_t*)p_calloc(1, sizeof(stack_t));
+    if (is_null(stack)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for stack!",
+                        __func__, sizeof(stack_t));
+        goto free_pbase;
+    }
+
+    stack->p  = pbase;
+    stack->id = id;
+    return stack;
+
+free_pbase:
+    switch (id) {
+    case __CONTAINER_ADAPTOR_BASE_VECTOR: VECTOR_DELETE((vector_t**)&pbase); break;
+    case __CONTAINER_ADAPTOR_BASE_DEQUE:  DEQUE_DELETE((deque_t**)&pbase);  break;
+    case __CONTAINER_ADAPTOR_BASE_LIST:   LIST_DELETE((list_t**)&pbase);   break;
     default: break;
     }
     return NULL;
@@ -54,9 +72,9 @@ void __stack_delete(stack_t** _this)
         return;
 
     switch ((*_this)->id) {
-    case __SEQUENCE_CONTAINER_BASE_VECTOR: VECTOR_DELETE(&(*_this)->v); break;
-    case __SEQUENCE_CONTAINER_BASE_DEQUE:  DEQUE_DELETE(&(*_this)->d);  break;
-    case __SEQUENCE_CONTAINER_BASE_LIST:   LIST_DELETE(&(*_this)->l);   break;
+    case __CONTAINER_ADAPTOR_BASE_VECTOR: VECTOR_DELETE(&(*_this)->v); break;
+    case __CONTAINER_ADAPTOR_BASE_DEQUE:  DEQUE_DELETE(&(*_this)->d);  break;
+    case __CONTAINER_ADAPTOR_BASE_LIST:   LIST_DELETE(&(*_this)->l);   break;
     default: break;
     }
 

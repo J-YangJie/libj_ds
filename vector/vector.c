@@ -155,7 +155,7 @@ uint8_t* __vector_realloc_buf(i_vector_t* _this, vector_size_t ncap)
                 _this->ops->__move( (vector_data_t)__i_vector_ptr_add(nb, i, step),
                                     (vector_data_t)__i_vector_ptr_add(_this->begin, i, step));
         }
-        p_aligned_free(oh);
+        p_aligned_free(oh, _this->align);
         return nh;
     }
 }
@@ -333,8 +333,11 @@ bool __vector_init(vector_t* vector)
     vector_size_t alloc = vector->capacity_init > 0 ? vector->capacity_init + 1 : 1;
 
     vector->rend  = (uint8_t*)p_aligned_malloc(vector->align, alloc * vector->step);
-    if (is_null(vector->rend))
+    if (is_null(vector->rend)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for vector buffer!",
+                        __func__, alloc * vector->step);
         return false;
+    }
 
     vector->begin = __i_vector_ptr_add(vector->rend, 1, vector->step);
     vector->end   = vector->begin;
@@ -347,7 +350,7 @@ static
 void __vector_deinit(vector_t* vector)
 {
     i_vector_clear(vector);
-    p_aligned_free(vector->rend);
+    p_aligned_free(vector->rend, vector->align);
 }
 
 /* checked */
@@ -355,46 +358,52 @@ vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, 
 {
     vector_t* vector;
 
-    JDSC_ASSERT(0 != step && capacity_init >= 0);
-    if (0 == step || capacity_init < 0) {
-        pr_err("%s: invalid step [ %zu ] or capacity_init [ %zd ]!", __func__, step, capacity_init);
+    if (step <= 0 || capacity_init < 0) {
+        JDSC_ASSERT_NEW(0, "%s: Invalid step %zu or capacity_init %zd "
+                        "(step must be greater than zero and capacity_init must not be negative)!",
+                        __func__, step, capacity_init);
         return NULL;
     }
 
-    JDSC_ASSERT(__sequence_container_dtype_valid(data_type));
     if (!__sequence_container_dtype_valid(data_type)) {
-        pr_err("%s: invalid data type [ %zu ]!", __func__, data_type);
+        JDSC_ASSERT_NEW(0, "%s: Invalid data type %zu!", __func__, data_type);
         return NULL;
     }
 
     size_t width = __sequence_container_dtype_width(data_type);
-    JDSC_ASSERT(0 == width || width == step);
     if (0 != width && width != step) {
-        pr_err("%s: data type width [ %zu ] does not match step [ %zu ]!", __func__, width, step);
+        JDSC_ASSERT_NEW(0, "%s: Data type width %zu does not match step %zu!",
+                        __func__, width, step);
         return NULL;
     }
 
-    JDSC_ASSERT(!(data_type & SEQ_CNTR_DTYPE_MASK_STUN)
-                || (!is_null(ops) && !is_null(ops->copy_data)));
     if ((data_type & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(ops) || is_null(ops->copy_data))) {
-        pr_err("%s: aggregate data type requires copy_data!", __func__);
+        JDSC_ASSERT_NEW(0, "%s: The `ops->copy_data` is required for struct/union element types!",
+                        __func__);
         return NULL;
     }
 
-    JDSC_ASSERT(g_class_vector_ops_sso() != ops
-                || (SEQ_CNTR_DTYPE_SSO == data_type && sizeof(ds_sso_t) == step));
-    if (g_class_vector_ops_sso() == ops
-        && (SEQ_CNTR_DTYPE_SSO != data_type || sizeof(ds_sso_t) != step)) {
-        pr_err("%s: SSO ops require SSO data type and sizeof(ds_sso_t) step!", __func__);
+    if (!is_null(ops) && !is_null(ops->copy_data) && is_null(ops->free_data)) {
+        JDSC_ASSERT_NEW(0, "%s: The `ops->free_data` is required when `ops->copy_data` is set!",
+                        __func__);
+        return NULL;
+    }
+
+    if (g_class_vector_ops_sso() == ops && (SEQ_CNTR_DTYPE_SSO != data_type || sizeof(ds_sso_t) != step)) {
+        JDSC_ASSERT_NEW(0, "%s: SSO ops require the SSO data type and a step of sizeof(ds_sso_t) (got %zu)!",
+                        __func__, step);
         return NULL;
     }
 
     vector = (vector_t*)p_calloc(1, sizeof(vector_t));
-    if (is_null(vector))
+    if (is_null(vector)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for vector!",
+                        __func__, sizeof(vector_t));
         return NULL;
+    }
 
     vector->dtype = data_type;
-    vector->step = step;
+    vector->step  = step;
     vector->align = align;
     vector->capacity_init = 0 != capacity_init && capacity_init < _I_VECTOR_CAPACITY_INIT ? _I_VECTOR_CAPACITY_INIT : capacity_init;
     if (!__vector_init(vector))

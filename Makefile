@@ -4,7 +4,7 @@ DLIB_NAME := libj_ds.so
 SLIB_NAME := libj_ds.a
 
 
-WITH_ALIGN=n
+WITH_ALIGNMEM=n
 WITH_32BIT=n
 
 WITH_LIST=n
@@ -105,8 +105,10 @@ CFLAGS += -O2
 # CFLAGS += -DJDSC_DEBUG
 # CFLAGS += -g3
 CFLAGS += -Werror
-ifeq ($(WITH_ALIGN), y)
-CFLAGS += -DJDSC_ALIGN=1
+ifeq ($(WITH_ALIGNMEM), y)
+CFLAGS += -DJDSC_ALIGNMEM=1
+else
+CFLAGS += -DJDSC_ALIGNMEM=0
 endif
 
 CXXFLAGS += -std=c++11
@@ -114,8 +116,10 @@ CXXFLAGS += -Wall -fmessage-length=0 -fPIC -fno-common
 CXXFLAGS += -O2
 # CXXFLAGS += -g3
 CXXFLAGS += -Werror
-ifeq ($(WITH_ALIGN), y)
-CXXFLAGS += -DJDSC_ALIGN=1
+ifeq ($(WITH_ALIGNMEM), y)
+CXXFLAGS += -DJDSC_ALIGNMEM=1
+else
+CXXFLAGS += -DJDSC_ALIGNMEM=0
 endif
 
 ifeq ($(WITH_32BIT),y)

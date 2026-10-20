@@ -20,23 +20,18 @@
 #ifndef __J_I_PRIORITY_QUEUE_H
 #define __J_I_PRIORITY_QUEUE_H
 
-#include <stddef.h>
-#include <stdint.h>
-#include <_types.h>
-#include <_compiler.h>
 #include <vector/vector.h>
 #include <deque/deque.h>
-#include <priority_queue/priority_queue_ops.h>
 
 typedef struct i_priority_queue {
-    uint8_t id;
-    bool    sso;
+    const class_priority_queue_ops_t* ops;
+    container_adaptor_base_t id;
+    bool sso;
     union {
         vector_t* v;
         deque_t*  d;
         void*     p;
     };
-    const class_priority_queue_ops_t* ops;
     uint8_t* swap;
 } i_priority_queue_t;
 
@@ -45,8 +40,8 @@ priority_queue_size_t i_priority_queue_size(const i_priority_queue_t* _this)
 {
     if (!is_null(_this)) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_VECTOR: return cvector_size(_this->v);
-        case __SEQUENCE_CONTAINER_BASE_DEQUE:  return cdeque_size(_this->d);
+        case __CONTAINER_ADAPTOR_BASE_VECTOR: return cvector_size(_this->v);
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:  return cdeque_size(_this->d);
         default:                               break;
         }
     }
@@ -57,8 +52,8 @@ static inline
 bool __i_priority_queue_empty(const i_priority_queue_t* _this)
 {
     switch (_this->id) {
-    case __SEQUENCE_CONTAINER_BASE_VECTOR: return __cvector_empty(_this->v);
-    case __SEQUENCE_CONTAINER_BASE_DEQUE:  return __cdeque_empty(_this->d);
+    case __CONTAINER_ADAPTOR_BASE_VECTOR: return __cvector_empty(_this->v);
+    case __CONTAINER_ADAPTOR_BASE_DEQUE:  return __cdeque_empty(_this->d);
     default:                               return false;
     }
 }
@@ -70,8 +65,8 @@ static inline
 priority_queue_value_t __i_priority_queue_top(const i_priority_queue_t* _this)
 {
     switch (_this->id) {
-    case __SEQUENCE_CONTAINER_BASE_VECTOR: return __cvector_front(_this->v);
-    case __SEQUENCE_CONTAINER_BASE_DEQUE:  return __cdeque_front(_this->d);
+    case __CONTAINER_ADAPTOR_BASE_VECTOR: return __cvector_front(_this->v);
+    case __CONTAINER_ADAPTOR_BASE_DEQUE:  return __cdeque_front(_this->d);
     default:                               return (priority_queue_value_t){ .u8 = NULL };
     }
 }
@@ -81,11 +76,11 @@ priority_queue_value_t i_priority_queue_top(const i_priority_queue_t* _this)
 {
     if (!is_null(_this)) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_VECTOR:
+        case __CONTAINER_ADAPTOR_BASE_VECTOR:
             if (!__cvector_empty(_this->v))
                 return cvector_front(_this->v);
             break;
-        case __SEQUENCE_CONTAINER_BASE_DEQUE:
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:
             if (!__cdeque_empty(_this->d))
                 return cdeque_front(_this->d);
             break;
@@ -104,12 +99,12 @@ void i_priority_queue_swap(i_priority_queue_t* _this, i_priority_queue_t* other)
     if (!is_null(_this) && !is_null(other) && _this != other && _this->id == other->id) {
         JDSC_ASSERT(_this->ops == other->ops); /* Include sso */
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_VECTOR:
+        case __CONTAINER_ADAPTOR_BASE_VECTOR:
             JDSC_ASSERT(__sequence_container_dtype_swap_compatible(_this->v->dtype, other->v->dtype)
                         && _this->v->step  == other->v->step
                         && _this->v->align == other->v->align);
             break;
-        case __SEQUENCE_CONTAINER_BASE_DEQUE:
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:
             JDSC_ASSERT(__sequence_container_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
                         && _this->d->step  == other->d->step
                         && _this->d->align == other->d->align);
@@ -129,8 +124,8 @@ priority_queue_size_t i_priority_queue_clear(i_priority_queue_t* _this)
 {
     if (!is_null(_this)) {
         switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_VECTOR: return cvector_clear(_this->v);
-        case __SEQUENCE_CONTAINER_BASE_DEQUE:  return cdeque_clear(_this->d);
+        case __CONTAINER_ADAPTOR_BASE_VECTOR: return cvector_clear(_this->v);
+        case __CONTAINER_ADAPTOR_BASE_DEQUE:  return cdeque_clear(_this->d);
         default:                               break;
         }
     }

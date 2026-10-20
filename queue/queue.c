@@ -25,23 +25,40 @@
 
 #define TAG "[queue]"
 
-queue_t* __queue_new(uint8_t id, void* pbase)
+queue_t* __queue_new(container_adaptor_base_t id, void* pbase)
 {
     queue_t* queue;
 
-    if (is_null(pbase))
+    if (is_null(pbase)) {
+        JDSC_ASSERT_NEW(0, "%s: The `pbase` must not be NULL!", __func__);
         return NULL;
-
-    queue = (queue_t*)p_calloc(1, sizeof(queue_t));
-    if (!is_null(queue)) {
-        queue->p  = pbase;
-        queue->id = id;
-        return queue;
     }
 
     switch (id) {
-    case __SEQUENCE_CONTAINER_BASE_DEQUE: DEQUE_DELETE((deque_t**)&pbase); break;
-    case __SEQUENCE_CONTAINER_BASE_LIST:  LIST_DELETE((list_t**)&pbase);   break;
+    case __CONTAINER_ADAPTOR_BASE_DEQUE:
+    case __CONTAINER_ADAPTOR_BASE_LIST:
+        break;
+    default:
+        JDSC_ASSERT_NEW(0, "%s: Unsupported container base id %u (expected DEQUE or LIST)!",
+                        __func__, (unsigned)id);
+        goto free_pbase;
+    }
+
+    queue = (queue_t*)p_calloc(1, sizeof(queue_t));
+    if (is_null(queue)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for queue!",
+                        __func__, sizeof(queue_t));
+        goto free_pbase;
+    }
+
+    queue->p  = pbase;
+    queue->id = id;
+    return queue;
+
+free_pbase:
+    switch (id) {
+    case __CONTAINER_ADAPTOR_BASE_DEQUE: DEQUE_DELETE((deque_t**)&pbase); break;
+    case __CONTAINER_ADAPTOR_BASE_LIST:  LIST_DELETE((list_t**)&pbase);   break;
     default: break;
     }
     return NULL;
@@ -53,8 +70,8 @@ void __queue_delete(queue_t** _this)
         return;
 
     switch ((*_this)->id) {
-    case __SEQUENCE_CONTAINER_BASE_DEQUE: DEQUE_DELETE(&(*_this)->d); break;
-    case __SEQUENCE_CONTAINER_BASE_LIST:  LIST_DELETE(&(*_this)->l);  break;
+    case __CONTAINER_ADAPTOR_BASE_DEQUE: DEQUE_DELETE(&(*_this)->d); break;
+    case __CONTAINER_ADAPTOR_BASE_LIST:  LIST_DELETE(&(*_this)->l);  break;
     default: break;
     }
 
