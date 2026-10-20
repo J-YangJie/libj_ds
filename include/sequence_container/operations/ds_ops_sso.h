@@ -35,6 +35,7 @@ typedef struct ds_sso {
     };
 } ds_sso_t;
 
+/* Common */
 HEADER_STATIC_INLINE
 bool ds_ops_valid_data_default_sso(ds_data_t data)
 {
@@ -42,8 +43,23 @@ bool ds_ops_valid_data_default_sso(ds_data_t data)
     return s && 0 != s[0];
 }
 
+void ds_ops_free_data_default_sso(ds_data_t* data);
+
+/* `l/left` and `r/right` have different meaning, `l/left` means char*, `r/right` means ds_sso_t* */
 HEADER_STATIC_INLINE
-int __ds_ops_cmp_sso(const ds_sso_t* l, const ds_sso_t* r)
+bool __ds_ops_eq_diff_sso(ds_data_t left, ds_data_t right)
+{
+    const char*     l = (const char*)left;
+    const ds_sso_t* r = (const ds_sso_t*)right;
+    size_t llen = strlen(l);
+    return llen == r->len && 0 == memcmp(l, r->p, llen);
+}
+
+bool ds_ops_copy_data_diff_sso(ds_data_t in, ds_data_t* out);
+
+/* `l/left` and `r/right` have the same meaning */
+HEADER_STATIC_INLINE
+int __ds_ops_cmp_same_sso(const ds_sso_t* l, const ds_sso_t* r)
 {
     size_t m = l->len < r->len ? l->len : r->len;
     int c = memcmp(l->p, r->p, m);
@@ -52,29 +68,24 @@ int __ds_ops_cmp_sso(const ds_sso_t* l, const ds_sso_t* r)
 }
 
 HEADER_STATIC_INLINE
-bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right)
+bool __ds_ops_eq_same_sso(ds_data_t left, ds_data_t right)
 {
-    return 0 == __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right);
+    return 0 == __ds_ops_cmp_same_sso((const ds_sso_t*)left, (const ds_sso_t*)right);
 }
 
 HEADER_STATIC_INLINE
-bool __ds_ops_lt_default_sso(ds_data_t left, ds_data_t right)
+bool __ds_ops_lt_same_sso(ds_data_t left, ds_data_t right)
 {
-    return __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right) < 0;
+    return __ds_ops_cmp_same_sso((const ds_sso_t*)left, (const ds_sso_t*)right) < 0;
 }
 
 HEADER_STATIC_INLINE
-bool __ds_ops_gt_default_sso(ds_data_t left, ds_data_t right)
+bool __ds_ops_gt_same_sso(ds_data_t left, ds_data_t right)
 {
-    return __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right) > 0;
+    return __ds_ops_cmp_same_sso((const ds_sso_t*)left, (const ds_sso_t*)right) > 0;
 }
 
-bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out);
-void ds_ops_free_data_default_sso(ds_data_t* data);
-
-
-
-
+bool ds_ops_copy_data_same_sso(ds_data_t in, ds_data_t* out);
 
 HEADER_STATIC_INLINE
 bool __ds_ops_is_local_sso(const ds_sso_t* s)
@@ -83,21 +94,16 @@ bool __ds_ops_is_local_sso(const ds_sso_t* s)
 }
 
 HEADER_STATIC_INLINE
-void __ds_ops_move_sso(ds_sso_t* dest, const ds_sso_t* src)
+void __ds_ops_move_same_sso(ds_sso_t* dest, const ds_sso_t* src)
 {
     *dest = *src;
     if (__ds_ops_is_local_sso(src))
         dest->p = dest->buf;
 }
 
-HEADER_STATIC_INLINE
-bool __ds_ops_eq_sso(ds_data_t left, ds_data_t right)
-{
-    const char*     l = (const char*)left;
-    const ds_sso_t* r = (const ds_sso_t*)right;
-    size_t llen = strlen(l);
-    return llen == r->len && 0 == memcmp(l, r->p, llen);
-}
+
+
+
 
 HEADER_STATIC_INLINE
 void __ds_ops_fix_sso(ds_data_t data)
@@ -106,5 +112,13 @@ void __ds_ops_fix_sso(ds_data_t data)
     if (s->len <= __DS_SSO_LOCAL_CAP)
         s->p = s->buf;
 }
+
+HEADER_STATIC_INLINE
+ds_data_t __ds_ops_char_addr_sso(ds_data_t data)
+{
+    ds_sso_t* s = (ds_sso_t*)data;
+    return (ds_data_t)s->p;
+}
+
 
 #endif /* __J_DS_OPS_SSO_H */

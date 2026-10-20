@@ -444,7 +444,7 @@ deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data)
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
             for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
-                if (__ds_ops_eq_sso(data, (deque_data_t)i))
+                if (__ds_ops_eq_diff_sso(data, (deque_data_t)i))
                     return __i_deque_make_iterator(_this, bkt, i);
             }
         }
@@ -494,7 +494,7 @@ deque_count_t i_deque_count(const i_deque_t* _this, deque_data_t data)
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
             for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
-                if (__ds_ops_eq_sso(data, (deque_data_t)i))
+                if (__ds_ops_eq_diff_sso(data, (deque_data_t)i))
                     ret++;
             }
         }
@@ -544,7 +544,7 @@ deque_size_t i_deque_remove(i_deque_t* _this, deque_data_t data)
         }
     } else if (_this->sso) {
         for ( ; end.cur != r.cur; r = __i_deque_next(r)) {
-            if (!__ds_ops_eq_sso(data, (deque_data_t)r.cur)) {
+            if (!__ds_ops_eq_diff_sso(data, (deque_data_t)r.cur)) {
                 if (l.cur != r.cur) {
                     memmove(l.cur, r.cur, sizeof(ds_sso_t));
                     __ds_ops_fix_sso((deque_data_t)l.cur); /* __i_deque_slot_move(_this, l.cur, r.cur); */

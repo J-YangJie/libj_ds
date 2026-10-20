@@ -66,7 +66,7 @@ bool __demo_struct_gt(ds_data_t left, ds_data_t right)
 
     if (nl != nr)
         return nl > nr;
-    return __ds_ops_gt_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+    return __ds_ops_gt_same_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
 }
 
 HEADER_STATIC_INLINE
@@ -77,7 +77,7 @@ bool __demo_struct_eq(ds_data_t left, ds_data_t right)
     const int nl = l->id + *l->p + l->sub_struct->a;
     const int nr = r->id + *r->p + r->sub_struct->a;
 
-    return nl == nr && __ds_ops_eq_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+    return nl == nr && __ds_ops_eq_same_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
 }
 
 HEADER_STATIC_INLINE
@@ -88,7 +88,7 @@ bool demo_struct_node_copy(ds_data_t in, ds_data_t* out)
 
     *dest = *src;
 
-    __ds_ops_fix_sso((ds_data_t)&dest->name1); /* __ds_ops_move_sso(&dest->name1, &src->name1); */
+    __ds_ops_fix_sso((ds_data_t)&dest->name1); /* __ds_ops_move_same_sso(&dest->name1, &src->name1); */
     dest->p = &dest->c;
     return true;
 }
@@ -104,7 +104,7 @@ bool demo_struct_heap_shallow_copy(ds_data_t in, ds_data_t* out)
 
     *dest = *src;
 
-    __ds_ops_fix_sso((ds_data_t)&dest->name1); /* __ds_ops_move_sso(&dest->name1, &src->name1); */
+    __ds_ops_fix_sso((ds_data_t)&dest->name1); /* __ds_ops_move_same_sso(&dest->name1, &src->name1); */
     dest->p = &dest->c;
     *out = (ds_data_t)dest; /* The container slot stores only the heap address */
     return true;
@@ -155,7 +155,7 @@ bool __demo_struct_constructor(demo_struct_t* s, int id, char* name1, char* name
     s->sub_struct->a = id;
 
     s->id = id;
-    if (!ds_ops_copy_data_default_sso((ds_data_t)name1, (ds_data_t*)&s->name1))
+    if (!ds_ops_copy_data_diff_sso((ds_data_t)name1, (ds_data_t*)&s->name1))
         goto free_sub_struct;
 
     if (!ds_ops_copy_data_default_string((ds_data_t)name2, (ds_data_t*)&s->name2))

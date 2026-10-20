@@ -51,46 +51,46 @@ typedef vector_reverse_iterator_t vector_r_iterator_t;
 typedef i_vector_t vector_t;
 
 /* Method 1 */
-HEADER_STATIC_INLINE vector_size_t       cvector_size(const vector_t* _this)                                                 { return i_vector_size(_this); }
-HEADER_STATIC_INLINE vector_size_t       cvector_max_size(const vector_t* _this)                                             { return i_vector_max_size(_this); }
-HEADER_STATIC_INLINE vector_size_t       cvector_capacity(const vector_t* _this)                                             { return i_vector_capacity(_this); }
-HEADER_STATIC_INLINE bool                __cvector_empty(const vector_t* _this)                                              { return __i_vector_empty(_this); }
-HEADER_STATIC_INLINE vector_count_t      cvector_count(const vector_t* _this, vector_data_t data)                            { return i_vector_count(_this, data); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_end(const vector_t* _this)                                                  { return i_vector_end(_this); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_begin(const vector_t* _this)                                                { return i_vector_begin(_this); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_next(vector_iterator_t iterator)                                            { return i_vector_next(iterator); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_prev(vector_iterator_t iterator)                                            { return i_vector_prev(iterator); }
-HEADER_STATIC_INLINE vector_r_iterator_t cvector_rend(const vector_t* _this)                                                 { return i_vector_rend(_this); }
-HEADER_STATIC_INLINE vector_r_iterator_t cvector_rbegin(const vector_t* _this)                                               { return i_vector_rbegin(_this); }
-HEADER_STATIC_INLINE vector_r_iterator_t cvector_rnext(vector_r_iterator_t r_iterator)                                       { return i_vector_rnext(r_iterator); }
-HEADER_STATIC_INLINE vector_r_iterator_t cvector_rprev(vector_r_iterator_t r_iterator)                                       { return i_vector_rprev(r_iterator); }
-HEADER_STATIC_INLINE vector_iterator_t   __cvector_it(const vector_t* _this, vector_index_t index)                           { return __i_vector_iterator(_this, index); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_it(const vector_t* _this, vector_index_t index)                             { return i_vector_iterator(_this, index); }
-HEADER_STATIC_INLINE vector_value_t      __cvector_at(const vector_t* _this, vector_index_t index)                           { return __i_vector_at(_this, index); }
-HEADER_STATIC_INLINE vector_value_t      cvector_at(const vector_t* _this, vector_index_t index)                             { return i_vector_at(_this, index); }
-HEADER_STATIC_INLINE vector_value_t      __cvector_back(const vector_t* _this)                                               { return __i_vector_back(_this); }
-HEADER_STATIC_INLINE vector_value_t      cvector_back(const vector_t* _this)                                                 { return i_vector_back(_this); }
-HEADER_STATIC_INLINE vector_value_t      __cvector_front(const vector_t* _this)                                              { return __i_vector_front(_this); }
-HEADER_STATIC_INLINE vector_value_t      cvector_front(const vector_t* _this)                                                { return i_vector_front(_this); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_find(const vector_t* _this, vector_data_t data)                             { return i_vector_find(_this, data); }
-HEADER_STATIC_INLINE bool                cvector_push_back(vector_t* _this, vector_data_t data)                              { return i_vector_push_back(_this, data); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_insert(vector_t* _this, vector_iterator_t iterator, vector_data_t data)     { return i_vector_insert(_this, iterator, data); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_insert_n(vector_t* _this, vector_iterator_t iterator, vector_size_t n, vector_data_t data) { return i_vector_insert_n(_this, iterator, n, data); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_insert_range(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_insert_range(_this, iterator_pos, iterator_begin, iterator_end); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_replace_it(vector_t* _this, vector_iterator_t iterator, vector_data_t data) { return i_vector_replace_it(_this, iterator, data); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_replace_index(vector_t* _this, vector_index_t index, vector_data_t data)    { return i_vector_replace_index(_this, index, data); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_erase(vector_t* _this, vector_iterator_t iterator)                          { return i_vector_erase(_this, iterator); }
-HEADER_STATIC_INLINE vector_iterator_t   cvector_erase_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_erase_range(_this, iterator_begin, iterator_end); }
-HEADER_STATIC_INLINE void                cvector_pop_back(vector_t* _this)                                                   { i_vector_pop_back(_this); }
-HEADER_STATIC_INLINE vector_size_t       cvector_remove(vector_t* _this, vector_data_t data)                                 { return i_vector_remove(_this, data); }
-HEADER_STATIC_INLINE vector_size_t       cvector_remove_if(vector_t* _this, remove_if_condition cond)                        { return i_vector_remove_if(_this, cond); }
-HEADER_STATIC_INLINE vector_size_t       cvector_assign(vector_t* _this, vector_size_t n, vector_data_t data)                { return i_vector_assign(_this, n, data); }
-HEADER_STATIC_INLINE vector_size_t       cvector_assign_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_assign_range(_this, iterator_begin, iterator_end); }
-HEADER_STATIC_INLINE bool                cvector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data)        { return i_vector_resize(_this, n, default_data); }
-HEADER_STATIC_INLINE bool                cvector_reserve(vector_t* _this, vector_size_t n)                                   { return i_vector_reserve(_this, n); }
-HEADER_STATIC_INLINE void                cvector_shrink_to_fit(vector_t* _this)                                              { i_vector_shrink_to_fit(_this); }
-HEADER_STATIC_INLINE void                cvector_swap(vector_t* _this, vector_t* other)                                      { i_vector_swap(_this, other); }
-HEADER_STATIC_INLINE vector_size_t       cvector_clear(vector_t* _this)                                                      { return i_vector_clear(_this); }
+HEADER_STATIC_INLINE vector_size_t        cvector_size(const vector_t* _this)                                                 { return i_vector_size(_this); }
+HEADER_STATIC_INLINE vector_size_t        cvector_max_size(const vector_t* _this)                                             { return i_vector_max_size(_this); }
+HEADER_STATIC_INLINE vector_size_t        cvector_capacity(const vector_t* _this)                                             { return i_vector_capacity(_this); }
+HEADER_STATIC_INLINE bool                 __cvector_empty(const vector_t* _this)                                              { return __i_vector_empty(_this); }
+HEADER_STATIC_INLINE vector_count_t       cvector_count(const vector_t* _this, vector_data_t data)                            { return i_vector_count(_this, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_end(const vector_t* _this)                                                  { return i_vector_end(_this); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_begin(const vector_t* _this)                                                { return i_vector_begin(_this); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_next(vector_iterator_t iterator)                                            { return i_vector_next(iterator); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_prev(vector_iterator_t iterator)                                            { return i_vector_prev(iterator); }
+HEADER_STATIC_INLINE vector_r_iterator_t  cvector_rend(const vector_t* _this)                                                 { return i_vector_rend(_this); }
+HEADER_STATIC_INLINE vector_r_iterator_t  cvector_rbegin(const vector_t* _this)                                               { return i_vector_rbegin(_this); }
+HEADER_STATIC_INLINE vector_r_iterator_t  cvector_rnext(vector_r_iterator_t r_iterator)                                       { return i_vector_rnext(r_iterator); }
+HEADER_STATIC_INLINE vector_r_iterator_t  cvector_rprev(vector_r_iterator_t r_iterator)                                       { return i_vector_rprev(r_iterator); }
+HEADER_STATIC_INLINE vector_iterator_t    __cvector_it(const vector_t* _this, vector_index_t index)                           { return __i_vector_iterator(_this, index); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_it(const vector_t* _this, vector_index_t index)                             { return i_vector_iterator(_this, index); }
+HEADER_STATIC_INLINE vector_value_t       __cvector_at(const vector_t* _this, vector_index_t index)                           { return __i_vector_at(_this, index); }
+HEADER_STATIC_INLINE vector_value_t       cvector_at(const vector_t* _this, vector_index_t index)                             { return i_vector_at(_this, index); }
+HEADER_STATIC_INLINE vector_value_t       __cvector_back(const vector_t* _this)                                               { return __i_vector_back(_this); }
+HEADER_STATIC_INLINE vector_value_t       cvector_back(const vector_t* _this)                                                 { return i_vector_back(_this); }
+HEADER_STATIC_INLINE vector_value_t       __cvector_front(const vector_t* _this)                                              { return __i_vector_front(_this); }
+HEADER_STATIC_INLINE vector_value_t       cvector_front(const vector_t* _this)                                                { return i_vector_front(_this); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_find(const vector_t* _this, vector_data_t data)                             { return i_vector_find(_this, data); }
+HEADER_STATIC_INLINE bool                 cvector_push_back(vector_t* _this, vector_data_t data)                              { return i_vector_push_back(_this, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_insert(vector_t* _this, vector_iterator_t iterator, vector_data_t data)     { return i_vector_insert(_this, iterator, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_insert_n(vector_t* _this, vector_iterator_t iterator, vector_size_t n, vector_data_t data) { return i_vector_insert_n(_this, iterator, n, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_insert_range(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_insert_range(_this, iterator_pos, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_replace_it(vector_t* _this, vector_iterator_t iterator, vector_data_t data) { return i_vector_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_replace_index(vector_t* _this, vector_index_t index, vector_data_t data)    { return i_vector_replace_index(_this, index, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_erase(vector_t* _this, vector_iterator_t iterator)                          { return i_vector_erase(_this, iterator); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_erase_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_erase_range(_this, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE void                 cvector_pop_back(vector_t* _this)                                                   { i_vector_pop_back(_this); }
+HEADER_STATIC_INLINE vector_size_t        cvector_remove(vector_t* _this, vector_data_t data)                                 { return i_vector_remove(_this, data); }
+HEADER_STATIC_INLINE vector_size_t        cvector_remove_if(vector_t* _this, remove_if_condition cond)                        { return i_vector_remove_if(_this, cond); }
+HEADER_STATIC_INLINE vector_size_t        cvector_assign(vector_t* _this, vector_size_t n, vector_data_t data)                { return i_vector_assign(_this, n, data); }
+HEADER_STATIC_INLINE vector_size_t        cvector_assign_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_assign_range(_this, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE bool                 cvector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data)        { return i_vector_resize(_this, n, default_data); }
+HEADER_STATIC_INLINE bool                 cvector_reserve(vector_t* _this, vector_size_t n)                                   { return i_vector_reserve(_this, n); }
+HEADER_STATIC_INLINE void                 cvector_shrink_to_fit(vector_t* _this)                                              { i_vector_shrink_to_fit(_this); }
+HEADER_STATIC_INLINE void                 cvector_swap(vector_t* _this, vector_t* other)                                      { i_vector_swap(_this, other); }
+HEADER_STATIC_INLINE vector_size_t        cvector_clear(vector_t* _this)                                                      { return i_vector_clear(_this); }
 
 /* Method 2 */
 typedef struct class_vector {

@@ -39,8 +39,8 @@ const class_priority_queue_ops_t* class_priority_queue_ops_sso_ins(void)
 {
     static const class_priority_queue_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_sso,
-        .__lt       = __ds_ops_lt_default_sso,
-        .copy_data  = ds_ops_copy_data_default_sso,
+        .__lt       = __ds_ops_lt_same_sso, /* __ds_ops_gt_same_sso */
+        .copy_data  = ds_ops_copy_data_diff_sso,
         .free_data  = ds_ops_free_data_default_sso,
         .__move     = NULL,
     };

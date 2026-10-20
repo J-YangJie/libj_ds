@@ -20,11 +20,8 @@
 #ifndef __J_I_LIST_H
 #define __J_I_LIST_H
 
-#include <stddef.h>
-#include <stdint.h>
 #include <_compiler.h>
 #include <linux/list.h>
-#include <linux/_compiler.h>
 
 #ifndef is_null
 #define is_null(X) (!(X))
@@ -40,188 +37,151 @@ typedef struct i_list {
     list_dtype_t     dtype;
     list_step_t      step;
     list_align_t     align;
-    size_t           pad;
+    list_pad_t       pad;
     struct list_head head; /* Err：It cannot be the last one, otherwise the address is invalid! */
     list_size_t      size;
     bool             sso;
 } i_list_t;
 
-/* checked */
 HEADER_STATIC_INLINE
 list_size_t __i_dlist_size(const i_list_t* _this)
 {
     return _this->size;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_size_t i_dlist_size(const i_list_t* _this)
 {
-    return unlikely(is_null(_this)) ? -1 : __i_dlist_size(_this);
+    return is_null(_this) ? -1 : __i_dlist_size(_this);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 bool __i_dlist_empty(const i_list_t* _this)
 {
     return list_empty(&_this->head);
 }
 
-/* checked */
 #ifdef dlist_entry_lhead
 #undef dlist_entry_lhead
 #endif
-#define dlist_entry_lhead(_ptr) ((list_node_t*)(_ptr))
+#define dlist_entry_lhead(_ptr)  ((list_node_t*)(_ptr))
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* __i_dlist_end(const i_list_t* _this)
 {
     return dlist_entry_lhead(&_this->head);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* i_dlist_end(const i_list_t* _this)
 {
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __i_dlist_end(_this);
+    if (!is_null(_this))
+        return __i_dlist_end(_this);
+    return NULL;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* __i_dlist_begin(const i_list_t* _this)
 {
     return dlist_entry_lhead(_this->head.next);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* i_dlist_begin(const i_list_t* _this)
 {
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __i_dlist_begin(_this);
+    if (!is_null(_this))
+        return __i_dlist_begin(_this);
+    return NULL;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* __i_dlist_next(const i_list_t* _this, const list_node_t* node)
+list_node_t* __i_dlist_next(const list_node_t* node)
 {
-    JDSC_ASSERT(!__i_dlist_empty(_this));
-    JDSC_ASSERT(__i_dlist_end(_this) != node);
-#if JDSC_ITERATOR_ERR_NULL
-    if (unlikely(__i_dlist_end(_this) == node))
-        return NULL;
-#endif /* JDSC_ITERATOR_ERR_NULL */
     return dlist_entry_lhead(node->node.next);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* i_dlist_next(const i_list_t* _this, const list_node_t* node)
+list_node_t* i_dlist_next(const list_node_t* node)
 {
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __i_dlist_next(_this, node);
+    if (!is_null(node))
+        return __i_dlist_next(node);
+    return NULL;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* __i_dlist_prev(const i_list_t* _this, const list_node_t* node)
+list_node_t* __i_dlist_prev(const list_node_t* node)
 {
-    JDSC_ASSERT(__i_dlist_begin(_this) != node);
     return dlist_entry_lhead(node->node.prev);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* i_dlist_prev(const i_list_t* _this, const list_node_t* node)
+list_node_t* i_dlist_prev(const list_node_t* node)
 {
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __i_dlist_prev(_this, node);
+    if (!is_null(node))
+        return __i_dlist_prev(node);
+    return NULL;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* __i_dlist_rend(const i_list_t* _this)
 {
     return dlist_entry_lhead(&_this->head);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* i_dlist_rend(const i_list_t* _this)
 {
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __i_dlist_rend(_this);
+    if (!is_null(_this))
+        return __i_dlist_rend(_this);
+    return NULL;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* __i_dlist_rbegin(const i_list_t* _this)
 {
     return dlist_entry_lhead(_this->head.rnext);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* i_dlist_rbegin(const i_list_t* _this)
 {
-    if (unlikely(is_null(_this)))
-        return NULL;
-    return __i_dlist_rbegin(_this);
+    if (!is_null(_this))
+        return __i_dlist_rbegin(_this);
+    return NULL;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* __i_dlist_rnext(const i_list_t* _this, const list_node_t* node)
+list_node_t* __i_dlist_rnext(const list_node_t* node)
 {
-    JDSC_ASSERT(!__i_dlist_empty(_this));
-    JDSC_ASSERT(__i_dlist_rend(_this) != node);
-#if JDSC_ITERATOR_ERR_NULL
-    if (unlikely(__i_dlist_rend(_this) == node))
-        return NULL;
-#endif /* JDSC_ITERATOR_ERR_NULL */
     return dlist_entry_lhead(node->node.rnext);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* i_dlist_rnext(const i_list_t* _this, const list_node_t* node)
+list_node_t* i_dlist_rnext(const list_node_t* node)
 {
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __i_dlist_rnext(_this, node);
+    if (!is_null(node))
+        return __i_dlist_rnext(node);
+    return NULL;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* __i_dlist_rprev(const i_list_t* _this, const list_node_t* node)
+list_node_t* __i_dlist_rprev(const list_node_t* node)
 {
-    JDSC_ASSERT(__i_dlist_rbegin(_this) != node);
     return dlist_entry_lhead(node->node.rprev);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* i_dlist_rprev(const i_list_t* _this, const list_node_t* node)
+list_node_t* i_dlist_rprev(const list_node_t* node)
 {
-    if (unlikely(is_null(_this) || is_null(node)))
-        return NULL;
-    return __i_dlist_rprev(_this, node);
+    if (!is_null(node))
+        return __i_dlist_rprev(node);
+    return NULL;
 }
 
-/* checked */
 #undef dlist_entry_lhead
 
-/* checked */
-#define dlist_entry(_pdata) ((list_node_t*)((uint8_t*)(_pdata) - offsetof(list_node_t, data)))
+#define dlist_entry(_pdata)  ((list_node_t*)((uint8_t*)(_pdata) - offsetof(list_node_t, data)))
 
-/* checked */
 HEADER_STATIC_INLINE
 list_iterator_t __i_dlist_lnode_to_it(const list_node_t* node)
 {
@@ -230,90 +190,78 @@ list_iterator_t __i_dlist_lnode_to_it(const list_node_t* node)
     return it;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* __i_dlist_it_to_lnode(list_iterator_t it)
+list_node_t* __i_dlist_it_to_lnode(const list_iterator_t it)
 {
     return is_null(it.d) ? NULL : dlist_entry(it.d);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_r_iterator_t __i_dlist_lnode_to_rit(const list_node_t* node)
 {
-    list_r_iterator_t r_it;
-    r_it.d = is_null(node) ? NULL : (list_data_t*)node->data;
-    return r_it;
+    list_r_iterator_t rit;
+    rit.d = is_null(node) ? NULL : (list_data_t*)node->data;
+    return rit;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_node_t* __i_dlist_rit_to_lnode(list_r_iterator_t r_it)
+list_node_t* __i_dlist_rit_to_lnode(const list_r_iterator_t rit)
 {
-    return is_null(r_it.d) ? NULL : dlist_entry(r_it.d);
+    return is_null(rit.d) ? NULL : dlist_entry(rit.d);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_iterator_t i_clist_end(const i_list_t* _this)
 {
     return __i_dlist_lnode_to_it(i_dlist_end(_this));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_iterator_t i_clist_begin(const i_list_t* _this)
 {
     return __i_dlist_lnode_to_it(i_dlist_begin(_this));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_iterator_t i_clist_next(const i_list_t* _this, list_iterator_t iterator)
+list_iterator_t i_clist_next(const list_iterator_t iterator)
 {
-    return __i_dlist_lnode_to_it(i_dlist_next(_this, __i_dlist_it_to_lnode(iterator)));
+    return __i_dlist_lnode_to_it(i_dlist_next(__i_dlist_it_to_lnode(iterator)));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_iterator_t i_clist_prev(const i_list_t* _this, list_iterator_t iterator)
+list_iterator_t i_clist_prev(const list_iterator_t iterator)
 {
-    return __i_dlist_lnode_to_it(i_dlist_prev(_this, __i_dlist_it_to_lnode(iterator)));
+    return __i_dlist_lnode_to_it(i_dlist_prev(__i_dlist_it_to_lnode(iterator)));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_r_iterator_t i_clist_rend(const i_list_t* _this)
 {
     return __i_dlist_lnode_to_rit(i_dlist_rend(_this));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_r_iterator_t i_clist_rbegin(const i_list_t* _this)
 {
     return __i_dlist_lnode_to_rit(i_dlist_rbegin(_this));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_r_iterator_t i_clist_rnext(const i_list_t* _this, list_r_iterator_t r_iterator)
+list_r_iterator_t i_clist_rnext(const list_r_iterator_t r_iterator)
 {
-    return __i_dlist_lnode_to_rit(i_dlist_rnext(_this, __i_dlist_rit_to_lnode(r_iterator)));
+    return __i_dlist_lnode_to_rit(i_dlist_rnext(__i_dlist_rit_to_lnode(r_iterator)));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-list_r_iterator_t i_clist_rprev(const i_list_t* _this, list_r_iterator_t r_iterator)
+list_r_iterator_t i_clist_rprev(const list_r_iterator_t r_iterator)
 {
-    return __i_dlist_lnode_to_rit(i_dlist_rprev(_this, __i_dlist_rit_to_lnode(r_iterator)));
+    return __i_dlist_lnode_to_rit(i_dlist_rprev(__i_dlist_rit_to_lnode(r_iterator)));
 }
 
 
 
 
 
-/* checked */
 HEADER_STATIC_INLINE
 list_iterator_t i_dlist_null_iterator(void)
 {
@@ -322,7 +270,6 @@ list_iterator_t i_dlist_null_iterator(void)
     return it;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_r_iterator_t i_dlist_null_r_iterator(void)
 {
@@ -331,7 +278,6 @@ list_r_iterator_t i_dlist_null_r_iterator(void)
     return rit;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_iterator_t __i_dlist_make_iterator(const void* ptr)
 {
@@ -340,36 +286,33 @@ list_iterator_t __i_dlist_make_iterator(const void* ptr)
     return it;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_node_t* __i_dlist_it_list_node(const i_list_t* _this, list_index_t index)
 {
+    const list_size_t size = __i_dlist_size(_this);
     list_node_t* it;
-    list_size_t size = __i_dlist_size(_this);
 
-    // if (index < size) {
+    /* if (index < size) */
     {
         if (index * 2 >= size) {
             index = size - index;
             it = __i_dlist_end(_this);
-            while (index--) it = __i_dlist_prev(_this, it);
+            while (index--) it = __i_dlist_prev(it);
         } else {
             it = __i_dlist_begin(_this);
-            while (index--) it = __i_dlist_next(_this, it);
+            while (index--) it = __i_dlist_next(it);
         }
         return it;
     }
-    // return NULL;
+    /* return NULL; */
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_iterator_t __i_dlist_iterator(const i_list_t* _this, list_index_t index)
 {
     return __i_dlist_make_iterator(__i_dlist_it_list_node(_this, index)->data);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_iterator_t i_dlist_iterator(const i_list_t* _this, list_index_t index)
 {
@@ -378,14 +321,12 @@ list_iterator_t i_dlist_iterator(const i_list_t* _this, list_index_t index)
     return i_dlist_null_iterator();
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_value_t __i_dlist_at(const i_list_t* _this, list_index_t index)
 {
     return (list_value_t){ .u8 = (uint8_t*)__i_dlist_iterator(_this, index).d, };
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_value_t i_dlist_at(const i_list_t* _this, list_index_t index)
 {
@@ -394,7 +335,6 @@ list_value_t i_dlist_at(const i_list_t* _this, list_index_t index)
     return (list_value_t){ .u8 = NULL, };
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_value_t __i_dlist_back(const i_list_t* _this)
 {
@@ -415,7 +355,6 @@ list_value_t __i_dlist_front(const i_list_t* _this)
     return (list_value_t){ .u8 = __i_dlist_begin(_this)->data, };
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 list_value_t i_dlist_front(const i_list_t* _this)
 {

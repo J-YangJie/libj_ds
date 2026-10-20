@@ -26,7 +26,15 @@
 JDSC_STATIC_ASSERT(offsetof(ds_sso_t, p) == 0, "p must stay at offset 0: the container reads the first 8 bytes of the slot as the user's char*");
 
 JDSC_INLINE
-bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out)
+void ds_ops_free_data_default_sso(ds_data_t* data)
+{
+    ds_sso_t* s = (ds_sso_t*)data;
+    if (!__ds_ops_is_local_sso(s))
+        p_free(s->p);
+}
+
+JDSC_INLINE
+bool ds_ops_copy_data_diff_sso(ds_data_t in, ds_data_t* out)
 {
     const char* i = (const char*)in;
     ds_sso_t*   o = (ds_sso_t*)out;
@@ -50,9 +58,25 @@ bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out)
 }
 
 JDSC_INLINE
-void ds_ops_free_data_default_sso(ds_data_t* data)
+bool ds_ops_copy_data_same_sso(ds_data_t in, ds_data_t* out)
 {
-    ds_sso_t* s = (ds_sso_t*)data;
-    if (!__ds_ops_is_local_sso(s))
-        p_free(s->p);
+    const ds_sso_t* i = (const ds_sso_t*)in;
+    ds_sso_t*       o = (ds_sso_t*)out;
+    size_t len = i->len;
+
+    if (len <= __DS_SSO_LOCAL_CAP) {
+        memcpy(o->buf, i->buf, len + 1);
+        o->p = o->buf;
+        o->len = len;
+        return true;
+    } else {
+        char* s = (char*)p_malloc(len + 1);
+        if (is_null(s))
+            return false;
+        memcpy(s, i->p, len + 1);
+        o->p = s;
+        o->len = len;
+        o->cap = len + 1;
+        return true;
+    }
 }

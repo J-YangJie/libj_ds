@@ -45,6 +45,7 @@ typedef bool (*__cmp)(ds_data_t left, ds_data_t right);
 typedef ds_dtype_t list_dtype_t;
 typedef ds_step_t  list_step_t;
 typedef ds_align_t list_align_t;
+typedef size_t     list_pad_t;
 typedef ds_index_t list_index_t;
 typedef ds_data_t  list_data_t;
 typedef ds_size_t  list_size_t;

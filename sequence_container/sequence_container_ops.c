@@ -38,8 +38,8 @@ const class_sequence_container_ops_t* class_sequence_container_ops_sso_ins(void)
 {
     static const class_sequence_container_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_sso,
-        .__eq       = __ds_ops_eq_default_sso,
-        .copy_data  = ds_ops_copy_data_default_sso,
+        .__eq       = __ds_ops_eq_diff_sso,
+        .copy_data  = ds_ops_copy_data_diff_sso,
         .free_data  = ds_ops_free_data_default_sso,
         .__move     = NULL,
     };

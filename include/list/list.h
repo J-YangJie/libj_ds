@@ -52,12 +52,12 @@ HEADER_STATIC_INLINE bool               __clist_empty(const list_t* _this)      
 HEADER_STATIC_INLINE list_count_t       clist_count(const list_t* _this, list_data_t data)                                             { return i_dlist_count(_this, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_end(const list_t* _this)                                                                 { return i_clist_end(_this); }
 HEADER_STATIC_INLINE list_iterator_t    clist_begin(const list_t* _this)                                                               { return i_clist_begin(_this); }
-HEADER_STATIC_INLINE list_iterator_t    clist_next(const list_t* _this, list_iterator_t iterator)                                      { return i_clist_next(_this, iterator); }
-HEADER_STATIC_INLINE list_iterator_t    clist_prev(const list_t* _this, list_iterator_t iterator)                                      { return i_clist_prev(_this, iterator); }
+HEADER_STATIC_INLINE list_iterator_t    clist_next(const list_iterator_t iterator)                                                     { return i_clist_next(iterator); }
+HEADER_STATIC_INLINE list_iterator_t    clist_prev(const list_iterator_t iterator)                                                     { return i_clist_prev(iterator); }
 HEADER_STATIC_INLINE list_r_iterator_t  clist_rend(const list_t* _this)                                                                { return i_clist_rend(_this); }
 HEADER_STATIC_INLINE list_r_iterator_t  clist_rbegin(const list_t* _this)                                                              { return i_clist_rbegin(_this); }
-HEADER_STATIC_INLINE list_r_iterator_t  clist_rnext(const list_t* _this, list_r_iterator_t r_iterator)                                 { return i_clist_rnext(_this, r_iterator); }
-HEADER_STATIC_INLINE list_r_iterator_t  clist_rprev(const list_t* _this, list_r_iterator_t r_iterator)                                 { return i_clist_rprev(_this, r_iterator); }
+HEADER_STATIC_INLINE list_r_iterator_t  clist_rnext(const list_r_iterator_t r_iterator)                                                { return i_clist_rnext(r_iterator); }
+HEADER_STATIC_INLINE list_r_iterator_t  clist_rprev(const list_r_iterator_t r_iterator)                                                { return i_clist_rprev(r_iterator); }
 HEADER_STATIC_INLINE list_iterator_t    __clist_it(const list_t* _this, list_index_t index)                                            { return __i_dlist_iterator(_this, index); }
 HEADER_STATIC_INLINE list_iterator_t    clist_it(const list_t* _this, list_index_t index)                                              { return i_dlist_iterator(_this, index); }
 HEADER_STATIC_INLINE list_value_t       __clist_at(const list_t* _this, list_index_t index)                                            { return __i_dlist_at(_this, index); }
@@ -94,12 +94,12 @@ typedef struct class_list {
     list_count_t (*count)(const list_t* _this, list_data_t data);
     list_iterator_t (*end)(const list_t* _this);
     list_iterator_t (*begin)(const list_t* _this);
-    list_iterator_t (*next)(const list_t* _this, list_iterator_t iterator);
-    list_iterator_t (*prev)(const list_t* _this, list_iterator_t iterator);
+    list_iterator_t (*next)(const list_iterator_t iterator);
+    list_iterator_t (*prev)(const list_iterator_t iterator);
     list_r_iterator_t (*rend)(const list_t* _this);
     list_r_iterator_t (*rbegin)(const list_t* _this);
-    list_r_iterator_t (*rnext)(const list_t* _this, list_r_iterator_t r_iterator);
-    list_r_iterator_t (*rprev)(const list_t* _this, list_r_iterator_t r_iterator);
+    list_r_iterator_t (*rnext)(const list_r_iterator_t r_iterator);
+    list_r_iterator_t (*rprev)(const list_r_iterator_t r_iterator);
     list_iterator_t (*__it)(const list_t* _this, list_index_t index);                                                  /* return iterator by n(index), but without checking parameters */
     list_iterator_t (*it)(const list_t* _this, list_index_t index);                                                    /* return iterator by n(index) */
     list_value_t (*__at)(const list_t* _this, list_index_t index);                                                     /* STL: ds[index], but without checking parameters */

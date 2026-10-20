@@ -329,7 +329,7 @@ list_node_t* __i_dlist_erase(i_list_t* _this, list_node_t* pos)
     if (unlikely(__i_dlist_empty(_this) || __i_dlist_end(_this) == pos) /* || __i_dlist_rend(_this) == pos*/)
         return NULL;
 
-    n = __i_dlist_next(_this, pos);
+    n = __i_dlist_next(pos);
     if (unlikely(is_null(n)))
         return NULL;
 
@@ -385,7 +385,7 @@ list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
         }
     } else if (_this->sso) {
         list_for_each_entry(n, &_this->head, node) {
-            if (__ds_ops_eq_sso(data, (list_data_t)(uintptr_t)n->data))
+            if (__ds_ops_eq_diff_sso(data, (list_data_t)(uintptr_t)n->data))
                 return n;
         }
     } else {
@@ -431,7 +431,7 @@ list_count_t ___i_dlist_count(const i_list_t* _this, list_data_t data)
         }
     } else if (_this->sso) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (__ds_ops_eq_sso(data, (list_data_t)(uintptr_t)n->data))
+            if (__ds_ops_eq_diff_sso(data, (list_data_t)(uintptr_t)n->data))
                 ret++;
         }
     } else {
@@ -488,7 +488,7 @@ list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
         }
     } else if (_this->sso) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (!__ds_ops_eq_sso(data, (list_data_t)(uintptr_t)n->data))
+            if (!__ds_ops_eq_diff_sso(data, (list_data_t)(uintptr_t)n->data))
                 continue;
 
             ___i_dlist_erase(_this, n);
@@ -537,7 +537,7 @@ bool __i_dlist_value_eq_stored(const i_list_t* _this, list_data_t left, list_dat
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         return left == right;
     } else if (_this->sso) {
-        return __ds_ops_eq_default_sso(left, right);
+        return __ds_ops_eq_same_sso(left, right);
     } else {
         return _this->ops->__eq(left, right);
     }
@@ -562,7 +562,7 @@ list_size_t i_dlist_unique(i_list_t* _this)
         return 0;
 
     first = __i_dlist_begin(_this);
-    next  = __i_dlist_next(_this, first);
+    next  = __i_dlist_next(first);
 
     while (__i_dlist_end(_this) != next) {
         if (__i_dlist_value_eq_stored(_this,
@@ -572,7 +572,7 @@ list_size_t i_dlist_unique(i_list_t* _this)
             ret++;
         } else {
             first = next;
-            next  = __i_dlist_next(_this, next);
+            next  = __i_dlist_next(next);
         }
     }
 
@@ -673,7 +673,7 @@ void i_dlist_splice_range(i_list_t* _this, list_iterator_t iterator, i_list_t* o
     first = __i_dlist_it_to_lnode(iterator_begin);
     last  = __i_dlist_it_to_lnode(iterator_end);
 
-    for (it = first; __i_dlist_end(other) != it && it != last && n <= other->size; it = __i_dlist_next(other, it)) {
+    for (it = first; __i_dlist_end(other) != it && it != last && n <= other->size; it = __i_dlist_next(it)) {
         if (_this == other && it == pos)
             return ;
         n++;
