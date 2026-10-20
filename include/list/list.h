@@ -21,23 +21,11 @@
 #ifndef __J_LIST_H
 #define __J_LIST_H
 
-#include <list/list_ops.h>
 #include <iterator/iterator.h>
-#include <operations/ds_ops_sso.h>
+#include <sequence_container/sequence_container.h>
 
-typedef struct list_value {
-    union {
-        list_data_t* d;
-        char** sd;
-        ds_sso_t* ssd;
-        uint8_t*  u8;
-        uint16_t* u16;
-        uint32_t* u32;
-        int8_t*   s8;
-        int16_t*  s16;
-        int32_t*  s32;
-    };
-} list_value_t;
+typedef sequence_container_value_t     list_value_t;
+typedef class_sequence_container_ops_t class_list_ops_t;
 
 typedef struct list_iterator {
     union {
@@ -144,6 +132,8 @@ void    __list_delete(list_t** _this);
 const class_list_t* class_list_ins(void);
 #define g_class_list()                class_list_ins()
 #define clist                         g_class_list()
+#define g_class_list_ops_string()     g_class_sequence_container_ops_string()
+#define g_class_list_ops_sso()        g_class_sequence_container_ops_sso()
 #define LIST_NEW()                    __list_new(NULL,   sizeof(list_data_t), __alignof__(list_data_t))
 #define LIST_NEW_OPS(_ops)            __list_new((_ops), sizeof(list_data_t), __alignof__(list_data_t))
 #define LIST_NEW_T(_type)             __list_new(NULL,   sizeof(_type), __alignof__(_type))

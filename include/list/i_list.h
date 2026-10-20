@@ -1,5 +1,5 @@
 /*
-  I-List Interfaces
+  List Inline Implementations
   Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -25,7 +25,6 @@
 #include <_compiler.h>
 #include <linux/list.h>
 #include <linux/_compiler.h>
-#include <list/list_ops.h>
 
 #ifndef is_null
 #define is_null(X) (!(X))

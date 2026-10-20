@@ -1,5 +1,5 @@
 /*
-  I-Deque Interfaces
+  Deque Inline Implementations
   Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -22,7 +22,6 @@
 
 #include <stddef.h>
 #include <_compiler.h>
-#include <deque/deque_ops.h>
 
 #define _I_DEQUE_ITERATOR_REND  ((uint8_t*)(uintptr_t)JDSC_ITERATOR_REND)
 

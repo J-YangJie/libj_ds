@@ -1,5 +1,5 @@
 /*
-  Data Structures Default Operations Of SSO String
+  Default Operation Interface Of The Data Structures For SSO
   Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -24,11 +24,12 @@
 #include <string.h>
 
 #define __DS_SSO_LOCAL_CAP 15
+
 typedef struct ds_sso {
-    char*  p;
+    char* p;
     size_t len;
     union {
-        char   buf[__DS_SSO_LOCAL_CAP + 1];
+        char buf[__DS_SSO_LOCAL_CAP + 1];
         size_t cap;
     };
 } ds_sso_t;

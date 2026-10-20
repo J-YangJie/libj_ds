@@ -1,5 +1,5 @@
 /*
-  Default Implementations Of Deque Custom Operation Interfaces
+  Default Implementations Of Sequence Containers Custom Operation Interfaces
   Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -17,14 +17,14 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <deque/deque_ops.h>
+#include <sequence_container/sequence_container.h>
 
 #include <operations/ds_ops_string.h>
-#include <operations/ds_ops_sso.h>
+#include <sequence_container/operations/ds_ops_sso.h>
 
-const class_deque_ops_t* class_deque_ops_string_ins(void)
+const class_sequence_container_ops_t* class_sequence_container_ops_string_ins(void)
 {
-    static const class_deque_ops_t ins = {
+    static const class_sequence_container_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_string,
         .__eq       = __ds_ops_eq_default_string,
         .copy_data  = ds_ops_copy_data_default_string,
@@ -33,9 +33,9 @@ const class_deque_ops_t* class_deque_ops_string_ins(void)
     return &ins;
 }
 
-const class_deque_ops_t* class_deque_ops_sso_ins(void)
+const class_sequence_container_ops_t* class_sequence_container_ops_sso_ins(void)
 {
-    static const class_deque_ops_t ins = {
+    static const class_sequence_container_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_sso,
         .__eq       = __ds_ops_eq_default_sso,
         .copy_data  = ds_ops_copy_data_default_sso,

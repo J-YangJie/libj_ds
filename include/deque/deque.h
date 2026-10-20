@@ -20,23 +20,11 @@
 #ifndef __J_DEQUE_H
 #define __J_DEQUE_H
 
-#include <deque/deque_ops.h>
 #include <iterator/iterator.h>
-#include <operations/ds_ops_sso.h>
+#include <sequence_container/sequence_container.h>
 
-typedef struct deque_value {
-    union {
-        deque_data_t* d;
-        char** sd;
-        ds_sso_t* ssd;
-        uint8_t*  u8;
-        uint16_t* u16;
-        uint32_t* u32;
-        int8_t*   s8;
-        int16_t*  s16;
-        int32_t*  s32;
-    };
-} deque_value_t;
+typedef sequence_container_value_t     deque_value_t;
+typedef class_sequence_container_ops_t class_deque_ops_t;
 
 typedef struct deque_iterator {
     union {
@@ -139,6 +127,8 @@ void     __deque_delete(deque_t** _this);
 const class_deque_t* class_deque_ins(void);
 #define g_class_deque()               class_deque_ins()
 #define cdeque                        g_class_deque()
+#define g_class_deque_ops_string()    g_class_sequence_container_ops_string()
+#define g_class_deque_ops_sso()       g_class_sequence_container_ops_sso()
 #define DEQUE_NEW()                   __deque_new(NULL,   sizeof(deque_data_t), __alignof__(deque_data_t))
 #define DEQUE_NEW_OPS(_ops)           __deque_new((_ops), sizeof(deque_data_t), __alignof__(deque_data_t))
 #define DEQUE_NEW_T(_type)            __deque_new(NULL,   sizeof(_type), __alignof__(_type))

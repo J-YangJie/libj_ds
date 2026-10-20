@@ -1,5 +1,5 @@
 /*
-  Default Implementations Of Data Structures Default Operations Of SSO String
+  Default Operation Implementation Of The Data Structures For SSO
   Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <operations/ds_ops_sso.h>
+#include <sequence_container/operations/ds_ops_sso.h>
 
 #include <_memory.h>
 #include <_compiler_inter.h>

@@ -1,5 +1,5 @@
 /*
-  I-Vector Interfaces
+  Vector Inline Implementations
   Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -23,7 +23,6 @@
 #include <stddef.h>
 #include <_compiler.h>
 #include <sort/sort_intro.h>   /* I_VECTOR_SORT_DEFINE 用到 I_SORT_DEFINE */
-#include <vector/vector_ops.h>
 
 #ifndef is_null
 #define is_null(X) (!(X))

@@ -21,23 +21,11 @@
 #ifndef __J_VECTOR_H
 #define __J_VECTOR_H
 
-#include <vector/vector_ops.h>
 #include <iterator/iterator.h>
-#include <operations/ds_ops_sso.h>
+#include <sequence_container/sequence_container.h>
 
-typedef struct vector_value {
-    union {
-        vector_data_t* d;
-        char** sd;
-        ds_sso_t* ssd;
-        uint8_t*  u8;
-        uint16_t* u16;
-        uint32_t* u32;
-        int8_t*   s8;
-        int16_t*  s16;
-        int32_t*  s32;
-    };
-} vector_value_t;
+typedef sequence_container_value_t     vector_value_t;
+typedef class_sequence_container_ops_t class_vector_ops_t;
 
 typedef struct vector_iterator {
     union {
@@ -135,6 +123,8 @@ void      __vector_delete(vector_t** _this);
 const class_vector_t* class_vector_ins(void);
 #define g_class_vector()              class_vector_ins()
 #define cvector                       g_class_vector()
+#define g_class_vector_ops_string()   g_class_sequence_container_ops_string()
+#define g_class_vector_ops_sso()      g_class_sequence_container_ops_sso()
 #define VECTOR_NEW()                  __vector_new(NULL,   sizeof(vector_data_t), __alignof__(vector_data_t), 0)
 #define VECTOR_NEW_OPS(_ops)          __vector_new((_ops), sizeof(vector_data_t), __alignof__(vector_data_t), 0)
 #define VECTOR_NEW_T(_type)           __vector_new(NULL,   sizeof(_type), __alignof__(_type), 0)

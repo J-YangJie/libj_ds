@@ -102,9 +102,16 @@ typedef ds_size_t  hashmap_size_t;
 typedef ds_count_t hashmap_count_t;
 typedef ds_count_t hashmap_bcount_t;
 
+/* stack */
+typedef ds_data_t  stack_data_t;
+typedef ds_size_t  stack_size_t;
+
+/* queue */
+typedef ds_data_t  queue_data_t;
+typedef ds_size_t  queue_size_t;
+
 /* priority_queue */
 typedef ds_data_t  priority_queue_data_t;
 typedef ds_size_t  priority_queue_size_t;
-typedef ds_count_t priority_queue_count_t;
 
 #endif /* __J_TYPES_H */

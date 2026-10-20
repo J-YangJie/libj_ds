@@ -1,5 +1,5 @@
 /*
-  Data Structures Default Operations
+  Default Operation Interface Of The Data Structures For char*
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
