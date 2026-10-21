@@ -54,13 +54,24 @@ typedef ssize_t  ds_size_t;
 //#define TEST_LIST           1
 //#define TEST_VECTOR         1
 //#define TEST_DEQUE          1
-//#define TEST_PQUEUE         1
 //#define TEST_STACK_VECTOR   1
 //#define TEST_STACK_DEQUE    1
 //#define TEST_STACK_LIST     1
+//#define TEST_QUEUE_DEQUE    1
+//#define TEST_QUEUE_LIST     1
+//#define TEST_PQUEUE_VECTOR  1
+//#define TEST_PQUEUE_DEQUE   1
 
 #if defined(TEST_STACK_VECTOR) || defined(TEST_STACK_DEQUE) || defined(TEST_STACK_LIST)
 #define TEST_STACK 1
+#endif
+
+#if defined(TEST_QUEUE_DEQUE) || defined(TEST_QUEUE_LIST)
+#define TEST_QUEUE 1
+#endif
+
+#if defined(TEST_PQUEUE_VECTOR) || defined(TEST_PQUEUE_DEQUE)
+#define TEST_PQUEUE 1
 #endif
 
 #ifndef TIMES_INSERT
@@ -113,9 +124,6 @@ typedef ssize_t  ds_size_t;
 #elif defined(TEST_DEQUE)
 #define DS_NAME      "deque"
 #define TIME_DS      time_deque
-#elif defined(TEST_PQUEUE)
-#define DS_NAME      "priority_queue"
-#define TIME_DS      time_pqueue
 #elif defined(TEST_STACK_VECTOR)
 #define DS_NAME      "stack_vector"
 #define TIME_DS      time_stack
@@ -125,6 +133,18 @@ typedef ssize_t  ds_size_t;
 #elif defined(TEST_STACK_LIST)
 #define DS_NAME      "stack_list"
 #define TIME_DS      time_stack
+#elif defined(TEST_QUEUE_DEQUE)
+#define DS_NAME      "queue_deque"
+#define TIME_DS      time_queue
+#elif defined(TEST_QUEUE_LIST)
+#define DS_NAME      "queue_list"
+#define TIME_DS      time_queue
+#elif defined(TEST_PQUEUE_VECTOR)
+#define DS_NAME      "priority_queue_vector"
+#define TIME_DS      time_pqueue
+#elif defined(TEST_PQUEUE_DEQUE)
+#define DS_NAME      "priority_queue_deque"
+#define TIME_DS      time_pqueue
 #else
 #define DS_NAME      "unknown"
 #define TIME_DS      time_vector
@@ -138,6 +158,18 @@ typedef ssize_t  ds_size_t;
 #define STACK_TEST_TYPE(_t)  stack<_t, list<_t>>
 #endif
 
+#if defined(TEST_QUEUE_DEQUE)
+#define QUEUE_TEST_TYPE(_t)  queue<_t, deque<_t>>
+#elif defined(TEST_QUEUE_LIST)
+#define QUEUE_TEST_TYPE(_t)  queue<_t, list<_t>>
+#endif
+
+#if defined(TEST_PQUEUE_VECTOR)
+#define PQ_TEST_TYPE(_t)     priority_queue<_t, vector<_t>>
+#elif defined(TEST_PQUEUE_DEQUE)
+#define PQ_TEST_TYPE(_t)     priority_queue<_t, deque<_t>>
+#endif
+
 #if defined(TEST_LIST) || defined(TEST_VECTOR) || defined(TEST_DEQUE)
 #define FIND_OPS   TIMES_FIND_V_L
 #define REMOVE_OPS TIMES_REMOVE_V_L
@@ -148,17 +180,26 @@ typedef ssize_t  ds_size_t;
 
 #if defined(TEST_STACK)
 #define DS_ACCESS_NAME  "top"
+#elif defined(TEST_QUEUE)
+#define DS_ACCESS_NAME  "front"
+#elif defined(TEST_PQUEUE)
+#define DS_ACCESS_NAME  "top"
+#else
+#define DS_ACCESS_NAME  "find"
+#endif
+
+#if defined(TEST_STACK) || defined(TEST_QUEUE) || defined(TEST_PQUEUE)
 #define DS_REMOVE_NAME  "pop"
 #define REMOVE_OPS_PRINT removed
 #else
-#define DS_ACCESS_NAME  "find"
 #define DS_REMOVE_NAME  "remove"
 #define REMOVE_OPS_PRINT REMOVE_OPS
 #endif
 
 #define TOUCH_TIMERS() do { (void)time_hashmap; (void)time_map; (void)time_set; \
                             (void)time_multimap; (void)time_multiset; (void)time_list; \
-                            (void)time_vector; (void)time_pqueue; (void)time_stack; \
+                            (void)time_vector; (void)time_stack; \
+                            (void)time_queue; (void)time_pqueue; \
                             (void)time_deque; } while (0)
 
 
@@ -173,8 +214,9 @@ static void test_i_for(void)
     clock_t time_list     = 0;
     clock_t time_vector   = 0;
     clock_t time_deque    = 0;
-    clock_t time_pqueue   = 0;
     clock_t time_stack    = 0;
+    clock_t time_queue    = 0;
+    clock_t time_pqueue   = 0;
     TOUCH_TIMERS();
 
 #ifdef TEST_HASHMAP
@@ -195,10 +237,12 @@ static void test_i_for(void)
     vector<ds_data_t> ds_vector_i;
 #elif TEST_DEQUE
     deque<ds_data_t> ds_deque_i;
-#elif TEST_PQUEUE
-    priority_queue<ds_data_t> ds_pqueue_i;
 #elif TEST_STACK
     STACK_TEST_TYPE(ds_data_t) ds_stack_i;
+#elif TEST_QUEUE
+    QUEUE_TEST_TYPE(ds_data_t) ds_queue_i;
+#elif TEST_PQUEUE
+    PQ_TEST_TYPE(ds_data_t) ds_pqueue_i;
 #endif
 
     printf("%s\n", __func__);
@@ -213,8 +257,9 @@ static void test_i_for(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
 #ifdef TEST_HASHMAP
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_hashmap_i.insert({i, i});  }, time_hashmap);
@@ -232,10 +277,12 @@ static void test_i_for(void)
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_i.push_back(i);     }, time_vector);
 #elif TEST_DEQUE
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.push_back(i);      }, time_deque);
-#elif TEST_PQUEUE
-        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_pqueue_i.push(i);          }, time_pqueue);
 #elif TEST_STACK
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_stack_i.push(i);           }, time_stack);
+#elif TEST_QUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_queue_i.push(i);           }, time_queue);
+#elif TEST_PQUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_pqueue_i.push(i);          }, time_pqueue);
 #endif
 
         printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000));
@@ -251,8 +298,9 @@ static void test_i_for(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t times_succ = 0;
         ds_size_t ds_size = 0;
@@ -304,9 +352,6 @@ static void test_i_for(void)
             auto it = find(ds_deque_i.begin(), ds_deque_i.end(), i);
             if (it != ds_deque_i.end()) times_succ++;
         }, time_deque);
-#elif TEST_PQUEUE
-        ds_size = ds_pqueue_i.size();
-        /* unsupport */
 #elif TEST_STACK
         ds_size = ds_stack_i.size();
         {
@@ -314,6 +359,26 @@ static void test_i_for(void)
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
                 sink = ds_stack_i.top();
             }, time_stack);
+            (void)sink;
+        }
+        times_succ = TIMES_FIND;
+#elif TEST_QUEUE
+        ds_size = ds_queue_i.size();
+        {
+            volatile ds_data_t sink = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
+                sink = ds_queue_i.front();
+            }, time_queue);
+            (void)sink;
+        }
+        times_succ = TIMES_FIND;
+#elif TEST_PQUEUE
+        ds_size = ds_pqueue_i.size();
+        {
+            volatile ds_data_t sink = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
+                sink = ds_pqueue_i.top();
+            }, time_pqueue);
             (void)sink;
         }
         times_succ = TIMES_FIND;
@@ -332,8 +397,9 @@ static void test_i_for(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t removed = 0;
 #ifdef TEST_HASHMAP
@@ -380,9 +446,6 @@ static void test_i_for(void)
                               ds_deque_i.end());
             removed += curr - ds_deque_i.size();
         }, time_deque);
-#elif TEST_PQUEUE
-        removed = 0;
-        /* unsupport */
 #elif TEST_STACK
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             //if (!ds_stack_i.empty())
@@ -391,6 +454,22 @@ static void test_i_for(void)
                 removed++;
             }
         }, time_stack);
+#elif TEST_QUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            //if (!ds_queue_i.empty())
+            {
+                ds_queue_i.pop();
+                removed++;
+            }
+        }, time_queue);
+#elif TEST_PQUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            //if (!ds_pqueue_i.empty())
+            {
+                ds_pqueue_i.pop();
+                removed++;
+            }
+        }, time_pqueue);
 #endif
 
         printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (TIME_DS / 1000), (ssize_t)removed);
@@ -406,8 +485,9 @@ static void test_i_for(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t removed = 0;
 #ifdef TEST_HASHMAP
@@ -426,16 +506,24 @@ static void test_i_for(void)
         GET_DURATION({ removed = ds_vector_i.size();   ds_vector_i.clear();   }, time_vector);
 #elif TEST_DEQUE
         GET_DURATION({ removed = ds_deque_i.size();    ds_deque_i.clear();    }, time_deque);
-#elif TEST_PQUEUE
-        GET_DURATION({ removed = ds_pqueue_i.size();
-            priority_queue<ds_data_t>().swap(ds_pqueue_i);
-        }, time_pqueue);
 #elif TEST_STACK
         for (int i = 0; i < TIMES_INSERT; ++i)
             ds_stack_i.push(i);
         GET_DURATION({ removed = ds_stack_i.size();
             decltype(ds_stack_i)().swap(ds_stack_i);
         }, time_stack);
+#elif TEST_QUEUE
+        for (int i = 0; i < TIMES_INSERT; ++i)
+            ds_queue_i.push(i);
+        GET_DURATION({ removed = ds_queue_i.size();
+            decltype(ds_queue_i)().swap(ds_queue_i);
+        }, time_queue);
+#elif TEST_PQUEUE
+        for (int i = 0; i < TIMES_INSERT; ++i)
+            ds_pqueue_i.push(i);
+        GET_DURATION({ removed = ds_pqueue_i.size();
+            decltype(ds_pqueue_i)().swap(ds_pqueue_i);
+        }, time_pqueue);
 #endif
 
         printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000), (ssize_t)removed);
@@ -453,8 +541,9 @@ static void test_i_rand(void)
     clock_t time_list     = 0;
     clock_t time_vector   = 0;
     clock_t time_deque    = 0;
-    clock_t time_pqueue   = 0;
     clock_t time_stack    = 0;
+    clock_t time_queue    = 0;
+    clock_t time_pqueue   = 0;
     TOUCH_TIMERS();
 
 #ifdef TEST_HASHMAP
@@ -475,10 +564,12 @@ static void test_i_rand(void)
     vector<ds_data_t> ds_vector_i;
 #elif TEST_DEQUE
     deque<ds_data_t> ds_deque_i;
-#elif TEST_PQUEUE
-    priority_queue<ds_data_t> ds_pqueue_i;
 #elif TEST_STACK
     STACK_TEST_TYPE(ds_data_t) ds_stack_i;
+#elif TEST_QUEUE
+    QUEUE_TEST_TYPE(ds_data_t) ds_queue_i;
+#elif TEST_PQUEUE
+    PQ_TEST_TYPE(ds_data_t) ds_pqueue_i;
 #endif
 
     srand(time(0));
@@ -494,8 +585,9 @@ static void test_i_rand(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
 #ifdef TEST_HASHMAP
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
@@ -529,14 +621,18 @@ static void test_i_rand(void)
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             ds_deque_i.push_back(rand() % TIMES_FIND);
         }, time_deque);
-#elif TEST_PQUEUE
-        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
-            ds_pqueue_i.push(rand() % TIMES_FIND);
-        }, time_pqueue);
 #elif TEST_STACK
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             ds_stack_i.push(rand() % TIMES_FIND);
         }, time_stack);
+#elif TEST_QUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            ds_queue_i.push(rand() % TIMES_FIND);
+        }, time_queue);
+#elif TEST_PQUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            ds_pqueue_i.push(rand() % TIMES_FIND);
+        }, time_pqueue);
 #endif
 
         printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000));
@@ -552,8 +648,9 @@ static void test_i_rand(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t times_succ = 0;
         ds_size_t ds_size = 0;
@@ -605,9 +702,6 @@ static void test_i_rand(void)
             auto it = find(ds_deque_i.begin(), ds_deque_i.end(), rand() % TIMES_FIND);
             if (it != ds_deque_i.end()) times_succ++;
         }, time_deque);
-#elif TEST_PQUEUE
-        ds_size = ds_pqueue_i.size();
-        /* unsupport */
 #elif TEST_STACK
         ds_size = ds_stack_i.size();
         {
@@ -615,6 +709,26 @@ static void test_i_rand(void)
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
                 sink = ds_stack_i.top();
             }, time_stack);
+            (void)sink;
+        }
+        times_succ = TIMES_FIND;
+#elif TEST_QUEUE
+        ds_size = ds_queue_i.size();
+        {
+            volatile ds_data_t sink = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
+                sink = ds_queue_i.front();
+            }, time_queue);
+            (void)sink;
+        }
+        times_succ = TIMES_FIND;
+#elif TEST_PQUEUE
+        ds_size = ds_pqueue_i.size();
+        {
+            volatile ds_data_t sink = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
+                sink = ds_pqueue_i.top();
+            }, time_pqueue);
             (void)sink;
         }
         times_succ = TIMES_FIND;
@@ -633,8 +747,9 @@ static void test_i_rand(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t removed = 0;
 #ifdef TEST_HASHMAP
@@ -681,9 +796,6 @@ static void test_i_rand(void)
                               ds_deque_i.end());
             removed += curr - ds_deque_i.size();
         }, time_deque);
-#elif TEST_PQUEUE
-        removed = 0;
-        /* unsupport */
 #elif TEST_STACK
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             //if (!ds_stack_i.empty())
@@ -692,6 +804,22 @@ static void test_i_rand(void)
                 removed++;
             }
         }, time_stack);
+#elif TEST_QUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            //if (!ds_queue_i.empty())
+            {
+                ds_queue_i.pop();
+                removed++;
+            }
+        }, time_queue);
+#elif TEST_PQUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            //if (!ds_pqueue_i.empty())
+            {
+                ds_pqueue_i.pop();
+                removed++;
+            }
+        }, time_pqueue);
 #endif
 
         printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (TIME_DS / 1000), (ssize_t)removed);
@@ -1201,8 +1329,9 @@ static void test_i_rand(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t removed = 0;
 #ifdef TEST_HASHMAP
@@ -1221,16 +1350,24 @@ static void test_i_rand(void)
         GET_DURATION({ removed = ds_vector_i.size();   ds_vector_i.clear();   }, time_vector);
 #elif TEST_DEQUE
         GET_DURATION({ removed = ds_deque_i.size();    ds_deque_i.clear();    }, time_deque);
-#elif TEST_PQUEUE
-        GET_DURATION({ removed = ds_pqueue_i.size();
-            priority_queue<ds_data_t>().swap(ds_pqueue_i);
-        }, time_pqueue);
 #elif TEST_STACK
         for (int i = 0; i < TIMES_INSERT; ++i)
             ds_stack_i.push(rand() % TIMES_FIND);
         GET_DURATION({ removed = ds_stack_i.size();
             decltype(ds_stack_i)().swap(ds_stack_i);
         }, time_stack);
+#elif TEST_QUEUE
+        for (int i = 0; i < TIMES_INSERT; ++i)
+            ds_queue_i.push(rand() % TIMES_FIND);
+        GET_DURATION({ removed = ds_queue_i.size();
+            decltype(ds_queue_i)().swap(ds_queue_i);
+        }, time_queue);
+#elif TEST_PQUEUE
+        for (int i = 0; i < TIMES_INSERT; ++i)
+            ds_pqueue_i.push(rand() % TIMES_FIND);
+        GET_DURATION({ removed = ds_pqueue_i.size();
+            decltype(ds_pqueue_i)().swap(ds_pqueue_i);
+        }, time_pqueue);
 #endif
 
         printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000), (ssize_t)removed);
@@ -1285,8 +1422,9 @@ static void test_s_rand(void)
     clock_t time_list     = 0;
     clock_t time_vector   = 0;
     clock_t time_deque    = 0;
-    clock_t time_pqueue   = 0;
     clock_t time_stack    = 0;
+    clock_t time_queue    = 0;
+    clock_t time_pqueue   = 0;
     TOUCH_TIMERS();
 
 #ifdef TEST_HASHMAP
@@ -1307,10 +1445,12 @@ static void test_s_rand(void)
     vector<string> ds_vector_s;
 #elif TEST_DEQUE
     deque<string> ds_deque_s;
-#elif TEST_PQUEUE
-    priority_queue<string> ds_pqueue_s;
 #elif TEST_STACK
     STACK_TEST_TYPE(string) ds_stack_s;
+#elif TEST_QUEUE
+    QUEUE_TEST_TYPE(string) ds_queue_s;
+#elif TEST_PQUEUE
+    PQ_TEST_TYPE(string) ds_pqueue_s;
 #endif
 
     srand(time(0));
@@ -1328,8 +1468,9 @@ static void test_s_rand(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         string dst;
         dst.reserve(S_STR_LEN_MAX + 1);
@@ -1366,14 +1507,18 @@ static void test_s_rand(void)
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             ds_deque_s.push_back(s_pool_str(dst));
         }, time_deque);
-#elif TEST_PQUEUE
-        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
-            ds_pqueue_s.push(s_pool_str(dst));
-        }, time_pqueue);
 #elif TEST_STACK
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             ds_stack_s.push(s_pool_str(dst));
         }, time_stack);
+#elif TEST_QUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            ds_queue_s.push(s_pool_str(dst));
+        }, time_queue);
+#elif TEST_PQUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            ds_pqueue_s.push(s_pool_str(dst));
+        }, time_pqueue);
 #endif
 
         printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000));
@@ -1389,8 +1534,9 @@ static void test_s_rand(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t times_succ = 0;
         ds_size_t ds_size = 0;
@@ -1446,10 +1592,6 @@ static void test_s_rand(void)
             auto it = find(ds_deque_s.begin(), ds_deque_s.end(), s_pool_str(dst));
             if (it != ds_deque_s.end()) times_succ++;
         }, time_deque);
-#elif TEST_PQUEUE
-        ds_size = ds_pqueue_s.size();
-        /* unsupport */
-        (void)dst;
 #elif TEST_STACK
         ds_size = ds_stack_s.size();
         {
@@ -1457,6 +1599,28 @@ static void test_s_rand(void)
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
                 sink = ds_stack_s.top().size();
             }, time_stack);
+            (void)sink;
+        }
+        times_succ = TIMES_FIND;
+        (void)dst;
+#elif TEST_QUEUE
+        ds_size = ds_queue_s.size();
+        {
+            volatile size_t sink = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
+                sink = ds_queue_s.front().size();
+            }, time_queue);
+            (void)sink;
+        }
+        times_succ = TIMES_FIND;
+        (void)dst;
+#elif TEST_PQUEUE
+        ds_size = ds_pqueue_s.size();
+        {
+            volatile size_t sink = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
+                sink = ds_pqueue_s.top().size();
+            }, time_pqueue);
             (void)sink;
         }
         times_succ = TIMES_FIND;
@@ -1476,8 +1640,9 @@ static void test_s_rand(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t removed = 0;
 
@@ -1524,10 +1689,6 @@ static void test_s_rand(void)
                              ds_deque_s.end());
             removed += curr - ds_deque_s.size();
         }, time_deque);
-#elif TEST_PQUEUE
-        removed = 0;
-        /* unsupport */
-        (void)dst;
 #elif TEST_STACK
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
             //if (!ds_stack_s.empty())
@@ -1536,6 +1697,24 @@ static void test_s_rand(void)
                 removed++;
             }
         }, time_stack);
+        (void)dst;
+#elif TEST_QUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            //if (!ds_queue_s.empty())
+            {
+                ds_queue_s.pop();
+                removed++;
+            }
+        }, time_queue);
+        (void)dst;
+#elif TEST_PQUEUE
+        GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+            //if (!ds_pqueue_s.empty())
+            {
+                ds_pqueue_s.pop();
+                removed++;
+            }
+        }, time_pqueue);
         (void)dst;
 #endif
 
@@ -2075,8 +2254,9 @@ static void test_s_rand(void)
         time_list     = 0;
         time_vector   = 0;
         time_deque    = 0;
-        time_pqueue   = 0;
         time_stack    = 0;
+        time_queue    = 0;
+        time_pqueue   = 0;
 
         size_t removed = 0;
 
@@ -2096,10 +2276,6 @@ static void test_s_rand(void)
         GET_DURATION({ removed = ds_vector_s.size();   ds_vector_s.clear();   }, time_vector);
 #elif TEST_DEQUE
         GET_DURATION({ removed = ds_deque_s.size();    ds_deque_s.clear();    }, time_deque);
-#elif TEST_PQUEUE
-        GET_DURATION({ removed = ds_pqueue_s.size();
-            priority_queue<string>().swap(ds_pqueue_s);
-        }, time_pqueue);
 #elif TEST_STACK
         {
             string dst;
@@ -2110,6 +2286,26 @@ static void test_s_rand(void)
         GET_DURATION({ removed = ds_stack_s.size();
             decltype(ds_stack_s)().swap(ds_stack_s);
         }, time_stack);
+#elif TEST_QUEUE
+        {
+            string dst;
+            dst.reserve(S_STR_LEN_MAX + 1);
+            for (int i = 0; i < TIMES_INSERT; ++i)
+                ds_queue_s.push(s_pool_str(dst));
+        }
+        GET_DURATION({ removed = ds_queue_s.size();
+            decltype(ds_queue_s)().swap(ds_queue_s);
+        }, time_queue);
+#elif TEST_PQUEUE
+        {
+            string dst;
+            dst.reserve(S_STR_LEN_MAX + 1);
+            for (int i = 0; i < TIMES_INSERT; ++i)
+                ds_pqueue_s.push(s_pool_str(dst));
+        }
+        GET_DURATION({ removed = ds_pqueue_s.size();
+            decltype(ds_pqueue_s)().swap(ds_pqueue_s);
+        }, time_pqueue);
 #endif
 
         printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000), (ssize_t)removed);

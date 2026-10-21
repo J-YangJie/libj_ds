@@ -10,6 +10,7 @@ WITH_LIST=n
 WITH_VECTOR=n
 WITH_DEQUE=n
 WITH_STACK=y
+WITH_QUEUE=y
 WITH_PRIORITY_QUEUE=y
 WITH_HASHMAP=y
 WITH_MAP=y
@@ -24,6 +25,11 @@ ifeq ($(WITH_STACK), y)
 WITH_LIST=y
 WITH_VECTOR=y
 WITH_DEQUE=y
+endif
+
+ifeq ($(WITH_QUEUE), y)
+WITH_DEQUE=y
+WITH_LIST=y
 endif
 
 
@@ -41,6 +47,10 @@ endif
 
 ifeq ($(WITH_STACK), y)
 OBJS += stack/stack.o
+endif
+
+ifeq ($(WITH_QUEUE), y)
+OBJS += queue/queue.o
 endif
 
 ifeq ($(WITH_LIST), y)
@@ -123,13 +133,18 @@ endif
 ifeq ($(WITH_LIST), y)
 PERFORMANCE_BINS += performance_list
 endif
-ifeq ($(WITH_PRIORITY_QUEUE), y)
-PERFORMANCE_BINS += performance_pqueue
-endif
 ifeq ($(WITH_STACK), y)
 PERFORMANCE_BINS += performance_stack_vector
 PERFORMANCE_BINS += performance_stack_deque
 PERFORMANCE_BINS += performance_stack_list
+endif
+ifeq ($(WITH_QUEUE), y)
+PERFORMANCE_BINS += performance_queue_deque
+PERFORMANCE_BINS += performance_queue_list
+endif
+ifeq ($(WITH_PRIORITY_QUEUE), y)
+PERFORMANCE_BINS += performance_pqueue_vector
+PERFORMANCE_BINS += performance_pqueue_deque
 endif
 ifeq ($(WITH_HASHMAP), y)
 PERFORMANCE_BINS += performance_hashmap
@@ -159,13 +174,18 @@ endif
 ifeq ($(WITH_LIST), y)
 PERFORMANCE_STL_BINS += performance_stl_list
 endif
-ifeq ($(WITH_PRIORITY_QUEUE), y)
-PERFORMANCE_STL_BINS += performance_stl_pqueue
-endif
 ifeq ($(WITH_STACK), y)
 PERFORMANCE_STL_BINS += performance_stl_stack_vector
 PERFORMANCE_STL_BINS += performance_stl_stack_deque
 PERFORMANCE_STL_BINS += performance_stl_stack_list
+endif
+ifeq ($(WITH_QUEUE), y)
+PERFORMANCE_STL_BINS += performance_stl_queue_deque
+PERFORMANCE_STL_BINS += performance_stl_queue_list
+endif
+ifeq ($(WITH_PRIORITY_QUEUE), y)
+PERFORMANCE_STL_BINS += performance_stl_pqueue_vector
+PERFORMANCE_STL_BINS += performance_stl_pqueue_deque
 endif
 ifeq ($(WITH_HASHMAP), y)
 PERFORMANCE_STL_BINS += performance_stl_hashmap
@@ -194,9 +214,6 @@ ifeq ($(WITH_LIST), y)
 endif
 ifeq ($(WITH_DEQUE), y)
 # DEMO_BINS += demo/demo_deque_bin
-endif
-ifeq ($(WITH_PRIORITY_QUEUE), y)
-DEMO_BINS += demo/demo_pqueue_bin
 endif
 ifeq ($(WITH_HASHMAP), y)
 DEMO_BINS += demo/demo_hashmap_bin
@@ -248,9 +265,6 @@ performance_jds_vector.o : main.c
 performance_jds_deque.o : main.c Makefile
 	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE -DDEQUE_STR_SSO
 
-performance_jds_pqueue.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_PQUEUE
-
 performance_jds_stack_vector.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_VECTOR
 
@@ -259,6 +273,18 @@ performance_jds_stack_deque.o : main.c
 
 performance_jds_stack_list.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_LIST
+
+performance_jds_queue_deque.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_DEQUE
+
+performance_jds_queue_list.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_LIST
+
+performance_jds_pqueue_vector.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_VECTOR
+
+performance_jds_pqueue_deque.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_DEQUE
 
 performance_jds_hashmap.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_HASH_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=0
@@ -311,9 +337,6 @@ performance_stl_vector.o : main_stl.cpp
 performance_stl_deque.o : main_stl.cpp Makefile
 	@$(CXX) $(CXXFLAGS) -c -o $@ $< $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE
 
-performance_stl_pqueue.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_PQUEUE
-
 performance_stl_stack_vector.o : main_stl.cpp
 	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_VECTOR
 
@@ -322,6 +345,18 @@ performance_stl_stack_deque.o : main_stl.cpp
 
 performance_stl_stack_list.o : main_stl.cpp
 	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_LIST
+
+performance_stl_queue_deque.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_DEQUE
+
+performance_stl_queue_list.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_LIST
+
+performance_stl_pqueue_vector.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_VECTOR
+
+performance_stl_pqueue_deque.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_DEQUE
 
 performance_stl_hashmap.o : main_stl.cpp
 	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_HASH_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=0
@@ -383,6 +418,12 @@ stress_slow : stress/main_slow.o stress/test_vector.o stress/test_list.o
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 
 stress_stack : stress/test_stack.o
+	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
+
+stress_queue : stress/test_queue.o
+	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
+
+stress_priority_queue : stress/test_priority_queue.o
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 
 
