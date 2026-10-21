@@ -28,7 +28,7 @@
 #include <assert.h>
 #define JDSC_ASSERT(expr) assert(expr)
 #else
-#define JDSC_ASSERT(expr)
+#define JDSC_ASSERT(expr) do { (void)0; } while(0)
 #endif /* JDSC_DEBUG */
 
 #endif /* __J_COMPILER_H */

@@ -106,12 +106,31 @@ void i_stack_swap(i_stack_t* _this, i_stack_t* other)
     void* p;
 
     if (!is_null(_this) && !is_null(other) && _this != other && _this->id == other->id) {
+        switch (_this->id) {
+        case __SEQUENCE_CONTAINER_BASE_VECTOR:
+            JDSC_ASSERT(   _this->v->ops   == other->v->ops /* Include sso */
+                        && _this->v->step  == other->v->step 
+                        && _this->v->align == other->v->align);
+            break;
+        case __SEQUENCE_CONTAINER_BASE_DEQUE:
+            JDSC_ASSERT(   _this->d->ops   == other->d->ops /* Include sso */
+                        && _this->d->step  == other->d->step 
+                        && _this->d->align == other->d->align);
+            break;
+        case __SEQUENCE_CONTAINER_BASE_LIST:
+            JDSC_ASSERT(   _this->l->ops   == other->l->ops /* Include sso */
+                        && _this->l->step  == other->l->step 
+                        && _this->l->align == other->l->align 
+                        && _this->l->pad   == other->l->pad);
+            break;
+        default:
+            break;
+        }
+
         p = _this->p;
         _this->p = other->p;
         other->p = p;
-        return ;
     }
-    JDSC_ASSERT(!is_null(_this) && !is_null(other) && _this->id == other.id);
 }
 
 static inline

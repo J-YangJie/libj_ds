@@ -32,4 +32,7 @@ typedef struct class_priority_queue_ops {
 const class_priority_queue_ops_t* class_priority_queue_ops_string_ins(void);
 #define g_class_priority_queue_ops_string()  class_priority_queue_ops_string_ins()
 
+const class_priority_queue_ops_t* class_priority_queue_ops_sso_ins(void);
+#define g_class_priority_queue_ops_sso()     class_priority_queue_ops_sso_ins()
+
 #endif /* __J_PRIORITY_QUEUE_OPS_H */
