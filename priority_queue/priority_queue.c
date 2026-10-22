@@ -594,6 +594,117 @@ void __i_pq_deque_heapify(i_priority_queue_t* _this)
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+static void __priority_queue_heapify(priority_queue_t* _this, priority_queue_size_t index)
+{
+    priority_queue_size_t i = index;
+    priority_queue_size_t len = __priority_queue_size(_this) - 1;
+    priority_queue_size_t m;
+
+    if (index >= __priority_queue_size(_this))
+        return ;
+
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
+        for (; (i << 1) + 1 <= len;) {
+            priority_queue_size_t ls = (i << 1) + 1;
+            priority_queue_size_t rs = (i << 1) + 2;
+
+            m = ls <= len && _this->head[i].data < _this->head[ls].data ? ls : i;
+            m = rs <= len && _this->head[m].data < _this->head[rs].data ? rs : m;
+
+            if (i == m)
+                break;
+
+            __priority_queue_exchange_data(&_this->head[m].data, &_this->head[i].data);
+            i = m;
+        }
+    } else {
+        for (; (i << 1) + 1 <= len;) {
+            priority_queue_size_t ls = (i << 1) + 1;
+            priority_queue_size_t rs = (i << 1) + 2;
+
+            m = ls <= len && _this->ops->__lt(_this->head[i].data, _this->head[ls].data) ? ls : i;
+            m = rs <= len && _this->ops->__lt(_this->head[m].data, _this->head[rs].data) ? rs : m;
+
+            if (i == m)
+                break;
+
+            __priority_queue_exchange_data(&_this->head[m].data, &_this->head[i].data);
+            i = m;
+        }
+    }
+}
+
+static inline
+void __i_priority_queue_heapify_vector(i_vector_t* _this, vector_size_t index)
+{
+    const vector_step_t step = _this->step;
+    const vector_size_t size = __i_vector_size(_this);
+    vector_size_t _m, _l, _r, _i = index;
+    uint8_t* pm, * pl, * pr, * pi;
+    bool less;
+
+    if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
+        for (; (_l = (_i << 1) + 1) < size;) {
+            {
+                pi = __i_vector_ptr_add(_this->begin, _i, step);
+                pl = __i_vector_ptr_add(_this->begin, _l, step);
+
+                less = __i_vector_slot_read(_this, pi) < __i_vector_slot_read(_this, pl);
+                _m = less ? _l : _i;
+                pm = less ? pl : pi;
+            }
+
+            {
+                _r = _l + 1;
+                pr = pl + step;
+
+                less = _r < size && __i_vector_slot_read(_this, pm) < __i_vector_slot_read(_this, pr);
+                _m = less ? _r : _m;
+                pm = less ? pr : pm;
+            }
+
+            if (_i == _m)
+                break;
+
+            {
+                vector_data_t data = __i_vector_slot_read(_this, pm);
+                __i_vector_slot_move(_this, pm, pi);
+                __i_vector_slot_write(_this, pi, data);
+            }
+            _i = _m;
+        }
+    } else {
+        for (; (i << 1) + 1 <= len;) {
+            priority_queue_size_t ls = (i << 1) + 1;
+            priority_queue_size_t rs = (i << 1) + 2;
+
+            m = ls <= len && _this->ops->__lt(_this->head[i].data, _this->head[ls].data) ? ls : i;
+            m = rs <= len && _this->ops->__lt(_this->head[m].data, _this->head[rs].data) ? rs : m;
+
+            if (i == m)
+                break;
+
+            __priority_queue_exchange_data(&_this->head[m].data, &_this->head[i].data);
+            i = m;
+        }
+    }
+}
+*/
+
+
 bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data)
 {
     if (is_null(_this))

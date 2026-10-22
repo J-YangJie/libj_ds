@@ -30,6 +30,7 @@
 
 typedef struct i_vector {
     const class_vector_ops_t* ops;
+    vector_dtype_t dtype;
     vector_step_t  step;
     vector_align_t align;
     vector_size_t  capacity_init;
@@ -399,6 +400,63 @@ vector_value_t i_vector_front(const i_vector_t* _this)
 
 
 
+#ifdef JDSC_32BIT
+/* checked */
+static inline
+bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t data)
+{
+    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
+        return _this->ops->copy_data(data, (vector_data_t*)slot);
+
+    switch (_this->step)
+    {
+    case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
+    case 2: *(uint16_t*)slot = (uint16_t)data; break;
+    case 4: *(uint32_t*)slot = (uint32_t)data; break;
+    default: return false;
+    }
+    return true;
+}
+
+/* checked */
+static inline
+vector_data_t __i_vector_slot_read(const i_vector_t* _this, const uint8_t* slot)
+{
+    const vector_dtype_t dtype = _this->dtype;
+
+    if (dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
+        return (vector_data_t)(uintptr_t)slot;
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_SINT) {
+        switch (_this->step)
+        {
+        case 1: return (int8_t)*(const int8_t*)slot;
+        case 2: return (int16_t)*(const int16_t*)slot;
+        case 4: return (int32_t)*(const int32_t*)slot;
+        default: return (vector_data_t)(uintptr_t)slot;
+        }
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_UINT) {
+        switch (_this->step)
+        {
+        case 1: return (uint8_t)*(const uint8_t*)slot;
+        case 2: return (uint16_t)*(const uint16_t*)slot;
+        case 4: return (uint32_t)*(const uint32_t*)slot;
+        default: return (vector_data_t)(uintptr_t)slot;
+        }
+    }
+}
+
+/* checked */
+static inline
+bool __i_vector_slot_equal(vector_step_t step, ds_data_t data, const void* slot)
+{
+    switch (step) {
+    case 1: return (uint8_t)data  == *(const uint8_t*)slot;
+    case 2: return (uint16_t)data == *(const uint16_t*)slot;
+    case 4: return (uint32_t)data == *(const uint32_t*)slot;
+    default: return false;
+    }
+}
+#else
 /* checked */
 static inline
 bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t data)
@@ -421,15 +479,44 @@ bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t
 static inline
 vector_data_t __i_vector_slot_read(const i_vector_t* _this, const uint8_t* slot)
 {
-    switch (_this->step)
-    {
-    case 1: return *(const uint8_t*)slot;
-    case 2: return *(const uint16_t*)slot;
-    case 4: return *(const uint32_t*)slot;
-    case 8: return *(const uint64_t*)slot;
-    default: return (vector_data_t)(uintptr_t)slot;
+    const vector_dtype_t dtype = _this->dtype;
+
+    if (dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
+        return (vector_data_t)(uintptr_t)slot;
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_SINT) {
+        switch (_this->step)
+        {
+        case 1: return (int8_t)*(const int8_t*)slot;
+        case 2: return (int16_t)*(const int16_t*)slot;
+        case 4: return (int32_t)*(const int32_t*)slot;
+        case 8: return (int64_t)*(const int64_t*)slot;
+        default: return (vector_data_t)(uintptr_t)slot;
+        }
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_UINT) {
+        switch (_this->step)
+        {
+        case 1: return (uint8_t)*(const uint8_t*)slot;
+        case 2: return (uint16_t)*(const uint16_t*)slot;
+        case 4: return (uint32_t)*(const uint32_t*)slot;
+        case 8: return (uint64_t)*(const uint64_t*)slot;
+        default: return (vector_data_t)(uintptr_t)slot;
+        }
     }
 }
+
+/* checked */
+static inline
+bool __i_vector_slot_equal(vector_step_t step, ds_data_t data, const void* slot)
+{
+    switch (step) {
+    case 1: return (uint8_t)data  == *(const uint8_t*)slot;
+    case 2: return (uint16_t)data == *(const uint16_t*)slot;
+    case 4: return (uint32_t)data == *(const uint32_t*)slot;
+    case 8: return (uint64_t)data == *(const uint64_t*)slot;
+    default: return false;
+    }
+}
+#endif /* JDSC_32BIT */
 
 /* checked */
 static inline
@@ -558,12 +645,12 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (__ds_ops_eq_width(_this->step, data, __i_vector_slot_read(_this, p)))
+            if (__i_vector_slot_equal(_this->step, data, p))
                 return __i_vector_make_iterator(_this->step, p);
         }
     } else if (_this->sso) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (__ds_ops_eq_sso(data, __i_vector_slot_read(_this, p)))
+            if (__ds_ops_eq_sso(data, (vector_data_t)p))
                 return __i_vector_make_iterator(_this->step, p);
         }
     } else {
@@ -579,8 +666,8 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
 static inline
 vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
 {
-    uint8_t* p;
     vector_count_t ret = 0;
+    uint8_t* p;
 
     if (is_null(_this))
         return -1;
@@ -590,12 +677,12 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (__ds_ops_eq_width(_this->step, data, __i_vector_slot_read(_this, p)))
+            if (__i_vector_slot_equal(_this->step, data, p))
                 ret++;
         }
     } else if (_this->sso) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (__ds_ops_eq_sso(data, __i_vector_slot_read(_this, p)))
+            if (__ds_ops_eq_sso(data, (vector_data_t)p))
                 ret++;
         }
     } else {
@@ -626,7 +713,7 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
-            if (!__ds_ops_eq_width(step, data, __i_vector_slot_read(_this, r))) {
+            if (!__i_vector_slot_equal(step, data, r)) {
                 __i_vector_slot_move(_this, l, r);
                 l = __i_vector_ptr_add(l, 1, step);
             } else {
@@ -637,7 +724,7 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
         }
     } else if (_this->sso) {
         for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
-            if (!__ds_ops_eq_sso(data, __i_vector_slot_read(_this, r))) {
+            if (!__ds_ops_eq_sso(data, (vector_data_t)r)) {
                 __i_vector_slot_move(_this, l, r);
                 l = __i_vector_ptr_add(l, 1, step);
             } else {

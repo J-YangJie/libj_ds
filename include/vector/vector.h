@@ -121,20 +121,22 @@ typedef struct class_vector {
     vector_size_t (*clear)(vector_t* _this);
 } class_vector_t;
 
-vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_align_t align, vector_size_t capacity_init);
+vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, vector_step_t step, vector_align_t align, vector_size_t capacity_init);
 void      __vector_delete(vector_t** _this);
 const class_vector_t* class_vector_ins(void);
-#define g_class_vector()              class_vector_ins()
-#define cvector                       g_class_vector()
-#define g_class_vector_ops_string()   g_class_sequence_container_ops_string()
-#define g_class_vector_ops_sso()      g_class_sequence_container_ops_sso()
-#define VECTOR_NEW()                  __vector_new(NULL,   sizeof(vector_data_t), __alignof__(vector_data_t), 0)
-#define VECTOR_NEW_OPS(_ops)          __vector_new((_ops), sizeof(vector_data_t), __alignof__(vector_data_t), 0)
-#define VECTOR_NEW_T(_type)           __vector_new(NULL,   sizeof(_type), __alignof__(_type), 0)
-#define VECTOR_NEW_OPS_T(_ops, _type) __vector_new((_ops), sizeof(_type), __alignof__(_type), 0)
-#define VECTOR_NEW_CHAR()             __vector_new(g_class_vector_ops_string(), sizeof(vector_data_t), __alignof__(vector_data_t), 0)
-#define VECTOR_NEW_SSO()              __vector_new(g_class_vector_ops_sso(),    sizeof(ds_sso_t),      __alignof__(ds_sso_t),      0)
-#define VECTOR_NEW_STRING()           VECTOR_NEW_SSO()
-#define VECTOR_DELETE(_pptr)          do { __vector_delete((_pptr)); } while(0)
+#define g_class_vector()               class_vector_ins()
+#define cvector                        g_class_vector()
+#define g_class_vector_ops_string()    g_class_sequence_container_ops_string()
+#define g_class_vector_ops_sso()       g_class_sequence_container_ops_sso()
+#define VECTOR_NEW_COMPLATE(_type_id, _type, _capacity_init)            __vector_new(NULL,   (_type_id), sizeof(_type), __alignof__(_type), (_capacity_init))
+#define VECTOR_NEW_OPS_COMPLATE(_ops, _type_id, _type, _capacity_init)  __vector_new((_ops), (_type_id), sizeof(_type), __alignof__(_type), (_capacity_init))
+#define VECTOR_NEW_T(_type)            VECTOR_NEW_OPS_COMPLATE((NULL), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type, 0)
+#define VECTOR_NEW_OPS_T(_ops, _type)  VECTOR_NEW_OPS_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type, 0)
+#define VECTOR_NEW()                   VECTOR_NEW_OPS_T(NULL,   vector_data_t)
+#define VECTOR_NEW_OPS(_ops)           VECTOR_NEW_OPS_T((_ops), vector_data_t)
+#define VECTOR_NEW_CHAR()              VECTOR_NEW_OPS_T(g_class_vector_ops_string(), vector_data_t)
+#define VECTOR_NEW_SSO()               VECTOR_NEW_OPS_T(g_class_vector_ops_sso(),    ds_sso_t)
+#define VECTOR_NEW_STRING()            VECTOR_NEW_SSO()
+#define VECTOR_DELETE(_pptr)           do { __vector_delete((_pptr)); } while(0)
 
 #endif /* __J_VECTOR_H */

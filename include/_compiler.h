@@ -31,4 +31,6 @@
 #define JDSC_ASSERT(expr) do { (void)0; } while(0)
 #endif /* JDSC_DEBUG */
 
+/* TODO: 补一个32位的宏定义判断，如果是32位的，则define JDSC_32BIT */
+
 #endif /* __J_COMPILER_H */

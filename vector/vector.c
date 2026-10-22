@@ -321,17 +321,33 @@ void __vector_deinit(vector_t* vector)
 }
 
 /* checked */
-vector_t* __vector_new(const class_vector_ops_t* ops, vector_step_t step, vector_align_t align, vector_size_t capacity_init)
+vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, vector_step_t step, vector_align_t align, vector_size_t capacity_init)
 {
     vector_t* vector;
 
+    /* TODO: 每种return NULL 前都加断言提示 */
     if (0 == step || capacity_init < 0)
         return NULL;
+
+    if (!__sequence_container_dtype_valid(data_type))
+        return NULL;
+
+    size_t width = __sequence_container_dtype_width(data_type);
+    if (0 != width && width != step)
+        return NULL;
+
+    if ((data_type & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(ops) || is_null(ops->copy_data)))
+        return NULL;
+
+    if (g_class_vector_ops_sso() == ops && (SEQ_CNTR_DTYPE_SSO != data_type || sizeof(ds_sso_t) != step))
+        return NULL;
+    /* TODO: 每种return NULL 前都加断言提示，到这里为止 */
 
     vector = (vector_t*)p_calloc(1, sizeof(vector_t));
     if (is_null(vector))
         return NULL;
 
+    vector->dtype = data_type;
     vector->step = step;
     vector->align = align;
     vector->capacity_init = 0 != capacity_init && capacity_init < _I_VECTOR_CAPACITY_INIT ? _I_VECTOR_CAPACITY_INIT : capacity_init;
