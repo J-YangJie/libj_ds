@@ -48,6 +48,26 @@ typedef struct class_sequence_container_ops {
     void (*free_data)(ds_data_t* data);              /* The function pointer can be null and manages memory on its own */
 } class_sequence_container_ops_t;
 
+/*
+ * Compare a caller-supplied value with a value read from a slot of width `step`.
+ *
+ * The caller is responsible for the element type, but not for how it widened
+ * the value into ds_data_t: `-1 << 32` and `4294967295` are the same 4-byte
+ * pattern. Truncate both sides to the slot width so either spelling matches.
+ * Used only when the container has no `__eq` op (step 1/2/4/8 numeric slots).
+ */
+static inline
+bool __ds_ops_eq_width(size_t step, ds_data_t left, ds_data_t right)
+{
+    switch (step) {
+    case 1: return (uint8_t)left  == (uint8_t)right;
+    case 2: return (uint16_t)left == (uint16_t)right;
+    case 4: return (uint32_t)left == (uint32_t)right;
+    case 8: return (uint64_t)left == (uint64_t)right;
+    default: return left == right;
+    }
+}
+
 const class_sequence_container_ops_t* class_sequence_container_ops_string_ins(void);
 #define g_class_sequence_container_ops_string()  class_sequence_container_ops_string_ins()
 

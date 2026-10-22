@@ -342,7 +342,7 @@ list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry(n, &_this->head, node) {
-            if (__i_dlist_slot_read(_this, n->data) == data)
+            if (__ds_ops_eq_width(_this->step, data, __i_dlist_slot_read(_this, n->data)))
                 return n;
         }
     } else if (_this->sso) {
@@ -383,7 +383,7 @@ list_count_t ___i_dlist_count(const i_list_t* _this, list_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (__i_dlist_slot_read(_this, n->data) == data)
+            if (__ds_ops_eq_width(_this->step, data, __i_dlist_slot_read(_this, n->data)))
                 ret++;
         }
     } else if (_this->sso) {
@@ -426,7 +426,7 @@ list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (__i_dlist_slot_read(_this, n->data) != data)
+            if (!__ds_ops_eq_width(_this->step, data, __i_dlist_slot_read(_this, n->data)))
                 continue;
 
             ___i_dlist_erase(_this, n);

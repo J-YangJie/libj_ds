@@ -428,7 +428,7 @@ deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data)
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
             for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
-                if (__i_deque_slot_read(_this, i) == data)
+                if (__ds_ops_eq_width(_this->step, data, __i_deque_slot_read(_this, i)))
                     return __i_deque_make_iterator(_this, bkt, i);
             }
         }
@@ -473,7 +473,7 @@ deque_count_t i_deque_count(const i_deque_t* _this, deque_data_t data)
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
             for ( ; i < l; i = __i_deque_ptr_add(i, 1, _this->step)) {
-                if (__i_deque_slot_read(_this, i) == data)
+                if (__ds_ops_eq_width(_this->step, data, __i_deque_slot_read(_this, i)))
                     ret++;
             }
         }
@@ -517,7 +517,7 @@ deque_size_t i_deque_remove(i_deque_t* _this, deque_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for ( ; end.cur != r.cur; r = __i_deque_next(r)) {
-            if (data != __i_deque_slot_read(_this, r.cur)) {
+            if (!__ds_ops_eq_width(_this->step, data, __i_deque_slot_read(_this, r.cur))) {
                 __i_deque_slot_move(_this, l.cur, r.cur);
                 l = __i_deque_next(l);
             } else {

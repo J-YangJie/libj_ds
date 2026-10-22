@@ -558,7 +558,7 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (data == __i_vector_slot_read(_this, p))
+            if (__ds_ops_eq_width(_this->step, data, __i_vector_slot_read(_this, p)))
                 return __i_vector_make_iterator(_this->step, p);
         }
     } else if (_this->sso) {
@@ -590,7 +590,7 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (data == __i_vector_slot_read(_this, p))
+            if (__ds_ops_eq_width(_this->step, data, __i_vector_slot_read(_this, p)))
                 ret++;
         }
     } else if (_this->sso) {
@@ -626,7 +626,7 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
-            if (data != __i_vector_slot_read(_this, r)) {
+            if (!__ds_ops_eq_width(step, data, __i_vector_slot_read(_this, r))) {
                 __i_vector_slot_move(_this, l, r);
                 l = __i_vector_ptr_add(l, 1, step);
             } else {
