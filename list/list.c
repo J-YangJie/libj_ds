@@ -40,7 +40,9 @@ bool __i_dlist_slot_write(const i_list_t* _this, uint8_t* slot, list_data_t data
     case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
     case 2: *(uint16_t*)slot = (uint16_t)data; break;
     case 4: *(uint32_t*)slot = (uint32_t)data; break;
+#ifdef JDSC_64BIT
     case 8: *(uint64_t*)slot = (uint64_t)data; break;
+#endif /* JDSC_64BIT */
     default: return false;
     }
     return true;
@@ -50,13 +52,49 @@ bool __i_dlist_slot_write(const i_list_t* _this, uint8_t* slot, list_data_t data
 static inline
 list_data_t __i_dlist_slot_read(const i_list_t* _this, const uint8_t* slot)
 {
-    switch (_this->step)
-    {
-    case 1: return *(const uint8_t*)slot;
-    case 2: return *(const uint16_t*)slot;
-    case 4: return *(const uint32_t*)slot;
-    case 8: return *(const uint64_t*)slot;
-    default: return (list_data_t)(uintptr_t)slot;
+    const list_dtype_t dtype = _this->dtype;
+
+    if (dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
+        return (list_data_t)(uintptr_t)slot;
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_SINT) {
+        switch (_this->step)
+        {
+        case 1: return (int8_t)*(const int8_t*)slot;
+        case 2: return (int16_t)*(const int16_t*)slot;
+        case 4: return (int32_t)*(const int32_t*)slot;
+#ifdef JDSC_64BIT
+        case 8: return (int64_t)*(const int64_t*)slot;
+#endif /* JDSC_64BIT */
+        default: return (list_data_t)(uintptr_t)slot;
+        }
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_UINT) {
+        switch (_this->step)
+        {
+        case 1: return *(const uint8_t*)slot;
+        case 2: return *(const uint16_t*)slot;
+        case 4: return *(const uint32_t*)slot;
+#ifdef JDSC_64BIT
+        case 8: return (list_data_t)*(const uint64_t*)slot;
+#endif /* JDSC_64BIT */
+        default: return (list_data_t)(uintptr_t)slot;
+        }
+    } else {
+        return (list_data_t)(uintptr_t)slot;
+    }
+}
+
+/* checked */
+static inline
+bool __i_dlist_slot_equal(list_step_t step, list_data_t data, const uint8_t* slot)
+{
+    switch (step) {
+    case 1: return (uint8_t)data  == *(const uint8_t*)slot;
+    case 2: return (uint16_t)data == *(const uint16_t*)slot;
+    case 4: return (uint32_t)data == *(const uint32_t*)slot;
+#ifdef JDSC_64BIT
+    case 8: return (uint64_t)data == *(const uint64_t*)slot;
+#endif /* JDSC_64BIT */
+    default: return false;
     }
 }
 
@@ -342,12 +380,12 @@ list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry(n, &_this->head, node) {
-            if (__i_dlist_slot_read(_this, n->data) == data)
+            if (__i_dlist_slot_equal(_this->step, data, n->data))
                 return n;
         }
     } else if (_this->sso) {
         list_for_each_entry(n, &_this->head, node) {
-            if (__ds_ops_eq_sso(data, __i_dlist_slot_read(_this, n->data)))
+            if (__ds_ops_eq_sso(data, (list_data_t)(uintptr_t)n->data))
                 return n;
         }
     } else {
@@ -370,6 +408,11 @@ list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data)
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return NULL;
 
+    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
+        JDSC_ASSERT(!"struct/union container has no __eq");
+        return NULL;
+    }
+
     n = ___i_dlist_find(_this, data);
     return is_null(n) ? i_dlist_end(_this) : n;
 }
@@ -383,12 +426,12 @@ list_count_t ___i_dlist_count(const i_list_t* _this, list_data_t data)
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (__i_dlist_slot_read(_this, n->data) == data)
+            if (__i_dlist_slot_equal(_this->step, data, n->data))
                 ret++;
         }
     } else if (_this->sso) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (__ds_ops_eq_sso(data, __i_dlist_slot_read(_this, n->data)))
+            if (__ds_ops_eq_sso(data, (list_data_t)(uintptr_t)n->data))
                 ret++;
         }
     } else {
@@ -409,6 +452,11 @@ list_count_t i_dlist_count(const i_list_t* _this, list_data_t data)
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
+    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
+        JDSC_ASSERT(!"struct/union container has no __eq");
+        return -1;
+    }
+
     return ___i_dlist_count(_this, data);
 }
 
@@ -424,9 +472,14 @@ list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return -1;
 
+    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
+        JDSC_ASSERT(!"struct/union container has no __eq");
+        return -1;
+    }
+
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (__i_dlist_slot_read(_this, n->data) != data)
+            if (!__i_dlist_slot_equal(_this->step, data, n->data))
                 continue;
 
             ___i_dlist_erase(_this, n);
@@ -435,7 +488,7 @@ list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
         }
     } else if (_this->sso) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (!__ds_ops_eq_sso(data, __i_dlist_slot_read(_this, n->data)))
+            if (!__ds_ops_eq_sso(data, (list_data_t)(uintptr_t)n->data))
                 continue;
 
             ___i_dlist_erase(_this, n);
@@ -499,6 +552,11 @@ list_size_t i_dlist_unique(i_list_t* _this)
 
     if (unlikely(is_null(_this)))
         return -1;
+
+    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
+        JDSC_ASSERT(!"struct/union container has no __eq");
+        return -1;
+    }
 
     if (__i_dlist_size(_this) < 2)
         return 0;
@@ -581,6 +639,9 @@ void i_dlist_splice(i_list_t* _this, list_iterator_t iterator, i_list_t* other)
     if (_this == other || __i_dlist_empty(other))
         return ;
 
+    if (_this->step != other->step || _this->ops != other->ops || _this->dtype != other->dtype)
+        return ;
+
     pos = __i_dlist_it_to_lnode(iterator);
     __i_dlist_transfer(&pos->node, other->head.next, &other->head);
 
@@ -600,6 +661,9 @@ void i_dlist_splice_range(i_list_t* _this, list_iterator_t iterator, i_list_t* o
 
     if (unlikely(is_null(_this) || is_null(other)
                  || is_null(iterator.d) || is_null(iterator_begin.d) || is_null(iterator_end.d)))
+        return ;
+
+    if (_this->step != other->step || _this->ops != other->ops || _this->dtype != other->dtype)
         return ;
 
     if (__i_dlist_empty(other) || iterator_begin.d == iterator_end.d)
@@ -638,7 +702,11 @@ void i_dlist_merge(i_list_t* _this, i_list_t* other, list_cmp_t cmp)
     if (_this == other || __i_dlist_empty(other))
         return ;
 
-    JDSC_ASSERT(_this->step == other->step);
+    JDSC_ASSERT(_this->step == other->step
+                && _this->ops == other->ops
+                && _this->dtype == other->dtype);
+    if (_this->step != other->step || _this->ops != other->ops || _this->dtype != other->dtype)
+        return ;
 
     first1 = _this->head.next;
     last1  = &_this->head;
@@ -707,7 +775,7 @@ void i_dlist_swap(i_list_t* _this, i_list_t* other)
     if (unlikely(is_null(_this) || is_null(other) || _this == other))
         return ;
 
-    if (_this->step != other->step || _this->ops != other->ops)
+    if (_this->step != other->step || _this->ops != other->ops || _this->dtype != other->dtype)
         return ;
 
     __i_dlist_swap_head(_this, other);
@@ -788,12 +856,44 @@ list_size_t i_dlist_clear(i_list_t* _this)
 }
 
 /* checked */
-list_t* __list_new(const class_list_ops_t* ops, list_step_t step, size_t align)
+list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_step_t step, size_t align)
 {
     list_t* list;
+    size_t  width;
 
-    if (0 == step)
+    JDSC_ASSERT(0 != step);
+    if (0 == step) {
+        pr_err("%s: invalid step [ %zu ]!", __func__, step);
         return NULL;
+    }
+
+    JDSC_ASSERT(__sequence_container_dtype_valid(data_type));
+    if (!__sequence_container_dtype_valid(data_type)) {
+        pr_err("%s: invalid data type [ %zu ]!", __func__, data_type);
+        return NULL;
+    }
+
+    width = __sequence_container_dtype_width(data_type);
+    JDSC_ASSERT(0 == width || width == step);
+    if (0 != width && width != step) {
+        pr_err("%s: data type width [ %zu ] does not match step [ %zu ]!", __func__, width, step);
+        return NULL;
+    }
+
+    JDSC_ASSERT(!(data_type & SEQ_CNTR_DTYPE_MASK_STUN)
+                || (!is_null(ops) && !is_null(ops->copy_data)));
+    if ((data_type & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(ops) || is_null(ops->copy_data))) {
+        pr_err("%s: aggregate data type requires copy_data!", __func__);
+        return NULL;
+    }
+
+    JDSC_ASSERT(g_class_list_ops_sso() != ops
+                || (SEQ_CNTR_DTYPE_SSO == data_type && sizeof(ds_sso_t) == step));
+    if (g_class_list_ops_sso() == ops
+        && (SEQ_CNTR_DTYPE_SSO != data_type || sizeof(ds_sso_t) != step)) {
+        pr_err("%s: SSO ops require SSO data type and sizeof(ds_sso_t) step!", __func__);
+        return NULL;
+    }
 
     list = (list_t*)p_calloc(1, sizeof(list_t));
     if (is_null(list))
@@ -802,6 +902,7 @@ list_t* __list_new(const class_list_ops_t* ops, list_step_t step, size_t align)
     list->ops   = ops;
     if (g_class_list_ops_sso() == list->ops)
         list->sso = true;
+    list->dtype = data_type;
     list->step  = step;
     list->align = align ? align : JDSC_ALIGN_DEFAULT;
 #if JDSC_ALIGN

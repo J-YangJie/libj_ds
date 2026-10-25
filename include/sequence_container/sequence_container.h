@@ -21,11 +21,105 @@
 #define __J_SEQUENCE_CONTAINER_H
 
 #include <_types.h>
+#include <_compiler.h>
 #include <sequence_container/operations/ds_ops_sso.h>
 
 #define __SEQUENCE_CONTAINER_BASE_VECTOR 1
 #define __SEQUENCE_CONTAINER_BASE_DEQUE  2
 #define __SEQUENCE_CONTAINER_BASE_LIST   3
+
+#ifndef BIT
+#define BIT(n) (1UL << (n))
+#endif /* BIT */
+
+#define SEQ_CNTR_DTYPE_U8                BIT(2)
+#define SEQ_CNTR_DTYPE_U16               BIT(3)
+#define SEQ_CNTR_DTYPE_U32               BIT(4)
+#define SEQ_CNTR_DTYPE_S8                BIT(6)
+#define SEQ_CNTR_DTYPE_S16               BIT(7)
+#define SEQ_CNTR_DTYPE_S32               BIT(8)
+#ifdef JDSC_64BIT
+#define SEQ_CNTR_DTYPE_U64               BIT(5)
+#define SEQ_CNTR_DTYPE_S64               BIT(9)
+#endif /* JDSC_64BIT */
+#define SEQ_CNTR_DTYPE_UINTPTR           BIT(10)
+#define SEQ_CNTR_DTYPE_INTPTR            BIT(11)
+#define SEQ_CNTR_DTYPE_STRUCT            BIT(12)
+#define SEQ_CNTR_DTYPE_UNION             BIT(13)
+#define SEQ_CNTR_DTYPE_PTR               SEQ_CNTR_DTYPE_INTPTR
+#define SEQ_CNTR_DTYPE_SSO               SEQ_CNTR_DTYPE_STRUCT
+
+#ifdef JDSC_64BIT
+#define SEQ_CNTR_DTYPE_MASK_U64          SEQ_CNTR_DTYPE_U64
+#define SEQ_CNTR_DTYPE_MASK_S64          SEQ_CNTR_DTYPE_S64
+#else
+#define SEQ_CNTR_DTYPE_MASK_U64          0
+#define SEQ_CNTR_DTYPE_MASK_S64          0
+#endif /* JDSC_64BIT */
+
+#define SEQ_CNTR_DTYPE_MASK_UINT         (SEQ_CNTR_DTYPE_U8  | SEQ_CNTR_DTYPE_U16 | SEQ_CNTR_DTYPE_U32 | SEQ_CNTR_DTYPE_UINTPTR | SEQ_CNTR_DTYPE_MASK_U64)
+#define SEQ_CNTR_DTYPE_MASK_SINT         (SEQ_CNTR_DTYPE_S8  | SEQ_CNTR_DTYPE_S16 | SEQ_CNTR_DTYPE_S32 | SEQ_CNTR_DTYPE_INTPTR | SEQ_CNTR_DTYPE_MASK_S64)
+#define SEQ_CNTR_DTYPE_MASK_NUM          (SEQ_CNTR_DTYPE_MASK_UINT | SEQ_CNTR_DTYPE_MASK_SINT)
+#define SEQ_CNTR_DTYPE_MASK_STUN         (SEQ_CNTR_DTYPE_STRUCT | SEQ_CNTR_DTYPE_UNION)
+#define SEQ_CNTR_DTYPE_MASK_ALL          (SEQ_CNTR_DTYPE_MASK_NUM | SEQ_CNTR_DTYPE_MASK_STUN)
+
+#define __SEQUENCE_CONTAINER_DTYPE_uint8_t                SEQ_CNTR_DTYPE_U8
+#define __SEQUENCE_CONTAINER_DTYPE_uint16_t               SEQ_CNTR_DTYPE_U16
+#define __SEQUENCE_CONTAINER_DTYPE_uint32_t               SEQ_CNTR_DTYPE_U32
+#ifdef JDSC_64BIT
+#define __SEQUENCE_CONTAINER_DTYPE_uint64_t               SEQ_CNTR_DTYPE_U64
+#endif /* JDSC_64BIT */
+#define __SEQUENCE_CONTAINER_DTYPE_int8_t                 SEQ_CNTR_DTYPE_S8
+#define __SEQUENCE_CONTAINER_DTYPE_int16_t                SEQ_CNTR_DTYPE_S16
+#define __SEQUENCE_CONTAINER_DTYPE_int32_t                SEQ_CNTR_DTYPE_S32
+#ifdef JDSC_64BIT
+#define __SEQUENCE_CONTAINER_DTYPE_int64_t                SEQ_CNTR_DTYPE_S64
+#endif /* JDSC_64BIT */
+#define __SEQUENCE_CONTAINER_DTYPE_uintptr_t              SEQ_CNTR_DTYPE_UINTPTR
+#define __SEQUENCE_CONTAINER_DTYPE_intptr_t               SEQ_CNTR_DTYPE_INTPTR
+#define __SEQUENCE_CONTAINER_DTYPE_ds_data_t              SEQ_CNTR_DTYPE_PTR
+#define __SEQUENCE_CONTAINER_DTYPE_deque_data_t           __SEQUENCE_CONTAINER_DTYPE_ds_data_t
+#define __SEQUENCE_CONTAINER_DTYPE_vector_data_t          __SEQUENCE_CONTAINER_DTYPE_ds_data_t
+#define __SEQUENCE_CONTAINER_DTYPE_list_data_t            __SEQUENCE_CONTAINER_DTYPE_ds_data_t
+#define __SEQUENCE_CONTAINER_DTYPE_stack_data_t           __SEQUENCE_CONTAINER_DTYPE_ds_data_t
+#define __SEQUENCE_CONTAINER_DTYPE_queue_data_t           __SEQUENCE_CONTAINER_DTYPE_ds_data_t
+#define __SEQUENCE_CONTAINER_DTYPE_priority_queue_data_t  __SEQUENCE_CONTAINER_DTYPE_ds_data_t
+#define __SEQUENCE_CONTAINER_DTYPE_ds_sso_t               SEQ_CNTR_DTYPE_SSO
+
+static inline
+bool __sequence_container_dtype_valid(ds_dtype_t dtype)
+{
+    return 0 != dtype && 0 == (dtype & (dtype - 1)) && 0 == (dtype & ~(ds_dtype_t)SEQ_CNTR_DTYPE_MASK_ALL);
+}
+
+static inline
+size_t __sequence_container_dtype_width(ds_dtype_t dtype)
+{
+    switch (dtype) {
+    case SEQ_CNTR_DTYPE_U8:  case SEQ_CNTR_DTYPE_S8:  return 1;
+    case SEQ_CNTR_DTYPE_U16: case SEQ_CNTR_DTYPE_S16: return 2;
+    case SEQ_CNTR_DTYPE_U32: case SEQ_CNTR_DTYPE_S32: return 4;
+#ifdef JDSC_64BIT
+    case SEQ_CNTR_DTYPE_U64: case SEQ_CNTR_DTYPE_S64: return 8;
+#endif /* JDSC_64BIT */
+    case SEQ_CNTR_DTYPE_UINTPTR:                      return sizeof(uintptr_t);
+    case SEQ_CNTR_DTYPE_INTPTR:                       return sizeof(intptr_t);
+    default:                                          return 0; /* struct/union: step carries the size */
+    }
+}
+
+/* Shared by the containers that compare a slot read against a lookup value. */
+static inline
+bool __ds_ops_eq_width(size_t step, ds_data_t left, ds_data_t right)
+{
+    switch (step) {
+    case 1: return (uint8_t)left  == (uint8_t)right;
+    case 2: return (uint16_t)left == (uint16_t)right;
+    case 4: return (uint32_t)left == (uint32_t)right;
+    case 8: return (uint64_t)left == (uint64_t)right;
+    default: return left == right;
+    }
+}
 
 typedef struct sequence_container_value {
     union {
@@ -46,6 +140,7 @@ typedef struct class_sequence_container_ops {
     bool (*__eq)(ds_data_t left, ds_data_t right);   /* Return true if [ `left` == `right` ] */
     bool (*copy_data)(ds_data_t in, ds_data_t* out); /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_data` must also be implemented */
     void (*free_data)(ds_data_t* data);              /* The function pointer can be null and manages memory on its own */
+    void (*__move)(ds_data_t dest, ds_data_t src);   /* Move semantics: relocate src to dest and rebase any self-references to dest. Optional; memmove is used when null. */
 } class_sequence_container_ops_t;
 
 const class_sequence_container_ops_t* class_sequence_container_ops_string_ins(void);

@@ -37,6 +37,7 @@ typedef struct list_node {
 
 typedef struct i_list {
     const class_list_ops_t* ops;
+    list_dtype_t     dtype;
     list_step_t      step;
     list_align_t     align;
     size_t           pad;

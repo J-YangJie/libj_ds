@@ -22,7 +22,7 @@
 
 #include <stddef.h>
 #include <_compiler.h>
-#include <sort/sort_intro.h>   /* I_VECTOR_SORT_DEFINE 用到 I_SORT_DEFINE */
+#include <sort/sort_intro.h>   /* __i_vector_sort_define 用到 __i_sort_define */
 
 #ifndef is_null
 #define is_null(X) (!(X))
@@ -30,6 +30,7 @@
 
 typedef struct i_vector {
     const class_vector_ops_t* ops;
+    vector_dtype_t dtype;
     vector_step_t  step;
     vector_align_t align;
     vector_size_t  capacity_init;
@@ -233,31 +234,32 @@ vector_iterator_t i_vector_prev(vector_iterator_t it)
  * 排序钩子 + 便捷展开
  *
  * 容器侧这一组只描述「本容器怎么走路 + 怎么从迭代器落到元素上」：
- *   _ADD/_NEXT/_PREV/_DIST/_EQ/_LT  —— 纯迭代器操作，与元素类型无关
- *   _GET(_T, it)                    —— 取元素的 _T 左值；容器知道元素在哪，_T 由调用点给
- * 剩下 _T / _MOVE / _LESS 才是元素类型与排序方向的事。
+ *   add/next/prev/dist/eq/lt  —— 纯迭代器操作，与元素类型无关
+ *   get(type, it)             —— 取元素的 type 左值；容器知道元素在哪，type 由调用点给
+ * 剩下 type / move / less 才是元素类型与排序方向的事。
  *
- * 排序迭代器取裸 _T* —— 和 STL 的 vector<T>::iterator 就是 T* 一样，所以 _IT 要按
+ * 排序迭代器取裸 type* —— 和 STL 的 vector<T>::iterator 就是 T* 一样，所以 iter 要按
  * 类型展开（typedef），这也是唯一没法固定名字的一项。带上 step 的 vector_iterator_t
  * 也能通用，但每个元素多一次乘法和一次结构体读写，实测「已升序」输入上慢 70%+。
  *
  * 用法：
- *   I_VECTOR_SORT_DEFINE(sort_vt_int, vector_data_t, VT_MOVE, VT_LESS)
+ *   __i_vector_sort_define(sort_vt_int, vector_data_t, VT_MOVE, VT_LESS)
  *   sort_vt_int((vector_data_t*)cvector_begin(v).cur, (vector_data_t*)cvector_end(v).cur);
  * ========================================================================== */
-#define i_vector_sort_get(_T, _it)   (*(_T*)(_it))
-#define i_vector_sort_add(_it, _n)   ((_it) + (_n))
-#define i_vector_sort_next(_it)      ((_it) + 1)
-#define i_vector_sort_prev(_it)      ((_it) - 1)
-#define i_vector_sort_dist(_a, _b)   ((_b) - (_a))
-#define i_vector_sort_eq(_a, _b)     ((_a) == (_b))
-#define i_vector_sort_lt(_a, _b)     ((_a) < (_b))
+#define __i_vector_sort_get(type, it)  (*(type*)(it))
+#define __i_vector_sort_add(it, n)     ((it) + (n))
+#define __i_vector_sort_next(it)       ((it) + 1)
+#define __i_vector_sort_prev(it)       ((it) - 1)
+#define __i_vector_sort_dist(a, b)     ((b) - (a))
+#define __i_vector_sort_eq(a, b)       ((a) == (b))
+#define __i_vector_sort_lt(a, b)       ((a) < (b))
 
-#define I_VECTOR_SORT_DEFINE(_name, _T, _MOVE, _LESS)                          \
-    typedef _T* _name##_vit;                                                   \
-    I_SORT_DEFINE(_name, _T, _name##_vit, i_vector_sort_add, i_vector_sort_next,\
-                  i_vector_sort_prev, i_vector_sort_dist, i_vector_sort_eq,    \
-                  i_vector_sort_get, _MOVE, _LESS, i_vector_sort_lt)
+#define __i_vector_sort_define(name, type, move, less)           \
+    typedef type* name##_vit;                                    \
+    __i_sort_define(name, type, name##_vit, __i_vector_sort_add, \
+                    __i_vector_sort_next, __i_vector_sort_prev,  \
+                    __i_vector_sort_dist, __i_vector_sort_eq,    \
+                    __i_vector_sort_get, move, less, __i_vector_sort_lt)
 
 /* checked */
 static inline
@@ -410,7 +412,9 @@ bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t
     case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
     case 2: *(uint16_t*)slot = (uint16_t)data; break;
     case 4: *(uint32_t*)slot = (uint32_t)data; break;
+#ifdef JDSC_64BIT
     case 8: *(uint64_t*)slot = (uint64_t)data; break;
+#endif /* JDSC_64BIT */
     default: return false;
     }
     return true;
@@ -420,13 +424,49 @@ bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t
 static inline
 vector_data_t __i_vector_slot_read(const i_vector_t* _this, const uint8_t* slot)
 {
-    switch (_this->step)
-    {
-    case 1: return *(const uint8_t*)slot;
-    case 2: return *(const uint16_t*)slot;
-    case 4: return *(const uint32_t*)slot;
-    case 8: return *(const uint64_t*)slot;
-    default: return (vector_data_t)(uintptr_t)slot;
+    const vector_dtype_t dtype = _this->dtype;
+
+    if (dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
+        return (vector_data_t)(uintptr_t)slot;
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_SINT) {
+        switch (_this->step)
+        {
+        case 1: return (int8_t)*(const int8_t*)slot;
+        case 2: return (int16_t)*(const int16_t*)slot;
+        case 4: return (int32_t)*(const int32_t*)slot;
+#ifdef JDSC_64BIT
+        case 8: return (int64_t)*(const int64_t*)slot;
+#endif /* JDSC_64BIT */
+        default: return (vector_data_t)(uintptr_t)slot;
+        }
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_UINT) {
+        switch (_this->step)
+        {
+        case 1: return (uint8_t)*(const uint8_t*)slot;
+        case 2: return (uint16_t)*(const uint16_t*)slot;
+        case 4: return (uint32_t)*(const uint32_t*)slot;
+#ifdef JDSC_64BIT
+        case 8: return (uint64_t)*(const uint64_t*)slot;
+#endif /* JDSC_64BIT */
+        default: return (vector_data_t)(uintptr_t)slot;
+        }
+    } else {
+        return (vector_data_t)(uintptr_t)slot;
+    }
+}
+
+/* checked */
+static inline
+bool __i_vector_slot_equal(vector_step_t step, vector_data_t data, const void* slot)
+{
+    switch (step) {
+    case 1: return (uint8_t)data  == *(const uint8_t*)slot;
+    case 2: return (uint16_t)data == *(const uint16_t*)slot;
+    case 4: return (uint32_t)data == *(const uint32_t*)slot;
+#ifdef JDSC_64BIT
+    case 8: return (uint64_t)data == *(const uint64_t*)slot;
+#endif /* JDSC_64BIT */
+    default: return false;
     }
 }
 
@@ -435,15 +475,19 @@ static inline
 void __i_vector_slot_move(const i_vector_t* _this, uint8_t* dest, const uint8_t* src)
 {
     if (dest != src) {
-        switch (_this->step) {
-        case 1:  memmove(dest, src, 1);  return ;
-        case 2:  memmove(dest, src, 2);  return ;
-        case 4:  memmove(dest, src, 4);  return ;
-        case 8:  memmove(dest, src, 8);  return ;
-        case 16: memmove(dest, src, 16); return ;
-        case 24: memmove(dest, src, 24); if (_this->sso) __ds_ops_fix_sso((ds_data_t)dest); return ;
-        case 32: memmove(dest, src, 32); if (_this->sso) __ds_ops_fix_sso((ds_data_t)dest); return ;
-        default: memmove(dest, src, _this->step); return ;
+        if (is_null(_this->ops) || is_null(_this->ops->__move)) {
+            switch (_this->step) {
+            case 1:  memmove(dest, src, 1);  return ;
+            case 2:  memmove(dest, src, 2);  return ;
+            case 4:  memmove(dest, src, 4);  return ;
+            case 8:  memmove(dest, src, 8);  return ;
+            case 16: memmove(dest, src, 16); return ;
+            case 24: memmove(dest, src, 24); if (_this->sso) __ds_ops_fix_sso((ds_data_t)dest); return ;
+            case 32: memmove(dest, src, 32); if (_this->sso) __ds_ops_fix_sso((ds_data_t)dest); return ;
+            default: memmove(dest, src, _this->step); return ;
+            }
+        } else {
+            _this->ops->__move((vector_data_t)dest, (vector_data_t)src);
         }
     }
 }
@@ -555,14 +599,19 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return i_vector_null_iterator();
 
+    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
+        JDSC_ASSERT(!"struct/union container has no __eq");
+        return i_vector_null_iterator();
+    }
+
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (data == __i_vector_slot_read(_this, p))
+            if (__i_vector_slot_equal(_this->step, data, p))
                 return __i_vector_make_iterator(_this->step, p);
         }
     } else if (_this->sso) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (__ds_ops_eq_sso(data, __i_vector_slot_read(_this, p)))
+            if (__ds_ops_eq_sso(data, (vector_data_t)p))
                 return __i_vector_make_iterator(_this->step, p);
         }
     } else {
@@ -578,8 +627,8 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
 static inline
 vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
 {
-    uint8_t* p;
     vector_count_t ret = 0;
+    uint8_t* p;
 
     if (is_null(_this))
         return -1;
@@ -587,14 +636,19 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return -1;
 
+    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
+        JDSC_ASSERT(!"struct/union container has no __eq");
+        return -1;
+    }
+
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (data == __i_vector_slot_read(_this, p))
+            if (__i_vector_slot_equal(_this->step, data, p))
                 ret++;
         }
     } else if (_this->sso) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (__ds_ops_eq_sso(data, __i_vector_slot_read(_this, p)))
+            if (__ds_ops_eq_sso(data, (vector_data_t)p))
                 ret++;
         }
     } else {
@@ -619,13 +673,18 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
         || (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
+    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
+        JDSC_ASSERT(!"struct/union container has no __eq");
+        return -1;
+    }
+
     const vector_step_t step = _this->step;
     l = r = _this->begin;
     end = _this->end;
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
-            if (data != __i_vector_slot_read(_this, r)) {
+            if (!__i_vector_slot_equal(step, data, r)) {
                 __i_vector_slot_move(_this, l, r);
                 l = __i_vector_ptr_add(l, 1, step);
             } else {
@@ -636,7 +695,7 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
         }
     } else if (_this->sso) {
         for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
-            if (!__ds_ops_eq_sso(data, __i_vector_slot_read(_this, r))) {
+            if (!__ds_ops_eq_sso(data, (vector_data_t)r)) {
                 __i_vector_slot_move(_this, l, r);
                 l = __i_vector_ptr_add(l, 1, step);
             } else {

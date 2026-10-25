@@ -56,6 +56,8 @@ typedef deque_reverse_iterator_t deque_r_iterator_t;
 
 typedef i_deque_t deque_t;
 
+bool cdeque_swap_at(deque_t* _this, deque_index_t i, deque_index_t j);
+
 /* Method 1 */
 static inline deque_size_t       cdeque_size(const deque_t* _this)                                        { return i_deque_size(_this); }
 static inline bool               __cdeque_empty(const deque_t* _this)                                     { return __i_deque_empty(_this); }
@@ -107,6 +109,7 @@ typedef struct class_deque {
     deque_value_t (*at)(const deque_t* _this, deque_index_t index);                                                       /* STL: ds->at(index) */
     deque_value_t (*back)(const deque_t* _this);
     deque_value_t (*front)(const deque_t* _this);
+    bool (*swap_at)(deque_t* _this, deque_index_t i, deque_index_t j);
     deque_iterator_t (*find)(const deque_t* _this, deque_data_t data);
     bool (*push_back)(deque_t* _this, deque_data_t data);
     bool (*push_front)(deque_t* _this, deque_data_t data);
@@ -122,19 +125,21 @@ typedef struct class_deque {
     deque_size_t (*clear)(deque_t* _this);
 } class_deque_t;
 
-deque_t* __deque_new(const class_deque_ops_t* ops, deque_step_t step, size_t align);
+deque_t* __deque_new(const class_deque_ops_t* ops, deque_dtype_t data_type, deque_step_t step, size_t align);
 void     __deque_delete(deque_t** _this);
 const class_deque_t* class_deque_ins(void);
 #define g_class_deque()               class_deque_ins()
 #define cdeque                        g_class_deque()
 #define g_class_deque_ops_string()    g_class_sequence_container_ops_string()
 #define g_class_deque_ops_sso()       g_class_sequence_container_ops_sso()
-#define DEQUE_NEW()                   __deque_new(NULL,   sizeof(deque_data_t), __alignof__(deque_data_t))
-#define DEQUE_NEW_OPS(_ops)           __deque_new((_ops), sizeof(deque_data_t), __alignof__(deque_data_t))
-#define DEQUE_NEW_T(_type)            __deque_new(NULL,   sizeof(_type), __alignof__(_type))
-#define DEQUE_NEW_OPS_T(_ops, _type)  __deque_new((_ops), sizeof(_type), __alignof__(_type))
-#define DEQUE_NEW_CHAR()              __deque_new(g_class_deque_ops_string(), sizeof(deque_data_t), __alignof__(deque_data_t))
-#define DEQUE_NEW_SSO()               __deque_new(g_class_deque_ops_sso(),    sizeof(ds_sso_t),     __alignof__(ds_sso_t))
+#define DEQUE_NEW_COMPLATE(_type_id, _type)            __deque_new(NULL,   (_type_id), sizeof(_type), __alignof__(_type))
+#define DEQUE_NEW_OPS_COMPLATE(_ops, _type_id, _type)  __deque_new((_ops), (_type_id), sizeof(_type), __alignof__(_type))
+#define DEQUE_NEW_T(_type)            DEQUE_NEW_OPS_COMPLATE((NULL), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
+#define DEQUE_NEW_OPS_T(_ops, _type)  DEQUE_NEW_OPS_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
+#define DEQUE_NEW()                   DEQUE_NEW_OPS_T(NULL,   deque_data_t)
+#define DEQUE_NEW_OPS(_ops)           DEQUE_NEW_OPS_T((_ops), deque_data_t)
+#define DEQUE_NEW_CHAR()              DEQUE_NEW_OPS_T(g_class_deque_ops_string(), deque_data_t)
+#define DEQUE_NEW_SSO()               DEQUE_NEW_OPS_T(g_class_deque_ops_sso(),    ds_sso_t)
 #define DEQUE_NEW_STRING()            DEQUE_NEW_SSO()
 #define DEQUE_DELETE(_pptr)           do { __deque_delete((_pptr)); } while(0)
 

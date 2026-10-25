@@ -31,35 +31,35 @@
  *   __final_insertion_sort   最后一遍插入排序：前 16 个走带守卫的版本，
  *                            其余走无守卫版本（省掉边界判断，因为前面已经排好）
  *
- * C 里没有模板，对应做法是「宏展开出一族 static inline 函数」：元素类型 _T、
- * 迭代器 _IT、比较 _LESS 全在展开时确定，于是比较和交换都能内联 —— 这一点
+ * C 里没有模板，对应做法是「宏展开出一族 static inline 函数」：元素类型 type、
+ * 迭代器 iter、比较 less 全在展开时确定，于是比较和交换都能内联 —— 这一点
  * 很关键，用函数指针传比较子的话每次比较多一次间接调用，跟 std::sort 就没得比了。
  *
  * 用法（每个元素类型 + 容器组合展开一次）：
  *
- *   I_SORT_DEFINE(名字前缀, 元素类型, 迭代器类型,
- *                 _ADD(it, n)  随机访问：第 n 个位置（n 可为负）
- *                 _NEXT(it)    ++it
- *                 _PREV(it)    --it
- *                              ⚠ 逐格挪一定要用 NEXT/PREV，别写成 _ADD(it, ±1)：
- *                                通用随机访问里通常含"除以 step"或跨 node 判断，
- *                                放在按元素扫描的热路径上会被放大。STL 也是分开的。
- *                 _DIST(a, b)  从 a 到 b 的距离（即 b - a；区间长度写 _DIST(first, last)）
- *                 _EQ(a, b)    两个迭代器是否指向同一位置
- *                 _GET(_T, it) _T 类型的左值，可直接读也可赋值。容器侧提供：
- *                              纯委托 - 容器知道怎么从迭代器落到元素上，
- *                              而元素类型由这里的 _T 给。
- *                 _MOVE(dp, sp) 把 *sp 搬到 *dp（两个都是 _T*）。**所有**元素搬运
- *                              都必须走它，不能写 `*dp = *sp`。
- *                              POD 传 `*(dp) = *(sp)`，编译出来跟原来一模一样；
- *                              自带指针指向自己内部的类型（DS_SSO 的内联串）
- *                              要传带 rebase 的版本，否则 p 会指着旧位置，
- *                              之后被当堆指针 free。
- *                 _LESS(a, b)  a < b，两个 _T 表达式
- *                 _LT(a, b)    迭代器位置先后：a 在 b 之前。⚠ 不能写成 a.cur < b.cur ——
- *                              node 内部的指针跨 node 之间没有可比性，必须按容器
- *                              自己的顺序来（deque 是先比 map 槽再比槽内偏移）
- *                 )
+ *   __i_sort_define(名字前缀, 元素类型, 迭代器类型,
+ *                   add(it, n)   随机访问：第 n 个位置（n 可为负）
+ *                   next(it)     ++it
+ *                   prev(it)     --it
+ *                                ⚠ 逐格挪一定要用 next/prev，别写成 add(it, ±1)：
+ *                                  通用随机访问里通常含"除以 step"或跨 node 判断，
+ *                                  放在按元素扫描的热路径上会被放大。STL 也是分开的。
+ *                   dist(a, b)   从 a 到 b 的距离（即 b - a；区间长度写 dist(first, last)）
+ *                   eq(a, b)     两个迭代器是否指向同一位置
+ *                   get(type, it) type 类型的左值，可直接读也可赋值。容器侧提供：
+ *                                纯委托 - 容器知道怎么从迭代器落到元素上，
+ *                                而元素类型由这里的 type 给。
+ *                   move(dp, sp) 把 *sp 搬到 *dp（两个都是 type*）。**所有**元素搬运
+ *                                都必须走它，不能写 `*dp = *sp`。
+ *                                POD 传 `*(dp) = *(sp)`，编译出来跟原来一模一样；
+ *                                自带指针指向自己内部的类型（DS_SSO 的内联串）
+ *                                要传带 rebase 的版本，否则 p 会指着旧位置，
+ *                                之后被当堆指针 free。
+ *                   less(a, b)   a < b，两个 type 表达式
+ *                   lt(a, b)     迭代器位置先后：a 在 b 之前。⚠ 不能写成 a.cur < b.cur ——
+ *                                node 内部的指针跨 node 之间没有可比性，必须按容器
+ *                                自己的顺序来（deque 是先比 map 槽再比槽内偏移）
+ *                   )
  *
  *   展开后直接调 名字(first, last) 排序；另有 名字_sorted(first, last) 做有序自检。
  *
@@ -72,244 +72,251 @@
 
 #include <sort/sort_seq.h>   /* I_SORT_THRESHOLD 与 i_sort_lg 与函数版共用一份 */
 
-#define I_SORT_DEFINE(_name, _T, _IT, _ADD, _NEXT, _PREV, _DIST, _EQ, _GET, _MOVE, _LESS, _LT) \
-                                                                                           \
-/* stl_algo.h:iter_swap */                                                                 \
-static inline void _name##_iter_swap(_IT _a, _IT _b)                                       \
-{                                                                                          \
-    _T _t;                                                                                 \
-                                                                                           \
-    _MOVE(&_t, &_GET(_T, _a));                                                                 \
-    _MOVE(&_GET(_T, _a), &_GET(_T, _b));                                                           \
-    _MOVE(&_GET(_T, _b), &_t);                                                                 \
-}                                                                                          \
-                                                                                           \
-/* 排完自检：整个区间是否非降序。基准里顺手验一下，省得排错了还看不出来 */                 \
-static inline int _name##_sorted(_IT _first, _IT _last)                                    \
-{                                                                                          \
-    _IT _p, _q;                                                                            \
-                                                                                           \
-    if (_EQ(_first, _last))                                                           \
-        return 1;                                                                          \
-                                                                                           \
-    for (_p = _first, _q = _NEXT(_first); !_EQ(_q, _last); _p = _q, _q = _NEXT(_q))\
-        if (_LESS(_GET(_T, _q), _GET(_T, _p)))                                                     \
-            return 0;                                                                      \
-    return 1;                                                                              \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1799 __unguarded_linear_insert —— 不查边界，靠前面已排好 */                  \
-static inline void _name##_linear_insert(_IT _last)                                        \
-{                                                                                          \
-    _T  _val;                                                                              \
-    _IT _next = _PREV(_last);                                                           \
-                                                                                           \
-    _MOVE(&_val, &_GET(_T, _last));                                                            \
-                                                                                           \
-    /* 注意方向：STL 这里是 comp(__val, __next)，值在左。调过来会多退一格踩到区间外 */     \
-    while (_LESS(_val, _GET(_T, _next))) {                                                     \
-        _MOVE(&_GET(_T, _last), &_GET(_T, _next));                                                 \
-        _last = _next;                                                                     \
-        _next = _PREV(_next);                                                           \
-    }                                                                                      \
-    _MOVE(&_GET(_T, _last), &_val);                                                            \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1819 __insertion_sort */                                                     \
-static inline void _name##_insertion_sort(_IT _first, _IT _last)                           \
-{                                                                                          \
-    _IT _i;                                                                                \
-                                                                                           \
-    if (_EQ(_first, _last))                                                           \
-        return ;                                                                           \
-                                                                                           \
-    for (_i = _NEXT(_first); !_EQ(_i, _last); _i = _NEXT(_i)) {                    \
-        if (_LESS(_GET(_T, _i), _GET(_T, _first))) {                                               \
-            /* _GLIBCXX_MOVE_BACKWARD3(_first, _i, _i + 1) */                              \
-            _T  _val;                                                                      \
-            _IT _j   = _i;                                                                 \
-                                                                                           \
-            _MOVE(&_val, &_GET(_T, _i));                                                       \
-            while (!_EQ(_j, _first)) {                                                 \
-                _IT _jp = _PREV(_j);                                                    \
-                _MOVE(&_GET(_T, _j), &_GET(_T, _jp));                                              \
-                _j = _jp;                                                                  \
-            }                                                                              \
-            _MOVE(&_GET(_T, _first), &_val);                                                   \
-        } else {                                                                           \
-            _name##_linear_insert(_i);                                                     \
-        }                                                                                  \
-    }                                                                                      \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1843 __unguarded_insertion_sort */                                           \
-static inline void _name##_unguarded_insertion_sort(_IT _first, _IT _last)                 \
-{                                                                                          \
-    _IT _i;                                                                                \
-                                                                                           \
-    for (_i = _first; !_EQ(_i, _last); _i = _NEXT(_i))                               \
-        _name##_linear_insert(_i);                                                         \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1861 __final_insertion_sort */                                               \
-static inline void _name##_final_insertion_sort(_IT _first, _IT _last)                     \
-{                                                                                          \
-    if (_DIST(_first, _last) > I_SORT_THRESHOLD) {                                          \
-        _name##_insertion_sort(_first, _ADD(_first, I_SORT_THRESHOLD));                    \
-        _name##_unguarded_insertion_sort(_ADD(_first, I_SORT_THRESHOLD), _last);           \
-    } else {                                                                               \
-        _name##_insertion_sort(_first, _last);                                             \
-    }                                                                                      \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:79 __move_median_to_first —— 三数取中，把中位数换到 _result */               \
-static inline void _name##_move_median_to_first(_IT _result, _IT _a, _IT _b, _IT _c)       \
-{                                                                                          \
-    if (_LESS(_GET(_T, _a), _GET(_T, _b))) {                                                       \
-        if (_LESS(_GET(_T, _b), _GET(_T, _c)))                                                     \
-            _name##_iter_swap(_result, _b);                                                \
-        else if (_LESS(_GET(_T, _a), _GET(_T, _c)))                                                \
-            _name##_iter_swap(_result, _c);                                                \
-        else                                                                               \
-            _name##_iter_swap(_result, _a);                                                \
-    } else if (_LESS(_GET(_T, _a), _GET(_T, _c))) {                                                \
-        _name##_iter_swap(_result, _a);                                                    \
-    } else if (_LESS(_GET(_T, _b), _GET(_T, _c))) {                                                \
-        _name##_iter_swap(_result, _c);                                                    \
-    } else {                                                                               \
-        _name##_iter_swap(_result, _b);                                                    \
-    }                                                                                      \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1878 __unguarded_partition —— 无守卫划分，基准已在 *_pivot 上 */             \
-static inline _IT _name##_unguarded_partition(_IT _first, _IT _last, _IT _pivot)           \
-{                                                                                          \
-    for (;;) {                                                                             \
-        while (_LESS(_GET(_T, _first), _GET(_T, _pivot)))                                          \
-            _first = _NEXT(_first);                                                      \
-        _last = _PREV(_last);                                                           \
-        while (_LESS(_GET(_T, _pivot), _GET(_T, _last)))                                           \
-            _last = _PREV(_last);                                                       \
-        if (!(_LT(_first, _last)))                                                         \
-            return _first;                                                                 \
-        _name##_iter_swap(_first, _last);                                                  \
-        _first = _NEXT(_first);                                                          \
-    }                                                                                      \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1900 __unguarded_partition_pivot */                                          \
-static inline _IT _name##_partition_pivot(_IT _first, _IT _last)                           \
-{                                                                                          \
-    _IT _mid = _ADD(_first, _DIST(_first, _last) / 2);                                      \
-                                                                                           \
-    _name##_move_median_to_first(_first, _NEXT(_first), _mid, _PREV(_last));          \
-    return _name##_unguarded_partition(_NEXT(_first), _last, _first);                    \
-}                                                                                          \
-                                                                                           \
-/* stl_heap.h:134 __push_heap */                                                           \
-static inline void _name##_push_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _top, _T* _val)\
-{                                                                                          \
-    ptrdiff_t _parent = (_hole - 1) / 2;                                                   \
-                                                                                           \
-    while (_hole > _top && _LESS(_GET(_T, _ADD(_first, _parent)), (*_val))) {                  \
-        _MOVE(&_GET(_T, _ADD(_first, _hole)), &_GET(_T, _ADD(_first, _parent)));                   \
-        _hole = _parent;                                                                   \
-        _parent = (_hole - 1) / 2;                                                         \
-    }                                                                                      \
-    _MOVE(&_GET(_T, _ADD(_first, _hole)), _val);                                               \
-}                                                                                          \
-                                                                                           \
-/* stl_heap.h:223 __adjust_heap */                                                         \
-static inline void _name##_adjust_heap(_IT _first, ptrdiff_t _hole, ptrdiff_t _len, _T* _val)\
-{                                                                                          \
-    const ptrdiff_t _top = _hole;                                                          \
-    ptrdiff_t       _second = _hole;                                                       \
-                                                                                           \
-    while (_second < (_len - 1) / 2) {                                                     \
-        _second = 2 * (_second + 1);                                                       \
-        if (_LESS(_GET(_T, _ADD(_first, _second)), _GET(_T, _ADD(_first, _second - 1))))           \
-            _second--;                                                                     \
-        _MOVE(&_GET(_T, _ADD(_first, _hole)), &_GET(_T, _ADD(_first, _second)));                   \
-        _hole = _second;                                                                   \
-    }                                                                                      \
-                                                                                           \
-    if ((_len & 1) == 0 && _second == (_len - 2) / 2) {                                    \
-        _second = 2 * (_second + 1);                                                       \
-        _MOVE(&_GET(_T, _ADD(_first, _hole)), &_GET(_T, _ADD(_first, _second - 1)));               \
-        _hole = _second - 1;                                                               \
-    }                                                                                      \
-    _name##_push_heap(_first, _hole, _top, _val);                                          \
-}                                                                                          \
-                                                                                           \
-/* stl_heap.h:253 __pop_heap */                                                            \
-static inline void _name##_pop_heap(_IT _first, _IT _last, _IT _result)                    \
-{                                                                                          \
-    _T _val;                                                                               \
-                                                                                           \
-    _MOVE(&_val, &_GET(_T, _result));                                                          \
-    _MOVE(&_GET(_T, _result), &_GET(_T, _first));                                                  \
-    _name##_adjust_heap(_first, 0, _DIST(_first, _last), &_val);                            \
-}                                                                                          \
-                                                                                           \
-/* stl_heap.h:339 __make_heap */                                                           \
-static inline void _name##_make_heap(_IT _first, _IT _last)                                \
-{                                                                                          \
-    ptrdiff_t _len, _parent;                                                               \
-                                                                                           \
-    if (_DIST(_first, _last) < 2)                                                           \
-        return ;                                                                           \
-                                                                                           \
-    _len = _DIST(_first, _last);                                                            \
-    for (_parent = (_len - 2) / 2; ; --_parent) {                                          \
-        _T _val;                                                                           \
-                                                                                           \
-        _MOVE(&_val, &_GET(_T, _ADD(_first, _parent)));                                        \
-        _name##_adjust_heap(_first, _parent, _len, &_val);                                 \
-        if (0 == _parent)                                                                  \
-            return ;                                                                       \
-    }                                                                                      \
-}                                                                                          \
-                                                                                           \
-/* stl_heap.h:418 __sort_heap */                                                           \
-static inline void _name##_sort_heap(_IT _first, _IT _last)                                \
-{                                                                                          \
-    while (_DIST(_first, _last) > 1) {                                                      \
-        _last = _PREV(_last);                                                           \
-        _name##_pop_heap(_first, _last, _last);                                            \
-    }                                                                                      \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1912 __partial_sort(first, last, last) —— 深度用尽时的堆排兜底 */            \
-static inline void _name##_heap_sort(_IT _first, _IT _last)                                \
-{                                                                                          \
-    _name##_make_heap(_first, _last);                                                      \
-    _name##_sort_heap(_first, _last);                                                      \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1925 __introsort_loop —— 右半边递归、左半边循环，省一次递归 */               \
-static inline void _name##_introsort_loop(_IT _first, _IT _last, ptrdiff_t _depth)         \
-{                                                                                          \
-    while (_DIST(_first, _last) > I_SORT_THRESHOLD) {                                       \
-        _IT _cut;                                                                          \
-                                                                                           \
-        if (0 == _depth) {                                                                 \
-            _name##_heap_sort(_first, _last);                                              \
-            return ;                                                                       \
-        }                                                                                  \
-        --_depth;                                                                          \
-        _cut = _name##_partition_pivot(_first, _last);                                     \
-        _name##_introsort_loop(_cut, _last, _depth);                                       \
-        _last = _cut;                                                                      \
-    }                                                                                      \
-}                                                                                          \
-                                                                                           \
-/* stl_algo.h:1949 __sort —— 公开入口就是 _name 本身 */                                     \
-static inline void _name(_IT _first, _IT _last)                                            \
-{                                                                                          \
-    if (!_EQ(_first, _last)) {                                                             \
-        _name##_introsort_loop(_first, _last, i_sort_lg(_DIST(_first, _last)) * 2);         \
-        _name##_final_insertion_sort(_first, _last);                                       \
-    }                                                                                      \
+#define __i_sort_define(name, type, iter, add, next, prev, dist, eq, get, move, less, lt) \
+                                                                                          \
+/* stl_algo.h:iter_swap */                                                                \
+static inline void name##_iter_swap(iter __a, iter __b)                                   \
+{                                                                                         \
+    type __tmp;                                                                           \
+                                                                                          \
+    move(&__tmp, &get(type, __a));                                                        \
+    move(&get(type, __a), &get(type, __b));                                               \
+    move(&get(type, __b), &__tmp);                                                        \
+}                                                                                         \
+                                                                                          \
+/* 排完自检：整个区间是否非降序。基准里顺手验一下，省得排错了还看不出来 */                \
+static inline int name##_sorted(iter __first, iter __last)                                \
+{                                                                                         \
+    iter __cur, __nxt;                                                                    \
+                                                                                          \
+    if (eq(__first, __last))                                                              \
+        return 1;                                                                         \
+                                                                                          \
+    for (__cur = __first, __nxt = next(__first); !eq(__nxt, __last);                      \
+         __cur = __nxt, __nxt = next(__nxt))                                              \
+        if (less(get(type, __nxt), get(type, __cur)))                                     \
+            return 0;                                                                     \
+    return 1;                                                                             \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1799 __unguarded_linear_insert —— 不查边界，靠前面已排好 */                 \
+static inline void name##_linear_insert(iter __last)                                      \
+{                                                                                         \
+    type __value;                                                                         \
+    iter __prev = prev(__last);                                                           \
+                                                                                          \
+    move(&__value, &get(type, __last));                                                   \
+                                                                                          \
+    /* 注意方向：STL 这里是 comp(__val, __next)，值在左。调过来会多退一格踩到区间外 */    \
+    while (less(__value, get(type, __prev))) {                                            \
+        move(&get(type, __last), &get(type, __prev));                                     \
+        __last = __prev;                                                                  \
+        __prev = prev(__prev);                                                            \
+    }                                                                                     \
+    move(&get(type, __last), &__value);                                                   \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1819 __insertion_sort */                                                    \
+static inline void name##_insertion_sort(iter __first, iter __last)                       \
+{                                                                                         \
+    iter __pos;                                                                           \
+                                                                                          \
+    if (eq(__first, __last))                                                              \
+        return;                                                                           \
+                                                                                          \
+    for (__pos = next(__first); !eq(__pos, __last); __pos = next(__pos)) {                \
+        if (less(get(type, __pos), get(type, __first))) {                                 \
+            /* _GLIBCXX_MOVE_BACKWARD3(_first, _i, _i + 1) */                             \
+            type __value;                                                                 \
+            iter __cur = __pos;                                                           \
+            iter __prev;                                                                  \
+                                                                                          \
+            move(&__value, &get(type, __pos));                                            \
+            while (!eq(__cur, __first)) {                                                 \
+                __prev = prev(__cur);                                                     \
+                move(&get(type, __cur), &get(type, __prev));                              \
+                __cur = __prev;                                                           \
+            }                                                                             \
+            move(&get(type, __first), &__value);                                          \
+        } else {                                                                          \
+            name##_linear_insert(__pos);                                                  \
+        }                                                                                 \
+    }                                                                                     \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1843 __unguarded_insertion_sort */                                          \
+static inline void name##_unguarded_insertion_sort(iter __first, iter __last)             \
+{                                                                                         \
+    iter __pos;                                                                           \
+                                                                                          \
+    for (__pos = __first; !eq(__pos, __last); __pos = next(__pos))                        \
+        name##_linear_insert(__pos);                                                      \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1861 __final_insertion_sort */                                              \
+static inline void name##_final_insertion_sort(iter __first, iter __last)                 \
+{                                                                                         \
+    if (dist(__first, __last) > I_SORT_THRESHOLD) {                                       \
+        name##_insertion_sort(__first, add(__first, I_SORT_THRESHOLD));                   \
+        name##_unguarded_insertion_sort(add(__first, I_SORT_THRESHOLD), __last);          \
+    } else {                                                                              \
+        name##_insertion_sort(__first, __last);                                           \
+    }                                                                                     \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:79 __move_median_to_first —— 三数取中，把中位数换到 __result */             \
+static inline void name##_move_median_to_first(iter __result, iter __left,                \
+                                               iter __mid, iter __right)                  \
+{                                                                                         \
+    if (less(get(type, __left), get(type, __mid))) {                                      \
+        if (less(get(type, __mid), get(type, __right)))                                   \
+            name##_iter_swap(__result, __mid);                                            \
+        else if (less(get(type, __left), get(type, __right)))                             \
+            name##_iter_swap(__result, __right);                                          \
+        else                                                                              \
+            name##_iter_swap(__result, __left);                                           \
+    } else if (less(get(type, __left), get(type, __right))) {                             \
+        name##_iter_swap(__result, __left);                                               \
+    } else if (less(get(type, __mid), get(type, __right))) {                              \
+        name##_iter_swap(__result, __right);                                              \
+    } else {                                                                              \
+        name##_iter_swap(__result, __mid);                                                \
+    }                                                                                     \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1878 __unguarded_partition —— 无守卫划分，基准已在 __pivot 上 */            \
+static inline iter name##_unguarded_partition(iter __first, iter __last, iter __pivot)    \
+{                                                                                         \
+    for (;;) {                                                                            \
+        while (less(get(type, __first), get(type, __pivot)))                              \
+            __first = next(__first);                                                      \
+        __last = prev(__last);                                                            \
+        while (less(get(type, __pivot), get(type, __last)))                               \
+            __last = prev(__last);                                                        \
+        if (!(lt(__first, __last)))                                                       \
+            return __first;                                                               \
+        name##_iter_swap(__first, __last);                                                \
+        __first = next(__first);                                                          \
+    }                                                                                     \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1900 __unguarded_partition_pivot */                                         \
+static inline iter name##_partition_pivot(iter __first, iter __last)                      \
+{                                                                                         \
+    iter __mid = add(__first, dist(__first, __last) / 2);                                 \
+                                                                                          \
+    name##_move_median_to_first(__first, next(__first), __mid, prev(__last));             \
+    return name##_unguarded_partition(next(__first), __last, __first);                    \
+}                                                                                         \
+                                                                                          \
+/* stl_heap.h:134 __push_heap */                                                          \
+static inline void name##_push_heap(iter __first, ptrdiff_t __hole, ptrdiff_t __top,      \
+                                    type* __value)                                        \
+{                                                                                         \
+    ptrdiff_t __parent = (__hole - 1) / 2;                                                \
+                                                                                          \
+    while (__hole > __top && less(get(type, add(__first, __parent)), *__value)) {         \
+        move(&get(type, add(__first, __hole)), &get(type, add(__first, __parent)));       \
+        __hole = __parent;                                                                \
+        __parent = (__hole - 1) / 2;                                                      \
+    }                                                                                     \
+    move(&get(type, add(__first, __hole)), __value);                                      \
+}                                                                                         \
+                                                                                          \
+/* stl_heap.h:223 __adjust_heap */                                                        \
+static inline void name##_adjust_heap(iter __first, ptrdiff_t __hole, ptrdiff_t __len,    \
+                                      type* __value)                                      \
+{                                                                                         \
+    const ptrdiff_t __top = __hole;                                                       \
+    ptrdiff_t __child = __hole;                                                           \
+                                                                                          \
+    while (__child < (__len - 1) / 2) {                                                   \
+        __child = 2 * (__child + 1);                                                      \
+        if (less(get(type, add(__first, __child)),                                        \
+                 get(type, add(__first, __child - 1))))                                   \
+            __child--;                                                                    \
+        move(&get(type, add(__first, __hole)), &get(type, add(__first, __child)));        \
+        __hole = __child;                                                                 \
+    }                                                                                     \
+                                                                                          \
+    if ((__len & 1) == 0 && __child == (__len - 2) / 2) {                                 \
+        __child = 2 * (__child + 1);                                                      \
+        move(&get(type, add(__first, __hole)), &get(type, add(__first, __child - 1)));    \
+        __hole = __child - 1;                                                             \
+    }                                                                                     \
+    name##_push_heap(__first, __hole, __top, __value);                                    \
+}                                                                                         \
+                                                                                          \
+/* stl_heap.h:253 __pop_heap */                                                           \
+static inline void name##_pop_heap(iter __first, iter __last, iter __result)              \
+{                                                                                         \
+    type __value;                                                                         \
+                                                                                          \
+    move(&__value, &get(type, __result));                                                 \
+    move(&get(type, __result), &get(type, __first));                                      \
+    name##_adjust_heap(__first, 0, dist(__first, __last), &__value);                      \
+}                                                                                         \
+                                                                                          \
+/* stl_heap.h:339 __make_heap */                                                          \
+static inline void name##_make_heap(iter __first, iter __last)                            \
+{                                                                                         \
+    ptrdiff_t __len, __parent;                                                            \
+                                                                                          \
+    if (dist(__first, __last) < 2)                                                        \
+        return;                                                                           \
+                                                                                          \
+    __len = dist(__first, __last);                                                        \
+    for (__parent = (__len - 2) / 2; ; --__parent) {                                      \
+        type __value;                                                                     \
+                                                                                          \
+        move(&__value, &get(type, add(__first, __parent)));                               \
+        name##_adjust_heap(__first, __parent, __len, &__value);                           \
+        if (0 == __parent)                                                                \
+            return;                                                                       \
+    }                                                                                     \
+}                                                                                         \
+                                                                                          \
+/* stl_heap.h:418 __sort_heap */                                                          \
+static inline void name##_sort_heap(iter __first, iter __last)                            \
+{                                                                                         \
+    while (dist(__first, __last) > 1) {                                                   \
+        __last = prev(__last);                                                            \
+        name##_pop_heap(__first, __last, __last);                                         \
+    }                                                                                     \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1912 __partial_sort(first, last, last) —— 深度用尽时的堆排兜底 */           \
+static inline void name##_heap_sort(iter __first, iter __last)                            \
+{                                                                                         \
+    name##_make_heap(__first, __last);                                                    \
+    name##_sort_heap(__first, __last);                                                    \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1925 __introsort_loop —— 右半边递归、左半边循环，省一次递归 */              \
+static inline void name##_introsort_loop(iter __first, iter __last, ptrdiff_t __depth)    \
+{                                                                                         \
+    while (dist(__first, __last) > I_SORT_THRESHOLD) {                                    \
+        iter __cut;                                                                       \
+                                                                                          \
+        if (0 == __depth) {                                                               \
+            name##_heap_sort(__first, __last);                                            \
+            return;                                                                       \
+        }                                                                                 \
+        --__depth;                                                                        \
+        __cut = name##_partition_pivot(__first, __last);                                  \
+        name##_introsort_loop(__cut, __last, __depth);                                    \
+        __last = __cut;                                                                   \
+    }                                                                                     \
+}                                                                                         \
+                                                                                          \
+/* stl_algo.h:1949 __sort —— 公开入口就是 name 本身 */                                    \
+static inline void name(iter __first, iter __last)                                        \
+{                                                                                         \
+    if (!eq(__first, __last)) {                                                           \
+        name##_introsort_loop(__first, __last,                                            \
+                              i_sort_lg(dist(__first, __last)) * 2);                      \
+        name##_final_insertion_sort(__first, __last);                                     \
+    }                                                                                     \
 }
 
 #endif /* __J_SORT_INTRO_H */

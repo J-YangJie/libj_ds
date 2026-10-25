@@ -32,12 +32,14 @@ typedef ds_data_t  ds_key_t;
 typedef ds_data_t  ds_value_t;
 typedef ssize_t    ds_size_t;
 typedef ssize_t    ds_count_t;
+typedef size_t     ds_dtype_t;
 typedef bool (*remove_if_condition)(ds_data_t data);
 typedef bool (*remove_if_condition_k)(ds_key_t key);
 typedef bool (*remove_if_condition_kv)(ds_key_t key, ds_value_t value);
 typedef bool (*__cmp)(ds_data_t left, ds_data_t right);
 
 /* list */
+typedef ds_dtype_t list_dtype_t;
 typedef size_t     list_step_t;
 typedef size_t     list_align_t;
 typedef size_t     list_index_t;
@@ -47,6 +49,7 @@ typedef ds_count_t list_count_t;
 typedef bool (*list_cmp_t)(list_data_t left, list_data_t right); /* Return true if [ `left` < `right` ]. Both sides are the value stored in the node (an address for step > 8), read the same way as `class_list_ops_t::__eq`'s `right` */
 
 /* vector */
+typedef ds_dtype_t vector_dtype_t;
 typedef size_t     vector_step_t;
 typedef size_t     vector_align_t;
 typedef size_t     vector_index_t;
@@ -55,6 +58,7 @@ typedef ds_size_t  vector_size_t;
 typedef ds_count_t vector_count_t;
 
 /* deque */
+typedef ds_dtype_t deque_dtype_t;
 typedef size_t     deque_step_t;
 typedef size_t     deque_align_t;
 typedef size_t     deque_index_t;
