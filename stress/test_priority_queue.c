@@ -155,6 +155,54 @@ static void test_swap(void)
     PRIORITY_QUEUE_DELETE(&b);
 }
 
+/* 24-byte slots: neither the 8-byte nor the SSO fast path; exercises the
+   generic hole-sift fallback on both bases (deque block size is 21 here,
+   also not a power of two). */
+typedef struct { int64_t key; char pad[16]; } big24_t;
+
+static bool big24_valid(priority_queue_data_t d) { return d != 0; }
+static bool big24_lt(priority_queue_data_t l, priority_queue_data_t r) { return l < r; }
+static bool big24_copy(priority_queue_data_t in, priority_queue_data_t* out)
+{
+    memcpy(out, (void*)in, sizeof(big24_t));
+    return true;
+}
+static void big24_free(priority_queue_data_t* d) { (void)d; }
+
+static const class_priority_queue_ops_t big24_ops = {
+    .valid_data = big24_valid,
+    .__lt       = big24_lt,
+    .copy_data  = big24_copy,
+    .free_data  = big24_free,
+};
+
+static void test_generic_step(int deque_base)
+{
+    priority_queue_t* pq = deque_base
+        ? PRIORITY_QUEUE_NEW_OPS_T(&big24_ops, big24_t, DEQUE)
+        : PRIORITY_QUEUE_NEW_OPS_T(&big24_ops, big24_t, VECTOR);
+    big24_t v[5];
+    static const int order[] = { 5, 1, 9, 3, 7 };
+    int i;
+
+    CHECK(pq != NULL, "generic new");
+    if (!pq) return;
+
+    for (i = 0; i < 5; ++i) {
+        memset(&v[i], i, sizeof(v[i]));
+        v[i].key = order[i];
+        CHECK(cpqueue_push(pq, (priority_queue_data_t)&v[i]), "generic push");
+    }
+    CHECK(cpqueue_size(pq) == 5, "generic size");
+    CHECK(((big24_t*)cpqueue_top(pq).d)->key == 9, "generic top 9");
+    cpqueue_pop(pq);
+    CHECK(((big24_t*)cpqueue_top(pq).d)->key == 7, "generic top 7");
+    cpqueue_pop(pq);
+    CHECK(((big24_t*)cpqueue_top(pq).d)->key == 5, "generic top 5");
+    CHECK(cpqueue_clear(pq) == 3, "generic clear");
+    PRIORITY_QUEUE_DELETE(&pq);
+}
+
 static void test_null(void)
 {
     CHECK(cpqueue_size(NULL) == -1, "null size");
@@ -171,6 +219,8 @@ int main(void)
     test_string();
     test_string_sso(0);
     test_string_sso(1);
+    test_generic_step(0);
+    test_generic_step(1);
     test_swap();
     test_null();
     if (failures) { printf("%d failures\n", failures); return 1; }
