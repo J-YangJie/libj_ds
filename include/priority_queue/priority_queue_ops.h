@@ -27,7 +27,7 @@ typedef struct class_priority_queue_ops {
     bool (*__lt)(priority_queue_data_t left, priority_queue_data_t right);   /* Return true if [ `left` < `right` ] */
     bool (*copy_data)(priority_queue_data_t in, priority_queue_data_t* out); /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_data` must also be implemented */
     void (*free_data)(priority_queue_data_t* data);                          /* The function pointer can be null and manages memory on its own */
-    void (*__move)(priority_queue_data_t dest, priority_queue_data_t src);   /* 移动语义；不提供时由底层容器回退 memmove */
+    void (*__move)(priority_queue_data_t dest, priority_queue_data_t src);   /* Move semantics, default to using `memmove` if not provided. */
 } class_priority_queue_ops_t;
 
 const class_priority_queue_ops_t* class_priority_queue_ops_string_ins(void);

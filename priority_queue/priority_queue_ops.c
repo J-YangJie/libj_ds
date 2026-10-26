@@ -30,6 +30,7 @@ const class_priority_queue_ops_t* class_priority_queue_ops_string_ins(void)
         .__lt       = __ds_ops_lt_default_string,
         .copy_data  = ds_ops_copy_data_default_string,
         .free_data  = ds_ops_free_data_default_string,
+        .__move     = NULL,
     };
     return &ins;
 }
@@ -41,6 +42,7 @@ const class_priority_queue_ops_t* class_priority_queue_ops_sso_ins(void)
         .__lt       = __ds_ops_lt_default_sso,
         .copy_data  = ds_ops_copy_data_default_sso,
         .free_data  = ds_ops_free_data_default_sso,
+        .__move     = NULL,
     };
     return &ins;
 }

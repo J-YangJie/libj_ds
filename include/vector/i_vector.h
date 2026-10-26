@@ -43,13 +43,6 @@ typedef struct i_vector {
 
 /* checked */
 static inline
-bool __i_vector_empty(const i_vector_t* _this)
-{
-    return _this->end == _this->begin;
-}
-
-/* checked */
-static inline
 uint8_t* ___i_vector_ptr_add(const uint8_t* p, ptrdiff_t n, vector_step_t step)
 {
     return (uint8_t*)p + (ptrdiff_t)step * n;
@@ -134,6 +127,13 @@ static inline
 vector_size_t i_vector_size(const i_vector_t* _this)
 {
     return is_null(_this) ? -1 : __i_vector_size(_this);
+}
+
+/* checked */
+static inline
+bool __i_vector_empty(const i_vector_t* _this)
+{
+    return _this->end == _this->begin;
 }
 
 /* checked */
@@ -229,37 +229,6 @@ vector_iterator_t i_vector_prev(vector_iterator_t it)
 {
     return __i_vector_prev(it);
 }
-
-/* ============================================================================
- * 排序钩子 + 便捷展开
- *
- * 容器侧这一组只描述「本容器怎么走路 + 怎么从迭代器落到元素上」：
- *   add/next/prev/dist/eq/lt  —— 纯迭代器操作，与元素类型无关
- *   get(type, it)             —— 取元素的 type 左值；容器知道元素在哪，type 由调用点给
- * 剩下 type / move / less 才是元素类型与排序方向的事。
- *
- * 排序迭代器取裸 type* —— 和 STL 的 vector<T>::iterator 就是 T* 一样，所以 iter 要按
- * 类型展开（typedef），这也是唯一没法固定名字的一项。带上 step 的 vector_iterator_t
- * 也能通用，但每个元素多一次乘法和一次结构体读写，实测「已升序」输入上慢 70%+。
- *
- * 用法：
- *   __i_vector_sort_define(sort_vt_int, vector_data_t, VT_MOVE, VT_LESS)
- *   sort_vt_int((vector_data_t*)cvector_begin(v).cur, (vector_data_t*)cvector_end(v).cur);
- * ========================================================================== */
-#define __i_vector_sort_get(type, it)  (*(type*)(it))
-#define __i_vector_sort_add(it, n)     ((it) + (n))
-#define __i_vector_sort_next(it)       ((it) + 1)
-#define __i_vector_sort_prev(it)       ((it) - 1)
-#define __i_vector_sort_dist(a, b)     ((b) - (a))
-#define __i_vector_sort_eq(a, b)       ((a) == (b))
-#define __i_vector_sort_lt(a, b)       ((a) < (b))
-
-#define __i_vector_sort_define(name, type, move, less)           \
-    typedef type* name##_vit;                                    \
-    __i_sort_define(name, type, name##_vit, __i_vector_sort_add, \
-                    __i_vector_sort_next, __i_vector_sort_prev,  \
-                    __i_vector_sort_dist, __i_vector_sort_eq,    \
-                    __i_vector_sort_get, move, less, __i_vector_sort_lt)
 
 /* checked */
 static inline
@@ -400,6 +369,41 @@ vector_value_t i_vector_front(const i_vector_t* _this)
 
 
 
+/* ============================================================================
+ * 排序钩子 + 便捷展开
+ *
+ * 容器侧这一组只描述「本容器怎么走路 + 怎么从迭代器落到元素上」：
+ *   add/next/prev/dist/eq/lt  —— 纯迭代器操作，与元素类型无关
+ *   get(type, it)             —— 取元素的 type 左值；容器知道元素在哪，type 由调用点给
+ * 剩下 type / move / less 才是元素类型与排序方向的事。
+ *
+ * 排序迭代器取裸 type* —— 和 STL 的 vector<T>::iterator 就是 T* 一样，所以 iter 要按
+ * 类型展开（typedef），这也是唯一没法固定名字的一项。带上 step 的 vector_iterator_t
+ * 也能通用，但每个元素多一次乘法和一次结构体读写，实测「已升序」输入上慢 70%+。
+ *
+ * 用法：
+ *   __i_vector_sort_define(sort_vt_int, vector_data_t, VT_MOVE, VT_LESS)
+ *   sort_vt_int((vector_data_t*)cvector_begin(v).cur, (vector_data_t*)cvector_end(v).cur);
+ * ========================================================================== */
+#define __i_vector_sort_get(type, it)  (*(type*)(it))
+#define __i_vector_sort_add(it, n)     ((it) + (n))
+#define __i_vector_sort_next(it)       ((it) + 1)
+#define __i_vector_sort_prev(it)       ((it) - 1)
+#define __i_vector_sort_dist(a, b)     ((b) - (a))
+#define __i_vector_sort_eq(a, b)       ((a) == (b))
+#define __i_vector_sort_lt(a, b)       ((a) < (b))
+
+#define __i_vector_sort_define(name, type, move, less)           \
+    typedef type* name##_vit;                                    \
+    __i_sort_define(name, type, name##_vit, __i_vector_sort_add, \
+                    __i_vector_sort_next, __i_vector_sort_prev,  \
+                    __i_vector_sort_dist, __i_vector_sort_eq,    \
+                    __i_vector_sort_get, move, less, __i_vector_sort_lt)
+
+
+
+
+
 /* checked */
 static inline
 bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t data)
@@ -482,8 +486,16 @@ void __i_vector_slot_move(const i_vector_t* _this, uint8_t* dest, const uint8_t*
             case 4:  memmove(dest, src, 4);  return ;
             case 8:  memmove(dest, src, 8);  return ;
             case 16: memmove(dest, src, 16); return ;
-            case 24: memmove(dest, src, 24); if (_this->sso) __ds_ops_fix_sso((ds_data_t)dest); return ;
-            case 32: memmove(dest, src, 32); if (_this->sso) __ds_ops_fix_sso((ds_data_t)dest); return ;
+            case 24: memmove(dest, src, 24);
+#ifdef JDSC_32BIT
+                    if (_this->sso) __ds_ops_fix_sso((vector_data_t)dest);
+#endif /* JDSC_32BIT */
+                return ;
+            case 32: memmove(dest, src, 32);
+#ifdef JDSC_64BIT
+                    if (_this->sso) __ds_ops_fix_sso((vector_data_t)dest);
+#endif /* JDSC_64BIT */
+                return ;
             default: memmove(dest, src, _this->step); return ;
             }
         } else {
@@ -696,7 +708,10 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
     } else if (_this->sso) {
         for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
             if (!__ds_ops_eq_sso(data, (vector_data_t)r)) {
-                __i_vector_slot_move(_this, l, r);
+                if (l != r) {
+                    memmove(l, r, sizeof(ds_sso_t));
+                    __ds_ops_fix_sso((vector_data_t)l); /* __i_vector_slot_move(_this, l, r); */
+                }
                 l = __i_vector_ptr_add(l, 1, step);
             } else {
                 if (!is_null(_this->ops) && !is_null(_this->ops->free_data))

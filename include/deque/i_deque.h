@@ -44,12 +44,6 @@ typedef struct i_deque {
 } i_deque_t;
 
 static inline
-bool __i_deque_empty(const i_deque_t* _this)
-{
-    return _this->end.cur == _this->begin.cur;
-}
-
-static inline
 uint8_t* ___i_deque_ptr_add(const uint8_t* p, ptrdiff_t n, deque_step_t step)
 {
     return (uint8_t*)p + (ptrdiff_t)step * n;
@@ -70,15 +64,6 @@ ptrdiff_t ___i_deque_ptr_diff(const uint8_t* p1, const uint8_t* p2, deque_step_t
 #define __i_deque_ptr_add(_p, _n, _step)    ___i_deque_ptr_add((_p), (ptrdiff_t)(_n), (_step))
 #define __i_deque_ptr_sub(_p, _n, _step)    ___i_deque_ptr_sub((_p), (ptrdiff_t)(_n), (_step))
 #define __i_deque_ptr_diff(_p1, _p2, _step) ___i_deque_ptr_diff((_p1), (_p2), (_step))
-
-/* TODO: 保留在这里？ */
-static inline
-bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
-{
-    if (a.bkt != b.bkt)
-        return a.bkt < b.bkt;
-    return a.cur < b.cur;
-}
 
 static inline
 void __i_deque_set_bkt(deque_iterator_t* it, uint8_t** bkt)
@@ -180,6 +165,12 @@ static inline
 deque_size_t i_deque_size(const i_deque_t* _this)
 {
     return is_null(_this) ? -1 : __i_deque_size(_this);
+}
+
+static inline
+bool __i_deque_empty(const i_deque_t* _this)
+{
+    return _this->end.cur == _this->begin.cur;
 }
 
 static inline
@@ -391,38 +382,6 @@ deque_r_iterator_t i_deque_rprev(deque_r_iterator_t rit)
     return __i_deque_rprev(rit);
 }
 
-/* ============================================================================
- * 排序钩子 —— 给 include/sort/sort_intro.h 的 __i_sort_define 用
- *
- * 这一组只描述「本容器怎么随机访问 / 前后走 / 量距离 / 判相等 / 判先后 / 取元素地址」，
- * 与元素类型无关，所以固定放在这里。调用点写 __i_sort_define 时直接引用这几个名字，
- * 不必再自己定义一遍。
- * 剩下的 type / move / less 才是「元素类型 + 排序方向」的事，由使用者给。
- *
- * 用法：
- *   __i_sort_define(sort_dq_asc, deque_data_t, __i_deque_sort_it,
- *                   __i_deque_sort_add, __i_deque_sort_next,
- *                   __i_deque_sort_prev, __i_deque_sort_dist,
- *                   __i_deque_sort_eq, __i_deque_sort_get,
- *                   DQ_MOVE, DQ_LESS, __i_deque_sort_lt)
- * ========================================================================== */
-#define __i_deque_sort_it            deque_iterator_t
-#define __i_deque_sort_add(it, n)    __i_deque_advance((it), (deque_size_t)(n))
-#define __i_deque_sort_next(it)      __i_deque_next(it)
-#define __i_deque_sort_prev(it)      __i_deque_prev(it)
-#define __i_deque_sort_dist(a, b)    __i_deque_iterator_distance((a), (b))
-#define __i_deque_sort_eq(a, b)      ((a).cur == (b).cur)
-#define __i_deque_sort_lt(a, b)      i_deque_iter_lt((a), (b))   /* 跨 bkt 不能比 .cur */
-#define __i_deque_sort_get(type, it) (*(type*)((it).cur))        /* 取元素 type 左值 */
-
-/* 便捷展开：deque 的迭代器天生就是类型擦除的（要跨 bkt，没法是裸指针），
-   所以上面那套钩子可以固定名字，这里直接用。 */
-#define __i_deque_sort_define(name, type, move, less)                  \
-    __i_sort_define(name, type, __i_deque_sort_it, __i_deque_sort_add, \
-                    __i_deque_sort_next, __i_deque_sort_prev,          \
-                    __i_deque_sort_dist, __i_deque_sort_eq,            \
-                    __i_deque_sort_get, move, less, __i_deque_sort_lt)
-
 
 
 
@@ -475,10 +434,50 @@ deque_value_t i_deque_front(const i_deque_t* _this)
 
 
 
-uint8_t* __i_deque_push_back_bkt_alloc(i_deque_t* _this);
-uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this);
-void __i_deque_pop_back_bkt_free(i_deque_t* _this);
-void __i_deque_pop_front_bkt_free(i_deque_t* _this);
+/* ============================================================================
+ * 排序钩子 —— 给 include/sort/sort_intro.h 的 __i_sort_define 用
+ *
+ * 这一组只描述「本容器怎么随机访问 / 前后走 / 量距离 / 判相等 / 判先后 / 取元素地址」，
+ * 与元素类型无关，所以固定放在这里。调用点写 __i_sort_define 时直接引用这几个名字，
+ * 不必再自己定义一遍。
+ * 剩下的 type / move / less 才是「元素类型 + 排序方向」的事，由使用者给。
+ *
+ * 用法：
+ *   __i_sort_define(sort_dq_asc, deque_data_t, __i_deque_sort_it,
+ *                   __i_deque_sort_add, __i_deque_sort_next,
+ *                   __i_deque_sort_prev, __i_deque_sort_dist,
+ *                   __i_deque_sort_eq, __i_deque_sort_get,
+ *                   DQ_MOVE, DQ_LESS, __i_deque_sort_lt)
+ * ========================================================================== */
+/* TODO: 保留在这里？ */
+static inline
+bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
+{
+    if (a.bkt != b.bkt)
+        return a.bkt < b.bkt;
+    return a.cur < b.cur;
+}
+
+#define __i_deque_sort_it            deque_iterator_t
+#define __i_deque_sort_add(it, n)    __i_deque_advance((it), (deque_size_t)(n))
+#define __i_deque_sort_next(it)      __i_deque_next(it)
+#define __i_deque_sort_prev(it)      __i_deque_prev(it)
+#define __i_deque_sort_dist(a, b)    __i_deque_iterator_distance((a), (b))
+#define __i_deque_sort_eq(a, b)      ((a).cur == (b).cur)
+#define __i_deque_sort_lt(a, b)      i_deque_iter_lt((a), (b))   /* 跨 bkt 不能比 .cur */
+#define __i_deque_sort_get(type, it) (*(type*)((it).cur))        /* 取元素 type 左值 */
+
+/* 便捷展开：deque 的迭代器天生就是类型擦除的（要跨 bkt，没法是裸指针），
+   所以上面那套钩子可以固定名字，这里直接用。 */
+#define __i_deque_sort_define(name, type, move, less)                  \
+    __i_sort_define(name, type, __i_deque_sort_it, __i_deque_sort_add, \
+                    __i_deque_sort_next, __i_deque_sort_prev,          \
+                    __i_deque_sort_dist, __i_deque_sort_eq,            \
+                    __i_deque_sort_get, move, less, __i_deque_sort_lt)
+
+
+
+
 
 static inline
 bool __i_deque_slot_write(const i_deque_t* _this, deque_data_t data, uint8_t* slot)
@@ -548,25 +547,43 @@ bool __i_deque_slot_equal(deque_step_t step, deque_data_t data, const uint8_t* s
 }
 
 static inline
-void __i_deque_slot_move(const i_deque_t* _this, uint8_t* dest, const uint8_t* src)
+void __i_deque_slot_memmove(const i_deque_t* _this, uint8_t* dest, const uint8_t* src)
 {
     if (dest != src) {
-        if (is_null(_this->ops) || is_null(_this->ops->__move)) {
-            switch (_this->step) {
-            case 1:  memmove(dest, src, 1);  return ;
-            case 2:  memmove(dest, src, 2);  return ;
-            case 4:  memmove(dest, src, 4);  return ;
-            case 8:  memmove(dest, src, 8);  return ;
-            case 16: memmove(dest, src, 16); return ;
-            case 24: memmove(dest, src, 24); if (_this->sso) __ds_ops_fix_sso((ds_data_t)dest); return ;
-            case 32: memmove(dest, src, 32); if (_this->sso) __ds_ops_fix_sso((ds_data_t)dest); return ;
-            default: memmove(dest, src, _this->step); return ;
-            }
-        } else {
-            _this->ops->__move((deque_data_t)(uintptr_t)dest, (deque_data_t)(uintptr_t)src);
+        switch (_this->step) {
+        case 1:  memmove(dest, src, 1);  return ;
+        case 2:  memmove(dest, src, 2);  return ;
+        case 4:  memmove(dest, src, 4);  return ;
+        case 8:  memmove(dest, src, 8);  return ;
+        case 16: memmove(dest, src, 16); return ;
+        case 24: memmove(dest, src, 24);
+#ifdef JDSC_32BIT
+                if (_this->sso) __ds_ops_fix_sso((deque_data_t)dest);
+#endif /* JDSC_32BIT */
+            return ;
+        case 32: memmove(dest, src, 32);
+#ifdef JDSC_64BIT
+                if (_this->sso) __ds_ops_fix_sso((deque_data_t)dest);
+#endif /* JDSC_64BIT */
+            return ;
+        default: memmove(dest, src, _this->step); return ;
         }
     }
 }
+
+static inline
+void __i_deque_slot_move(const i_deque_t* _this, uint8_t* dest, const uint8_t* src)
+{
+    if (is_null(_this->ops) || is_null(_this->ops->__move))
+        __i_deque_slot_memmove(_this, dest, src);
+    else if (dest != src)
+        _this->ops->__move((deque_data_t)dest, (deque_data_t)src);
+}
+
+uint8_t* __i_deque_push_back_bkt_alloc(i_deque_t* _this);
+uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this);
+void __i_deque_pop_back_bkt_free(i_deque_t* _this);
+void __i_deque_pop_front_bkt_free(i_deque_t* _this);
 
 static inline
 bool i_deque_push_back(i_deque_t* _this, deque_data_t data)

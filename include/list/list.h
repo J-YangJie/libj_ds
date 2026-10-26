@@ -127,7 +127,7 @@ typedef struct class_list {
     list_size_t (*clear)(list_t* _this);
 } class_list_t;
 
-list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_step_t step, size_t align);
+list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_step_t step, list_align_t align);
 void    __list_delete(list_t** _this);
 const class_list_t* class_list_ins(void);
 #define g_class_list()               class_list_ins()

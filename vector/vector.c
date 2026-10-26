@@ -31,6 +31,53 @@
 #define _I_VECTOR_CAPACITY_INIT  4
 
 /* checked */
+static JDSC_INLINE_FORCE_POLICY
+bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data)
+{
+    const vector_step_t step = _this->step;
+    vector_size_t suc = 0;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data)) {
+        while (n-- > 0) {
+            if (_this->ops->copy_data(data, (vector_data_t*)pos))
+                suc++;
+            else
+                goto err;
+            pos = __i_vector_ptr_add(pos, 1, step);
+        }
+
+        return true;
+    } else {
+        while (n-- > 0) {
+            switch (_this->step)
+            {
+            case 1: *(uint8_t*)pos  = (uint8_t)data;  break;
+            case 2: *(uint16_t*)pos = (uint16_t)data; break;
+            case 4: *(uint32_t*)pos = (uint32_t)data; break;
+#ifdef JDSC_64BIT
+            case 8: *(uint64_t*)pos = (uint64_t)data; break;
+#endif /* JDSC_64BIT */
+            default: return false;
+            }
+
+            suc++;
+            pos = __i_vector_ptr_add(pos, 1, step);
+        }
+
+        return true;
+    }
+
+err:
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
+        for (vector_size_t i = 0; i < suc; ++i) {
+            pos = __i_vector_ptr_sub(pos, 1, step);
+            _this->ops->free_data((vector_data_t*)pos);
+        }
+    }
+    return false;
+}
+
+/* checked */
 static JDSC_INLINE
 void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_t* src, vector_size_t n)
 {
@@ -39,9 +86,23 @@ void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_
     if (unlikely(n <= 0 || dest == src))
         return ;
 
-    if (!_this->sso && (is_null(_this->ops) || is_null(_this->ops->__move))) {
+    if (_this->sso) {
+        uint8_t* p   = dest;
+        uint8_t* end = __i_vector_ptr_add(dest, n, step);
+
         memmove(dest, src, (size_t)(n * step));
-    } else {
+        for (; p != end; p += step)
+            __ds_ops_fix_sso((vector_data_t)p);
+        return ;
+    }
+
+    if (is_null(_this->ops) || is_null(_this->ops->__move)) {
+        memmove(dest, src, (size_t)(n * step));
+        return ;
+    }
+
+    {
+        void (*move)(vector_data_t, vector_data_t) = _this->ops->__move;
         const size_t d = (size_t)dest;
         const size_t s = (size_t)src;
         uint8_t* _src  = (uint8_t*)src;
@@ -51,10 +112,10 @@ void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_
             dest = __i_vector_ptr_add(dest, n - 1, step);
             _src = __i_vector_ptr_add(_src, n - 1, step);
             for (i = 0; i < n; ++i, dest -= step, _src -= step)
-                __i_vector_slot_move(_this, dest, _src);
+                move((vector_data_t)dest, (vector_data_t)_src);
         } else {
             for (i = 0; i < n; ++i, dest += step, _src += step)
-                __i_vector_slot_move(_this, dest, _src);
+                move((vector_data_t)dest, (vector_data_t)_src);
         }
     }
 }
@@ -153,53 +214,6 @@ void __i_vector_shrink_to_fit(i_vector_t* _this)
     _this->begin = __i_vector_ptr_add(_this->rend, 1, step);
     _this->end = __i_vector_ptr_add(_this->begin, size, step);
     _this->end_of_storage = _this->end;
-}
-
-/* checked */
-static JDSC_INLINE_FORCE_POLICY
-bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data)
-{
-    const vector_step_t step = _this->step;
-    vector_size_t suc = 0;
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data)) {
-        while (n-- > 0) {
-            if (_this->ops->copy_data(data, (vector_data_t*)pos))
-                suc++;
-            else
-                goto err;
-            pos = __i_vector_ptr_add(pos, 1, step);
-        }
-
-        return true;
-    } else {
-        while (n-- > 0) {
-            switch (_this->step)
-            {
-            case 1: *(uint8_t*)pos  = (uint8_t)data;  break;
-            case 2: *(uint16_t*)pos = (uint16_t)data; break;
-            case 4: *(uint32_t*)pos = (uint32_t)data; break;
-#ifdef JDSC_64BIT
-            case 8: *(uint64_t*)pos = (uint64_t)data; break;
-#endif /* JDSC_64BIT */
-            default: return false;
-            }
-
-            suc++;
-            pos = __i_vector_ptr_add(pos, 1, step);
-        }
-
-        return true;
-    }
-
-err:
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
-        for (vector_size_t i = 0; i < suc; ++i) {
-            pos = __i_vector_ptr_sub(pos, 1, step);
-            _this->ops->free_data((vector_data_t*)pos);
-        }
-    }
-    return false;
 }
 
 /* checked */

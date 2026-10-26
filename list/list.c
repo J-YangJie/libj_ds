@@ -856,7 +856,7 @@ list_size_t i_dlist_clear(i_list_t* _this)
 }
 
 /* checked */
-list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_step_t step, size_t align)
+list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_step_t step, list_align_t align)
 {
     list_t* list;
     size_t  width;

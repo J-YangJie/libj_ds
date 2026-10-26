@@ -41,7 +41,7 @@ typedef struct i_list {
     list_step_t      step;
     list_align_t     align;
     size_t           pad;
-    struct list_head head; /* 注：不能是最后一个，否则地址不合法 */
+    struct list_head head; /* Err：It cannot be the last one, otherwise the address is invalid! */
     list_size_t      size;
     bool             sso;
 } i_list_t;
@@ -66,10 +66,6 @@ bool __i_dlist_empty(const i_list_t* _this)
 {
     return list_empty(&_this->head);
 }
-
-
-
-
 
 /* checked */
 #ifdef dlist_entry_lhead
@@ -317,73 +313,6 @@ list_r_iterator_t i_clist_rprev(const i_list_t* _this, list_r_iterator_t r_itera
 
 
 
-
-bool i_dlist_push_back(i_list_t* _this, list_data_t data);
-bool i_dlist_push_front(i_list_t* _this, list_data_t data);
-list_node_t* i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data);
-list_node_t* i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, list_data_t data);
-void i_dlist_pop_back(i_list_t* _this);
-void i_dlist_pop_front(i_list_t* _this);
-list_node_t* i_dlist_erase(i_list_t* _this, list_node_t* pos);
-list_node_t* i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_t* end);
-list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data);
-list_count_t i_dlist_count(const i_list_t* _this, list_data_t data);
-list_size_t i_dlist_remove(i_list_t* _this, list_data_t data);
-list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond);
-list_size_t i_dlist_unique(i_list_t* _this);
-void i_dlist_reverse(i_list_t* _this);
-void i_dlist_splice(i_list_t* _this, list_iterator_t iterator, i_list_t* other);
-void i_dlist_splice_range(i_list_t* _this, list_iterator_t iterator, i_list_t* other,
-                          list_iterator_t iterator_begin, list_iterator_t iterator_end);
-void i_dlist_merge(i_list_t* _this, i_list_t* other, list_cmp_t cmp);
-void i_dlist_swap(i_list_t* _this, i_list_t* other);
-bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data);
-list_size_t i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data);
-list_size_t i_dlist_clear(i_list_t* _this);
-
-
-/* checked */
-static inline
-list_iterator_t i_clist_find(const i_list_t* _this, list_data_t data)
-{
-    return __i_dlist_lnode_to_it(i_dlist_find(_this, data));
-}
-
-/* checked */
-static inline
-list_iterator_t i_clist_insert(i_list_t* _this, list_iterator_t iterator, list_data_t data)
-{
-    return __i_dlist_lnode_to_it(i_dlist_insert(_this, __i_dlist_it_to_lnode(iterator), data));
-}
-
-/* checked */
-static inline
-list_iterator_t i_clist_insert_n(i_list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data)
-{
-    return __i_dlist_lnode_to_it(i_dlist_insert_n(_this, __i_dlist_it_to_lnode(iterator), n, data));
-}
-
-/* checked */
-static inline
-list_iterator_t i_clist_erase(i_list_t* _this, list_iterator_t iterator)
-{
-    return __i_dlist_lnode_to_it(i_dlist_erase(_this, __i_dlist_it_to_lnode(iterator)));
-}
-
-/* checked */
-static inline
-list_iterator_t i_clist_erase_range(i_list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)
-{
-    return __i_dlist_lnode_to_it(i_dlist_erase_range(_this,
-                                   __i_dlist_it_to_lnode(iterator_begin),
-                                   __i_dlist_it_to_lnode(iterator_end)));
-}
-
-
-
-
-
-
 /* checked */
 static inline
 list_iterator_t i_dlist_null_iterator(void)
@@ -467,6 +396,15 @@ list_value_t i_dlist_at(const i_list_t* _this, list_index_t index)
 
 /* checked */
 static inline
+list_value_t i_dlist_back(const i_list_t* _this)
+{
+    if (!is_null(_this) && !__i_dlist_empty(_this))
+        return (list_value_t){ .u8 = __i_dlist_rbegin(_this)->data, };
+    return (list_value_t){ .u8 = NULL, };
+}
+
+/* checked */
+static inline
 list_value_t i_dlist_front(const i_list_t* _this)
 {
     if (!is_null(_this) && !__i_dlist_empty(_this))
@@ -474,13 +412,69 @@ list_value_t i_dlist_front(const i_list_t* _this)
     return (list_value_t){ .u8 = NULL, };
 }
 
+
+
+
+
+bool i_dlist_push_back(i_list_t* _this, list_data_t data);
+bool i_dlist_push_front(i_list_t* _this, list_data_t data);
+list_node_t* i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data);
+list_node_t* i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, list_data_t data);
+void i_dlist_pop_back(i_list_t* _this);
+void i_dlist_pop_front(i_list_t* _this);
+list_node_t* i_dlist_erase(i_list_t* _this, list_node_t* pos);
+list_node_t* i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_t* end);
+list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data);
+list_count_t i_dlist_count(const i_list_t* _this, list_data_t data);
+list_size_t i_dlist_remove(i_list_t* _this, list_data_t data);
+list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond);
+list_size_t i_dlist_unique(i_list_t* _this);
+void i_dlist_reverse(i_list_t* _this);
+void i_dlist_splice(i_list_t* _this, list_iterator_t iterator, i_list_t* other);
+void i_dlist_splice_range(i_list_t* _this, list_iterator_t iterator, i_list_t* other,
+                          list_iterator_t iterator_begin, list_iterator_t iterator_end);
+void i_dlist_merge(i_list_t* _this, i_list_t* other, list_cmp_t cmp);
+void i_dlist_swap(i_list_t* _this, i_list_t* other);
+bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data);
+list_size_t i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data);
+list_size_t i_dlist_clear(i_list_t* _this);
+
 /* checked */
 static inline
-list_value_t i_dlist_back(const i_list_t* _this)
+list_iterator_t i_clist_find(const i_list_t* _this, list_data_t data)
 {
-    if (!is_null(_this) && !__i_dlist_empty(_this))
-        return (list_value_t){ .u8 = __i_dlist_rbegin(_this)->data, };
-    return (list_value_t){ .u8 = NULL, };
+    return __i_dlist_lnode_to_it(i_dlist_find(_this, data));
 }
+
+/* checked */
+static inline
+list_iterator_t i_clist_insert(i_list_t* _this, list_iterator_t iterator, list_data_t data)
+{
+    return __i_dlist_lnode_to_it(i_dlist_insert(_this, __i_dlist_it_to_lnode(iterator), data));
+}
+
+/* checked */
+static inline
+list_iterator_t i_clist_insert_n(i_list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data)
+{
+    return __i_dlist_lnode_to_it(i_dlist_insert_n(_this, __i_dlist_it_to_lnode(iterator), n, data));
+}
+
+/* checked */
+static inline
+list_iterator_t i_clist_erase(i_list_t* _this, list_iterator_t iterator)
+{
+    return __i_dlist_lnode_to_it(i_dlist_erase(_this, __i_dlist_it_to_lnode(iterator)));
+}
+
+/* checked */
+static inline
+list_iterator_t i_clist_erase_range(i_list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)
+{
+    return __i_dlist_lnode_to_it(i_dlist_erase_range(_this,
+                                   __i_dlist_it_to_lnode(iterator_begin),
+                                   __i_dlist_it_to_lnode(iterator_end)));
+}
+
 
 #endif /* __J_I_LIST_H */

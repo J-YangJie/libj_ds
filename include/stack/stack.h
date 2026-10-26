@@ -49,11 +49,16 @@ typedef struct class_stack {
     stack_size_t (*clear)(stack_t* _this);
 } class_stack_t;
 
-#define STACK_VECTOR_NEW_OPS_T(_ops, _type, _capacity) VECTOR_NEW_OPS_T((_ops), _type)
-#define STACK_DEQUE_NEW_OPS_T(_ops, _type, _capacity)  DEQUE_NEW_OPS_T((_ops), _type)
-#define STACK_LIST_NEW_OPS_T(_ops, _type, _capacity)   LIST_NEW_OPS_T((_ops), _type)
-#define _STACK_NEW_OPS_T(_ops, _type, _BASE_NAME, _capacity) \
-        __stack_new((__SEQUENCE_CONTAINER_BASE_ ## _BASE_NAME), STACK_ ## _BASE_NAME ## _NEW_OPS_T((_ops), _type, (_capacity)))
+#define STACK_VECTOR_NEW_OPS_COMPLATE(_ops, _type_id, _type, _capacity_init)  VECTOR_NEW_OPS_COMPLATE((_ops), (_type_id), _type, (_capacity_init))
+#define STACK_DEQUE_NEW_OPS_COMPLATE(_ops, _type_id, _type, _capacity_init)   DEQUE_NEW_OPS_COMPLATE((_ops), (_type_id), _type)
+#define STACK_LIST_NEW_OPS_COMPLATE(_ops, _type_id, _type, _capacity_init)    LIST_NEW_OPS_COMPLATE((_ops), (_type_id), _type)
+#define STACK_VECTOR_NEW_OPS_T(_ops, _type, _capacity_init)                   VECTOR_NEW_OPS_T((_ops), _type)
+#define STACK_DEQUE_NEW_OPS_T(_ops, _type, _capacity_init)                    DEQUE_NEW_OPS_T((_ops), _type)
+#define STACK_LIST_NEW_OPS_T(_ops, _type, _capacity_init)                     LIST_NEW_OPS_T((_ops), _type)
+#define _STACK_NEW_OPS_COMPLATE(_ops, _type_id, _type, _BASE_NAME, _capacity_init) \
+        __stack_new((__SEQUENCE_CONTAINER_BASE_##_BASE_NAME), STACK_##_BASE_NAME##_NEW_OPS_COMPLATE((_ops), (_type_id), _type, (_capacity_init)))
+#define _STACK_NEW_OPS_T(_ops, _type, _BASE_NAME, _capacity_init) \
+        __stack_new((__SEQUENCE_CONTAINER_BASE_##_BASE_NAME), STACK_##_BASE_NAME##_NEW_OPS_T((_ops), _type, (_capacity_init)))
 
 stack_t* __stack_new(uint8_t id, void* base);
 void     __stack_delete(stack_t** _this);
@@ -62,10 +67,12 @@ const class_stack_t* class_stack_ins(void);
 #define cstack                                    g_class_stack()
 #define g_class_stack_ops_string()                g_class_sequence_container_ops_string()
 #define g_class_stack_ops_sso()                   g_class_sequence_container_ops_sso()
-#define STACK_NEW()                               _STACK_NEW_OPS_T(NULL,   stack_data_t, VECTOR, 0)
-#define STACK_NEW_OPS(_ops)                       _STACK_NEW_OPS_T((_ops), stack_data_t, VECTOR, 0)
+#define STACK_NEW_OPS_COMPLATE(_ops, _type_id, _type, _BASE_NAME, _capacity_init) \
+        _STACK_NEW_OPS_COMPLATE((_ops), (_type_id), _type, _BASE_NAME, (_capacity_init))
 #define STACK_NEW_T(_type, _BASE_NAME)            _STACK_NEW_OPS_T(NULL,   _type, _BASE_NAME, 0)
 #define STACK_NEW_OPS_T(_ops, _type, _BASE_NAME)  _STACK_NEW_OPS_T((_ops), _type, _BASE_NAME, 0)
+#define STACK_NEW()                               _STACK_NEW_OPS_T(NULL,   stack_data_t, VECTOR, 0)
+#define STACK_NEW_OPS(_ops)                       _STACK_NEW_OPS_T((_ops), stack_data_t, VECTOR, 0)
 #define STACK_NEW_CHAR()                          _STACK_NEW_OPS_T(g_class_stack_ops_string(), stack_data_t, VECTOR, 0)
 #define STACK_NEW_SSO()                           _STACK_NEW_OPS_T(g_class_stack_ops_sso(),    ds_sso_t,     VECTOR, 0)
 #define STACK_NEW_STRING()                        STACK_NEW_SSO()

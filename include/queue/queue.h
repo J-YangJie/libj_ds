@@ -51,10 +51,14 @@ typedef struct class_queue {
     queue_size_t (*clear)(queue_t* _this);
 } class_queue_t;
 
-#define QUEUE_DEQUE_NEW_OPS_T(_ops, _type) DEQUE_NEW_OPS_T((_ops), _type)
-#define QUEUE_LIST_NEW_OPS_T(_ops, _type)  LIST_NEW_OPS_T((_ops), _type)
+#define QUEUE_DEQUE_NEW_OPS_COMPLATE(_ops, _type_id, _type)  DEQUE_NEW_OPS_COMPLATE((_ops), (_type_id), _type)
+#define QUEUE_LIST_NEW_OPS_COMPLATE(_ops, _type_id, _type)   LIST_NEW_OPS_COMPLATE((_ops), (_type_id), _type)
+#define QUEUE_DEQUE_NEW_OPS_T(_ops, _type)                   DEQUE_NEW_OPS_T((_ops), _type)
+#define QUEUE_LIST_NEW_OPS_T(_ops, _type)                    LIST_NEW_OPS_T((_ops), _type)
+#define _QUEUE_NEW_OPS_COMPLATE(_ops, _type_id, _type, _BASE_NAME) \
+        __queue_new((__SEQUENCE_CONTAINER_BASE_##_BASE_NAME), QUEUE_##_BASE_NAME##_NEW_OPS_COMPLATE((_ops), (_type_id), _type))
 #define _QUEUE_NEW_OPS_T(_ops, _type, _BASE_NAME) \
-        __queue_new((__SEQUENCE_CONTAINER_BASE_ ## _BASE_NAME), QUEUE_ ## _BASE_NAME ## _NEW_OPS_T((_ops), _type))
+        __queue_new((__SEQUENCE_CONTAINER_BASE_##_BASE_NAME), QUEUE_##_BASE_NAME##_NEW_OPS_T((_ops), _type))
 
 queue_t* __queue_new(uint8_t id, void* base);
 void     __queue_delete(queue_t** _this);
@@ -63,10 +67,12 @@ const class_queue_t* class_queue_ins(void);
 #define cqueue                                    g_class_queue()
 #define g_class_queue_ops_string()                g_class_sequence_container_ops_string()
 #define g_class_queue_ops_sso()                   g_class_sequence_container_ops_sso()
-#define QUEUE_NEW()                               _QUEUE_NEW_OPS_T(NULL,   queue_data_t, DEQUE)
-#define QUEUE_NEW_OPS(_ops)                       _QUEUE_NEW_OPS_T((_ops), queue_data_t, DEQUE)
+#define QUEUE_NEW_OPS_COMPLATE(_ops, _type_id, _type, _BASE_NAME) \
+        _QUEUE_NEW_OPS_COMPLATE((_ops), (_type_id), _type, _BASE_NAME)
 #define QUEUE_NEW_T(_type, _BASE_NAME)            _QUEUE_NEW_OPS_T(NULL,   _type, _BASE_NAME)
 #define QUEUE_NEW_OPS_T(_ops, _type, _BASE_NAME)  _QUEUE_NEW_OPS_T((_ops), _type, _BASE_NAME)
+#define QUEUE_NEW()                               _QUEUE_NEW_OPS_T(NULL,   queue_data_t, DEQUE)
+#define QUEUE_NEW_OPS(_ops)                       _QUEUE_NEW_OPS_T((_ops), queue_data_t, DEQUE)
 #define QUEUE_NEW_CHAR()                          _QUEUE_NEW_OPS_T(g_class_queue_ops_string(), queue_data_t, DEQUE)
 #define QUEUE_NEW_SSO()                           _QUEUE_NEW_OPS_T(g_class_queue_ops_sso(),    ds_sso_t,     DEQUE)
 #define QUEUE_NEW_STRING()                        QUEUE_NEW_SSO()

@@ -93,7 +93,7 @@ bool __sequence_container_dtype_valid(ds_dtype_t dtype)
 }
 
 static inline
-size_t __sequence_container_dtype_width(ds_dtype_t dtype)
+ds_step_t __sequence_container_dtype_width(ds_dtype_t dtype)
 {
     switch (dtype) {
     case SEQ_CNTR_DTYPE_U8:  case SEQ_CNTR_DTYPE_S8:  return 1;
@@ -105,19 +105,6 @@ size_t __sequence_container_dtype_width(ds_dtype_t dtype)
     case SEQ_CNTR_DTYPE_UINTPTR:                      return sizeof(uintptr_t);
     case SEQ_CNTR_DTYPE_INTPTR:                       return sizeof(intptr_t);
     default:                                          return 0; /* struct/union: step carries the size */
-    }
-}
-
-/* Shared by the containers that compare a slot read against a lookup value. */
-static inline
-bool __ds_ops_eq_width(size_t step, ds_data_t left, ds_data_t right)
-{
-    switch (step) {
-    case 1: return (uint8_t)left  == (uint8_t)right;
-    case 2: return (uint16_t)left == (uint16_t)right;
-    case 4: return (uint32_t)left == (uint32_t)right;
-    case 8: return (uint64_t)left == (uint64_t)right;
-    default: return left == right;
     }
 }
 
@@ -140,7 +127,7 @@ typedef struct class_sequence_container_ops {
     bool (*__eq)(ds_data_t left, ds_data_t right);   /* Return true if [ `left` == `right` ] */
     bool (*copy_data)(ds_data_t in, ds_data_t* out); /* The function pointer can be null and manages memory on its own. However, if this function is implemented, `free_data` must also be implemented */
     void (*free_data)(ds_data_t* data);              /* The function pointer can be null and manages memory on its own */
-    void (*__move)(ds_data_t dest, ds_data_t src);   /* Move semantics: relocate src to dest and rebase any self-references to dest. Optional; memmove is used when null. */
+    void (*__move)(ds_data_t dest, ds_data_t src);   /* Move semantics, default to using `memmove` if not provided. */
 } class_sequence_container_ops_t;
 
 const class_sequence_container_ops_t* class_sequence_container_ops_string_ins(void);

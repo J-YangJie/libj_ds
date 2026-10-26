@@ -125,7 +125,7 @@ typedef struct class_deque {
     deque_size_t (*clear)(deque_t* _this);
 } class_deque_t;
 
-deque_t* __deque_new(const class_deque_ops_t* ops, deque_dtype_t data_type, deque_step_t step, size_t align);
+deque_t* __deque_new(const class_deque_ops_t* ops, deque_dtype_t data_type, deque_step_t step, deque_align_t align);
 void     __deque_delete(deque_t** _this);
 const class_deque_t* class_deque_ins(void);
 #define g_class_deque()               class_deque_ins()
