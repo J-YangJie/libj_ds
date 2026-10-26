@@ -50,8 +50,6 @@ typedef vector_reverse_iterator_t vector_r_iterator_t;
 
 typedef i_vector_t vector_t;
 
-bool cvector_swap_at(vector_t* _this, vector_index_t i, vector_index_t j);
-
 /* Method 1 */
 static inline vector_size_t       cvector_size(const vector_t* _this)                                          { return i_vector_size(_this); }
 static inline vector_size_t       cvector_capacity(const vector_t* _this)                                      { return i_vector_capacity(_this); }
@@ -105,7 +103,6 @@ typedef struct class_vector {
     vector_value_t (*at)(const vector_t* _this, vector_index_t index);
     vector_value_t (*back)(const vector_t* _this);
     vector_value_t (*front)(const vector_t* _this);
-    bool (*swap_at)(vector_t* _this, vector_index_t i, vector_index_t j);
     vector_iterator_t (*find)(const vector_t* _this, vector_data_t data);
     bool (*push_back)(vector_t* _this, vector_data_t data);
     vector_iterator_t (*insert)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);                        /* insert data before `iterator` */

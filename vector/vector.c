@@ -422,73 +422,6 @@ void __vector_delete(vector_t** _this)
     p_free(*_this);
 }
 
-bool cvector_swap_at(vector_t* _this, vector_index_t i, vector_index_t j)
-{
-    vector_step_t step;
-    uint8_t* a;
-    uint8_t* b;
-    uint8_t* t;
-    uint8_t tmp[32];
-
-    if (is_null(_this)
-        || i >= (vector_index_t)__i_vector_size(_this)
-        || j >= (vector_index_t)__i_vector_size(_this))
-        return false;
-
-    if (i == j)
-        return true;
-
-    step = _this->step;
-
-    a = __i_vector_ptr_add(_this->begin, i, step);
-    b = __i_vector_ptr_add(_this->begin, j, step);
-
-    switch (step) {
-    case 1: {
-        uint8_t v = *(uint8_t*)a; *(uint8_t*)a = *(uint8_t*)b; *(uint8_t*)b = v; return true;
-    }
-    case 2: {
-        uint16_t v = *(uint16_t*)a; *(uint16_t*)a = *(uint16_t*)b; *(uint16_t*)b = v; return true;
-    }
-    case 4: {
-        uint32_t v = *(uint32_t*)a; *(uint32_t*)a = *(uint32_t*)b; *(uint32_t*)b = v; return true;
-    }
-    case 8: {
-        uint64_t v = *(uint64_t*)a; *(uint64_t*)a = *(uint64_t*)b; *(uint64_t*)b = v; return true;
-    }
-    case 16:
-        if (!_this->sso) {
-            uint64_t a0 = *(uint64_t*)a,       a1 = *(uint64_t*)(a + 8);
-            uint64_t b0 = *(uint64_t*)b,       b1 = *(uint64_t*)(b + 8);
-            *(uint64_t*)a = b0; *(uint64_t*)(a + 8) = b1;
-            *(uint64_t*)b = a0; *(uint64_t*)(b + 8) = a1;
-            return true;
-        }
-        break;
-    default:
-        break;
-    }
-
-    if (step <= sizeof(tmp)) {
-        t = tmp;
-    } else {
-        t = (uint8_t*)p_malloc(step);
-        if (is_null(t))
-            return false;
-    }
-
-    memcpy(t, a, step);
-    __i_vector_slot_move(_this, a, b);
-    memcpy(b, t, step);
-    if (_this->sso)
-        __ds_ops_fix_sso((ds_data_t)b);
-
-    if (t != tmp)
-        p_free(t);
-
-    return true;
-}
-
 const class_vector_t* class_vector_ins(void)
 {
     static const class_vector_t ins = {
@@ -510,7 +443,6 @@ const class_vector_t* class_vector_ins(void)
         .at             = cvector_at,
         .back           = cvector_back,
         .front          = cvector_front,
-        .swap_at        = cvector_swap_at,
         .find           = cvector_find,
         .push_back      = cvector_push_back,
         .insert         = cvector_insert,

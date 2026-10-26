@@ -102,7 +102,7 @@ void __i_deque_set_bkt_n_r(deque_r_iterator_t* rit, uint8_t** bkt, deque_size_t 
 }
 
 static inline
-deque_iterator_t __i_deque_advance(deque_iterator_t it, deque_size_t n)
+deque_iterator_t __i_deque_advance_slow(deque_iterator_t it, deque_size_t n)
 {
     const ptrdiff_t off = n + __i_deque_ptr_diff(it.cur, it.begin, it.step);
     const ptrdiff_t s = __i_deque_ptr_diff(it.end, it.begin, it.step);
@@ -112,10 +112,40 @@ deque_iterator_t __i_deque_advance(deque_iterator_t it, deque_size_t n)
         return it;
     }
 
-    const ptrdiff_t noff = off > 0 ? off / s : -((-off - 1) / s) - 1;
-    __i_deque_set_bkt(&it, it.bkt + noff);
-    it.cur = __i_deque_ptr_add(it.begin, (off - noff * s), it.step);
+    {
+        const ptrdiff_t noff = off > 0 ? off / s : -((-off - 1) / s) - 1;
+
+        __i_deque_set_bkt(&it, it.bkt + noff);
+        it.cur = __i_deque_ptr_add(it.begin, (off - noff * s), it.step);
+    }
     return it;
+}
+
+static inline
+deque_iterator_t __i_deque_advance_fast(deque_iterator_t it, deque_size_t n)
+{
+    const ptrdiff_t off = n + __i_deque_ptr_diff(it.cur, it.begin, it.step);
+    const ptrdiff_t s = __i_deque_ptr_diff(it.end, it.begin, it.step);
+
+    if (off >= 0 && off < s) {
+        it.cur = __i_deque_ptr_add(it.cur, n, it.step);
+        return it;
+    }
+
+    {
+        const int shift = __builtin_ctz((unsigned)s);
+        const ptrdiff_t noff = off > 0 ? off >> shift : -(((-off - 1) >> shift)) - 1;
+
+        __i_deque_set_bkt(&it, it.bkt + noff);
+        it.cur = __i_deque_ptr_add(it.begin, (off - noff * s), it.step);
+    }
+    return it;
+}
+
+static inline
+deque_iterator_t __i_deque_advance(deque_iterator_t it, deque_size_t n)
+{
+    return __i_deque_advance_fast(it, n);
 }
 
 static inline

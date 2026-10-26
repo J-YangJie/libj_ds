@@ -37,19 +37,9 @@ typedef struct i_priority_queue {
         void*     p;
     };
     const class_priority_queue_ops_t* ops;
+    uint8_t* swap;
 } i_priority_queue_t;
 
-static inline
-priority_queue_value_t __i_pq_at(const i_priority_queue_t* _this, size_t index)
-{
-    switch (_this->id) {
-    case __SEQUENCE_CONTAINER_BASE_VECTOR: return __cvector_at(_this->v, index);
-    case __SEQUENCE_CONTAINER_BASE_DEQUE:  return __cdeque_at(_this->d, index);
-    default:                               return (priority_queue_value_t){ .u8 = NULL };
-    }
-}
-
-/* checked */
 static inline
 priority_queue_size_t i_priority_queue_size(const i_priority_queue_t* _this)
 {
@@ -63,7 +53,6 @@ priority_queue_size_t i_priority_queue_size(const i_priority_queue_t* _this)
     return -1;
 }
 
-/* checked */
 static inline
 bool __i_priority_queue_empty(const i_priority_queue_t* _this)
 {
@@ -74,11 +63,6 @@ bool __i_priority_queue_empty(const i_priority_queue_t* _this)
     }
 }
 
-/*
-  push/pop are O(log n): the heap sift lives in priority_queue.c, compiled
-  once, so the specialized slot loops are not duplicated into every user
-  translation unit.  One call per operation, not per level.
-*/
 bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data);
 void i_priority_queue_pop(i_priority_queue_t* _this);
 
@@ -102,7 +86,6 @@ priority_queue_value_t i_priority_queue_top(const i_priority_queue_t* _this)
     return (priority_queue_value_t){ .u8 = NULL };
 }
 
-/* checked */
 static inline
 void i_priority_queue_swap(i_priority_queue_t* _this, i_priority_queue_t* other)
 {
@@ -129,7 +112,6 @@ void i_priority_queue_swap(i_priority_queue_t* _this, i_priority_queue_t* other)
     }
 }
 
-/* checked */
 static inline
 priority_queue_size_t i_priority_queue_clear(i_priority_queue_t* _this)
 {

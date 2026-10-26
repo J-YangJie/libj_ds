@@ -285,7 +285,7 @@ static void test_i_for(void)
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_pqueue_i.push(i);          }, time_pqueue);
 #endif
 
-        printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000));
+        printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
     }
 
     if (1) // if (0)
@@ -384,7 +384,7 @@ static void test_i_for(void)
         times_succ = TIMES_FIND;
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (TIME_DS / 1000), times_succ, ds_size);
+        printf("RESULT %s %s %s %zd %zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (ssize_t)(TIME_DS / 1000), times_succ, ds_size);
     }
 
     if (1) // if (0)
@@ -472,7 +472,7 @@ static void test_i_for(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (TIME_DS / 1000), (ssize_t)removed);
+        printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (ssize_t)(TIME_DS / 1000), (ssize_t)removed);
     }
 
     if (1)
@@ -526,7 +526,7 @@ static void test_i_for(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000), (ssize_t)removed);
+        printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000), (ssize_t)removed);
     }
 }
 
@@ -635,7 +635,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000));
+        printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
     }
 
     if (1) // if (0)
@@ -734,7 +734,7 @@ static void test_i_rand(void)
         times_succ = TIMES_FIND;
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (TIME_DS / 1000), times_succ, ds_size);
+        printf("RESULT %s %s %s %zd %zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (ssize_t)(TIME_DS / 1000), times_succ, ds_size);
     }
 
     if (1) // if (0)
@@ -822,7 +822,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (TIME_DS / 1000), (ssize_t)removed);
+        printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (ssize_t)(TIME_DS / 1000), (ssize_t)removed);
     }
 
 #ifdef TEST_DEQUE
@@ -834,51 +834,51 @@ static void test_i_rand(void)
 
             time_deque = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += count(ds_deque_i.begin(), ds_deque_i.end(), rand() % TIMES_FIND); }, time_deque);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_deque / 1000), cnt, ds_deque_i.size());
+            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), (ssize_t)cnt, ds_deque_i.size());
         }
 
 
         /* erase_range */
         time_deque = 0;
         GET_DURATION({ ds_deque_i.erase(ds_deque_i.begin() + 1, ds_deque_i.end() - 1); }, time_deque);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, (TIMES_INSERT - ds_deque_i.size()), (time_deque / 1000));
+        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, (TIMES_INSERT - ds_deque_i.size()), (ssize_t)(time_deque / 1000));
         GET_DURATION({ ds_deque_i.erase(ds_deque_i.begin(), ds_deque_i.end()); }, time_deque);
 
 
         /* insert/push front + erase/pop front */
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.insert(ds_deque_i.begin(), rand() % TIMES_FIND); }, time_deque);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.erase(ds_deque_i.begin());                       }, time_deque);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.push_front(rand() % TIMES_FIND);                 }, time_deque);
-        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.pop_front();                                     }, time_deque);
-        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
 
         /* insert/push back + erase/pop back */
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.insert(ds_deque_i.end(), rand() % TIMES_FIND);   }, time_deque);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.erase(ds_deque_i.end() - 1);                     }, time_deque);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.push_back(rand() % TIMES_FIND);                  }, time_deque);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_i.pop_back();                                      }, time_deque);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
 
         /* insert front+10 + erase front+10 */
@@ -890,14 +890,14 @@ static void test_i_rand(void)
             auto it = ds_deque_i.begin() + 10;
             GET_DURATION({ ds_deque_i.insert(it, rand() % TIMES_FIND); }, time_deque);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = ds_deque_i.begin() + 10;
             GET_DURATION({ ds_deque_i.erase(it); }, time_deque);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
 
         /* insert back-10 + erase back-10 */
@@ -909,14 +909,14 @@ static void test_i_rand(void)
             auto it = ds_deque_i.begin() + (ds_deque_i.size() - 10);
             GET_DURATION({ ds_deque_i.insert(it, rand() % TIMES_FIND); }, time_deque);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = ds_deque_i.begin() + (ds_deque_i.size() - 10);
             GET_DURATION({ ds_deque_i.erase(it); }, time_deque);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
 
         /* insert mid + erase mid */
@@ -928,14 +928,14 @@ static void test_i_rand(void)
             auto it = ds_deque_i.begin() + (ds_deque_i.size() / 2);
             GET_DURATION({ ds_deque_i.insert(it, rand() % TIMES_FIND); }, time_deque);
         }
-        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
         time_deque = 0;
         for (int i = 0; i < TIMES_FIND_V_L; ++i) {
             auto it = ds_deque_i.begin() + (ds_deque_i.size() / 2);
             GET_DURATION({ ds_deque_i.erase(it); }, time_deque);
         }
-        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_deque / 1000), ds_deque_i.size());
+        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
 
         /* insert_n + insert_n mid + erase_range mid + remove all */
@@ -946,11 +946,11 @@ static void test_i_rand(void)
 
             time_deque = 0;
             GET_DURATION({ ds_deque_i.insert(ds_deque_i.end(), (size_t)TIMES_INSERT, 9); }, time_deque);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_i.size());
+            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
             time_deque = 0;
             GET_DURATION({ ds_deque_i.insert(ds_deque_i.begin() + (ds_deque_i.size() / 2), (size_t)MID_N, 9); }, time_deque);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_deque / 1000), ds_deque_i.size());
+            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
             time_deque = 0;
             {
@@ -959,7 +959,7 @@ static void test_i_rand(void)
                 auto   e = ds_deque_i.begin() + ((s + (size_t)MID_N) / 2);
                 GET_DURATION({ ds_deque_i.erase(b, e); }, time_deque);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_deque / 1000), ds_deque_i.size());
+            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), ds_deque_i.size());
 
             time_deque = 0;
             {
@@ -967,7 +967,7 @@ static void test_i_rand(void)
                 GET_DURATION({ ds_deque_i.erase(remove(ds_deque_i.begin(), ds_deque_i.end(), 9), ds_deque_i.end()); }, time_deque);
                 removed = (ds_size_t)(curr - ds_deque_i.size());
             }
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), removed, ds_deque_i.size());
+            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), removed, ds_deque_i.size());
         }
 
 
@@ -978,7 +978,7 @@ static void test_i_rand(void)
         time_deque = 0;
         GET_DURATION({ sort(ds_deque_i.begin(), ds_deque_i.end()); }, time_deque);
         printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_deque / 1000), (int)is_sorted(ds_deque_i.begin(), ds_deque_i.end()), ds_deque_i.size());
+               (ssize_t)(time_deque / 1000), (int)is_sorted(ds_deque_i.begin(), ds_deque_i.end()), ds_deque_i.size());
 
         srand(SORT_SEED);
         ds_deque_i.clear(); for (int i = 0; i < TIMES_INSERT; ++i) ds_deque_i.push_back((ds_data_t)(rand()));
@@ -986,7 +986,7 @@ static void test_i_rand(void)
         time_deque = 0;
         GET_DURATION({ sort(ds_deque_i.begin(), ds_deque_i.end(), greater<ds_data_t>()); }, time_deque);
         printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_deque / 1000), (int)is_sorted(ds_deque_i.begin(), ds_deque_i.end(), greater<ds_data_t>()), ds_deque_i.size());
+               (ssize_t)(time_deque / 1000), (int)is_sorted(ds_deque_i.begin(), ds_deque_i.end(), greater<ds_data_t>()), ds_deque_i.size());
     }
 #endif
 
@@ -999,14 +999,14 @@ static void test_i_rand(void)
 
             time_vector = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += count(ds_vector_i.begin(), ds_vector_i.end(), rand() % TIMES_FIND); }, time_vector);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_vector / 1000), cnt, ds_vector_i.size());
+            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), (ssize_t)cnt, ds_vector_i.size());
         }
 
 
         /* erase_range */
         time_vector = 0;
         GET_DURATION({ ds_vector_i.erase(ds_vector_i.begin() + 1, ds_vector_i.end() - 1); }, time_vector);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, (TIMES_INSERT - ds_vector_i.size()), (time_vector / 1000));
+        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, (TIMES_INSERT - ds_vector_i.size()), (ssize_t)(time_vector / 1000));
         GET_DURATION({ ds_vector_i.erase(ds_vector_i.begin(), ds_vector_i.end()); }, time_vector);
 
 
@@ -1014,31 +1014,31 @@ static void test_i_rand(void)
         time_vector = 0;
         ds_vector_i.clear(); ds_vector_i.shrink_to_fit();
         GET_DURATION(for (int i = 0; i < TIMES_INSERT / 500; ++i) { ds_vector_i.insert(ds_vector_i.begin(), rand() % TIMES_FIND); }, time_vector);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT / 500; ++i) { ds_vector_i.erase(ds_vector_i.begin());                       }, time_vector);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
 
         /* insert/push back + erase/pop back */
         time_vector = 0;
         ds_vector_i.clear(); ds_vector_i.shrink_to_fit();
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_i.insert(ds_vector_i.end(), rand() % TIMES_FIND);   }, time_vector);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_i.erase(ds_vector_i.end() - 1);                     }, time_vector);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
         time_vector = 0;
         ds_vector_i.clear(); ds_vector_i.shrink_to_fit();
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_i.push_back(rand() % TIMES_FIND);                  }, time_vector);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_i.pop_back();                                     }, time_vector);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
 
         /* insert front+10 + erase front+10 */ /* only TIMES_INSERT / 500 times */
@@ -1050,14 +1050,14 @@ static void test_i_rand(void)
             auto it = ds_vector_i.begin() + 10;
             GET_DURATION({ ds_vector_i.insert(it, rand() % TIMES_FIND); }, time_vector);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
         time_vector = 0;
         for (int i = 0; i < TIMES_INSERT / 500; ++i) {
             auto it = ds_vector_i.begin() + 10;
             GET_DURATION({ ds_vector_i.erase(it); }, time_vector);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
 
         /* insert back-10 + erase back-10 */
@@ -1069,14 +1069,14 @@ static void test_i_rand(void)
             auto it = ds_vector_i.begin() + (ds_vector_i.size() - 10);
             GET_DURATION({ ds_vector_i.insert(it, rand() % TIMES_FIND); }, time_vector);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
         time_vector = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = ds_vector_i.begin() + (ds_vector_i.size() - 10);
             GET_DURATION({ ds_vector_i.erase(it); }, time_vector);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
 
         /* insert mid + erase mid */ /* only TIMES_FIND_V_L times */
@@ -1088,14 +1088,14 @@ static void test_i_rand(void)
             auto it = ds_vector_i.begin() + (ds_vector_i.size() / 2);
             GET_DURATION({ ds_vector_i.insert(it, rand() % TIMES_FIND); }, time_vector);
         }
-        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
         time_vector = 0;
         for (int i = 0; i < TIMES_FIND_V_L; ++i) {
             auto it = ds_vector_i.begin() + (ds_vector_i.size() / 2);
             GET_DURATION({ ds_vector_i.erase(it); }, time_vector);
         }
-        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_vector / 1000), ds_vector_i.size());
+        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
 
         /* insert_n + insert_n mid + erase_range mid + remove all */
@@ -1106,11 +1106,11 @@ static void test_i_rand(void)
 
             time_vector = 0;
             GET_DURATION({ ds_vector_i.insert(ds_vector_i.end(), (size_t)TIMES_INSERT, 9); }, time_vector);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_i.size());
+            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
             time_vector = 0;
             GET_DURATION({ ds_vector_i.insert(ds_vector_i.begin() + (ds_vector_i.size() / 2), (size_t)MID_N, 9); }, time_vector);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_vector / 1000), ds_vector_i.size());
+            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
             time_vector = 0;
             {
@@ -1119,7 +1119,7 @@ static void test_i_rand(void)
                 auto   e = ds_vector_i.begin() + ((s + (size_t)MID_N) / 2);
                 GET_DURATION({ ds_vector_i.erase(b, e); }, time_vector);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_vector / 1000), ds_vector_i.size());
+            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), ds_vector_i.size());
 
             time_vector = 0;
             {
@@ -1127,7 +1127,7 @@ static void test_i_rand(void)
                 GET_DURATION({ ds_vector_i.erase(remove(ds_vector_i.begin(), ds_vector_i.end(), 9), ds_vector_i.end()); }, time_vector);
                 removed = (ds_size_t)(curr - ds_vector_i.size());
             }
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), removed, ds_vector_i.size());
+            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, ds_vector_i.size());
         }
 
 
@@ -1138,7 +1138,7 @@ static void test_i_rand(void)
         time_vector = 0;
         GET_DURATION({ sort(ds_vector_i.begin(), ds_vector_i.end()); }, time_vector);
         printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_vector / 1000), (int)is_sorted(ds_vector_i.begin(), ds_vector_i.end()), ds_vector_i.size());
+               (ssize_t)(time_vector / 1000), (int)is_sorted(ds_vector_i.begin(), ds_vector_i.end()), ds_vector_i.size());
 
         srand(SORT_SEED);
         ds_vector_i.clear(); ds_vector_i.shrink_to_fit(); for (int i = 0; i < TIMES_INSERT; ++i) ds_vector_i.push_back((ds_data_t)(rand()));
@@ -1146,7 +1146,7 @@ static void test_i_rand(void)
         time_vector = 0;
         GET_DURATION({ sort(ds_vector_i.begin(), ds_vector_i.end(), greater<ds_data_t>()); }, time_vector);
         printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_vector / 1000), (int)is_sorted(ds_vector_i.begin(), ds_vector_i.end(), greater<ds_data_t>()), ds_vector_i.size());
+               (ssize_t)(time_vector / 1000), (int)is_sorted(ds_vector_i.begin(), ds_vector_i.end(), greater<ds_data_t>()), ds_vector_i.size());
     }
 #endif
 
@@ -1159,51 +1159,51 @@ static void test_i_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += count(ds_list_i.begin(), ds_list_i.end(), rand() % TIMES_FIND); }, time_list);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_list / 1000), cnt, ds_list_i.size());
+            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_list / 1000), (ssize_t)cnt, ds_list_i.size());
         }
 
 
         /* erase_range */
         time_list = 0;
         GET_DURATION({ ds_list_i.erase(next(ds_list_i.begin()), prev(ds_list_i.end())); }, time_list);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - ds_list_i.size(), (time_list / 1000));
+        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - ds_list_i.size(), (ssize_t)(time_list / 1000));
         GET_DURATION({ ds_list_i.erase(ds_list_i.begin(), ds_list_i.end()); }, time_list);
 
 
         /* insert/push front + erase/pop front */
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_i.insert(ds_list_i.begin(), rand() % TIMES_FIND); }, time_list);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_i.erase(ds_list_i.begin());                       }, time_list);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_i.push_front(rand() % TIMES_FIND);               }, time_list);
-        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_i.pop_front();                                  }, time_list);
-        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
 
         /* insert/push back + erase/pop back */
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_i.insert(ds_list_i.end(), rand() % TIMES_FIND);   }, time_list);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_i.erase(prev(ds_list_i.end()));                  }, time_list);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_i.push_back(rand() % TIMES_FIND);                }, time_list);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_i.pop_back();                                   }, time_list);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
 
         /* insert front+10 + erase front+10 */
@@ -1215,14 +1215,14 @@ static void test_i_rand(void)
             auto it = next(ds_list_i.begin(), 10);
             GET_DURATION({ ds_list_i.insert(it, rand() % TIMES_FIND); }, time_list);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = next(ds_list_i.begin(), 10);
             GET_DURATION({ ds_list_i.erase(it); }, time_list);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
 
         /* insert back-10 + erase back-10 */
@@ -1234,14 +1234,14 @@ static void test_i_rand(void)
             auto it = prev(ds_list_i.end(), 10);
             GET_DURATION({ ds_list_i.insert(it, rand() % TIMES_FIND); }, time_list);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = prev(ds_list_i.end(), 10);
             GET_DURATION({ ds_list_i.erase(it); }, time_list);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
 
         /* insert mid + erase mid */ /* only TIMES_INSERT / 5 times */
@@ -1254,7 +1254,7 @@ static void test_i_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT / 5; ++i) { ds_list_i.insert(mid, rand() % TIMES_FIND); }, time_list);
-            printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (time_list / 1000), ds_list_i.size());
+            printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), ds_list_i.size());
         }
 
         {
@@ -1262,7 +1262,7 @@ static void test_i_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT / 5; ++i) { mid = ds_list_i.erase(mid); }, time_list);
-            printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (time_list / 1000), ds_list_i.size());
+            printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), ds_list_i.size());
         }
 
 
@@ -1274,11 +1274,11 @@ static void test_i_rand(void)
 
             time_list = 0;
             GET_DURATION({ ds_list_i.insert(ds_list_i.end(), (size_t)TIMES_INSERT, 9); }, time_list);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_i.size());
+            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_i.size());
 
             time_list = 0;
             GET_DURATION({ ds_list_i.insert(next(ds_list_i.begin(), ds_list_i.size() / 2), (size_t)MID_N, 9); }, time_list);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_list / 1000), ds_list_i.size());
+            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), ds_list_i.size());
 
             time_list = 0;
             {
@@ -1287,7 +1287,7 @@ static void test_i_rand(void)
                 auto   e = next(ds_list_i.begin(), (s + (size_t)MID_N) / 2);
                 GET_DURATION({ ds_list_i.erase(b, e); }, time_list);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_list / 1000), ds_list_i.size());
+            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), ds_list_i.size());
 
             time_list = 0;
             {
@@ -1295,7 +1295,7 @@ static void test_i_rand(void)
                 GET_DURATION({ ds_list_i.remove(9); }, time_list);
                 removed = (ds_size_t)(curr - ds_list_i.size());
             }
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), removed, ds_list_i.size());
+            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, ds_list_i.size());
         }
 
 
@@ -1306,7 +1306,7 @@ static void test_i_rand(void)
         time_list = 0;
         GET_DURATION({ ds_list_i.sort(); }, time_list);
         printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_list / 1000), (int)is_sorted(ds_list_i.begin(), ds_list_i.end()), ds_list_i.size());
+               (ssize_t)(time_list / 1000), (int)is_sorted(ds_list_i.begin(), ds_list_i.end()), ds_list_i.size());
 
         /* sort: 降序 —— 对应 main.c 的 clist_sort(l, LIST_SORT_DESC) */
         srand(SORT_SEED);
@@ -1315,7 +1315,7 @@ static void test_i_rand(void)
         time_list = 0;
         GET_DURATION({ ds_list_i.sort(greater<ds_data_t>()); }, time_list);
         printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_list / 1000), (int)is_sorted(ds_list_i.begin(), ds_list_i.end(), greater<ds_data_t>()), ds_list_i.size());
+               (ssize_t)(time_list / 1000), (int)is_sorted(ds_list_i.begin(), ds_list_i.end(), greater<ds_data_t>()), ds_list_i.size());
     }
 #endif
 
@@ -1370,7 +1370,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000), (ssize_t)removed);
+        printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000), (ssize_t)removed);
     }
 }
 
@@ -1521,7 +1521,7 @@ static void test_s_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000));
+        printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
     }
 
     if (1) // if (0)
@@ -1627,7 +1627,7 @@ static void test_s_rand(void)
         (void)dst;
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (TIME_DS / 1000), times_succ, ds_size);
+        printf("RESULT %s %s %s %zd %zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (ssize_t)(TIME_DS / 1000), times_succ, ds_size);
     }
 
     if (1) // if (0)
@@ -1718,7 +1718,7 @@ static void test_s_rand(void)
         (void)dst;
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (TIME_DS / 1000), (ssize_t)removed);
+        printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (ssize_t)(TIME_DS / 1000), (ssize_t)removed);
     }
 
 #ifdef TEST_DEQUE
@@ -1737,51 +1737,51 @@ static void test_s_rand(void)
 
             time_deque = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += count(ds_deque_s.begin(), ds_deque_s.end(), DS_ARG()); }, time_deque);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_deque / 1000), cnt, ds_deque_s.size());
+            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), (ssize_t)cnt, ds_deque_s.size());
         }
 
 
         /* erase_range */
         time_deque = 0;
         GET_DURATION({ ds_deque_s.erase(ds_deque_s.begin() + 1, ds_deque_s.end() - 1); }, time_deque);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, (TIMES_INSERT - ds_deque_s.size()), (time_deque / 1000));
+        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, (TIMES_INSERT - ds_deque_s.size()), (ssize_t)(time_deque / 1000));
         GET_DURATION({ ds_deque_s.erase(ds_deque_s.begin(), ds_deque_s.end()); }, time_deque);
 
 
         /* insert/push front + erase/pop front */
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.insert(ds_deque_s.begin(), DS_ARG());       }, time_deque);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.erase(ds_deque_s.begin());                  }, time_deque);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.push_front(DS_ARG());                       }, time_deque);
-        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.pop_front();                                }, time_deque);
-        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
 
         /* insert/push back + erase/pop back */
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.insert(ds_deque_s.end(), DS_ARG());         }, time_deque);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.erase(ds_deque_s.end() - 1);                }, time_deque);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.push_back(DS_ARG());                        }, time_deque);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_deque_s.pop_back();                                 }, time_deque);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
 
         /* insert front+10 + erase front+10 */
@@ -1793,14 +1793,14 @@ static void test_s_rand(void)
             auto it = ds_deque_s.begin() + 10;
             GET_DURATION({ ds_deque_s.insert(it, DS_ARG()); }, time_deque);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = ds_deque_s.begin() + 10;
             GET_DURATION({ ds_deque_s.erase(it); }, time_deque);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
 
         /* insert back-10 + erase back-10 */
@@ -1812,14 +1812,14 @@ static void test_s_rand(void)
             auto it = ds_deque_s.begin() + (ds_deque_s.size() - 10);
             GET_DURATION({ ds_deque_s.insert(it, DS_ARG()); }, time_deque);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = ds_deque_s.begin() + (ds_deque_s.size() - 10);
             GET_DURATION({ ds_deque_s.erase(it); }, time_deque);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
 
         /* insert mid + erase mid */
@@ -1831,14 +1831,14 @@ static void test_s_rand(void)
             auto it = ds_deque_s.begin() + (ds_deque_s.size() / 2);
             GET_DURATION({ ds_deque_s.insert(it, DS_ARG()); }, time_deque);
         }
-        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
         time_deque = 0;
         for (int i = 0; i < TIMES_FIND_V_L; ++i) {
             auto it = ds_deque_s.begin() + (ds_deque_s.size() / 2);
             GET_DURATION({ ds_deque_s.erase(it); }, time_deque);
         }
-        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_deque / 1000), ds_deque_s.size());
+        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
 
         /* insert_n + insert_n mid + erase_range mid + remove all */
@@ -1850,11 +1850,11 @@ static void test_s_rand(void)
 
             time_deque = 0;
             GET_DURATION({ ds_deque_s.insert(ds_deque_s.end(), (size_t)TIMES_INSERT, fixbuf); }, time_deque);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), ds_deque_s.size());
+            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
             time_deque = 0;
             GET_DURATION({ ds_deque_s.insert(ds_deque_s.begin() + (ds_deque_s.size() / 2), (size_t)MID_N, fixbuf); }, time_deque);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_deque / 1000), ds_deque_s.size());
+            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
             time_deque = 0;
             {
@@ -1863,7 +1863,7 @@ static void test_s_rand(void)
                 auto   e = ds_deque_s.begin() + ((s + (size_t)MID_N) / 2);
                 GET_DURATION({ ds_deque_s.erase(b, e); }, time_deque);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_deque / 1000), ds_deque_s.size());
+            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), ds_deque_s.size());
 
             time_deque = 0;
             {
@@ -1871,7 +1871,7 @@ static void test_s_rand(void)
                 GET_DURATION({ ds_deque_s.erase(remove(ds_deque_s.begin(), ds_deque_s.end(), fixbuf), ds_deque_s.end()); }, time_deque);
                 removed = (ds_size_t)(curr - ds_deque_s.size());
             }
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_deque / 1000), removed, ds_deque_s.size());
+            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), removed, ds_deque_s.size());
         }
 
 
@@ -1882,7 +1882,7 @@ static void test_s_rand(void)
         time_deque = 0;
         GET_DURATION({ sort(ds_deque_s.begin(), ds_deque_s.end()); }, time_deque);
         printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_deque / 1000), (int)is_sorted(ds_deque_s.begin(), ds_deque_s.end()), ds_deque_s.size());
+               (ssize_t)(time_deque / 1000), (int)is_sorted(ds_deque_s.begin(), ds_deque_s.end()), ds_deque_s.size());
 
         srand(SORT_SEED);
         ds_deque_s.clear(); for (int i = 0; i < TIMES_INSERT; ++i) ds_deque_s.push_back(DS_ARG());
@@ -1890,7 +1890,7 @@ static void test_s_rand(void)
         time_deque = 0;
         GET_DURATION({ sort(ds_deque_s.begin(), ds_deque_s.end(), greater<string>()); }, time_deque);
         printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_deque / 1000), (int)is_sorted(ds_deque_s.begin(), ds_deque_s.end(), greater<string>()), ds_deque_s.size());
+               (ssize_t)(time_deque / 1000), (int)is_sorted(ds_deque_s.begin(), ds_deque_s.end(), greater<string>()), ds_deque_s.size());
 
 #undef DS_ARG
     }
@@ -1912,14 +1912,14 @@ static void test_s_rand(void)
 
             time_vector = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += count(ds_vector_s.begin(), ds_vector_s.end(), DS_ARG()); }, time_vector);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_vector / 1000), cnt, ds_vector_s.size());
+            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), (ssize_t)cnt, ds_vector_s.size());
         }
 
 
         /* erase_range */
         time_vector = 0;
         GET_DURATION({ ds_vector_s.erase(ds_vector_s.begin() + 1, ds_vector_s.end() - 1); }, time_vector);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, (TIMES_INSERT - ds_vector_s.size()), (time_vector / 1000));
+        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, (TIMES_INSERT - ds_vector_s.size()), (ssize_t)(time_vector / 1000));
         GET_DURATION({ ds_vector_s.erase(ds_vector_s.begin(), ds_vector_s.end()); }, time_vector);
 
 
@@ -1927,31 +1927,31 @@ static void test_s_rand(void)
         time_vector = 0;
         ds_vector_s.clear(); ds_vector_s.shrink_to_fit();
         GET_DURATION(for (int i = 0; i < TIMES_INSERT / 500; ++i) { ds_vector_s.insert(ds_vector_s.begin(), DS_ARG());       }, time_vector);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT / 500; ++i) { ds_vector_s.erase(ds_vector_s.begin());                  }, time_vector);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
 
         /* insert/push back + erase/pop back */
         time_vector = 0;
         ds_vector_s.clear(); ds_vector_s.shrink_to_fit();
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_s.insert(ds_vector_s.end(), DS_ARG());         }, time_vector);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_s.erase(ds_vector_s.end() - 1);                }, time_vector);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
         time_vector = 0;
         ds_vector_s.clear(); ds_vector_s.shrink_to_fit();
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_s.push_back(DS_ARG());                        }, time_vector);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_vector_s.pop_back();                                 }, time_vector);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
 
         /* insert front+10 + erase front+10 */ /* only TIMES_INSERT / 500 times */
@@ -1963,14 +1963,14 @@ static void test_s_rand(void)
             auto it = ds_vector_s.begin() + 10;
             GET_DURATION({ ds_vector_s.insert(it, DS_ARG()); }, time_vector);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
         time_vector = 0;
         for (int i = 0; i < TIMES_INSERT / 500; ++i) {
             auto it = ds_vector_s.begin() + 10;
             GET_DURATION({ ds_vector_s.erase(it); }, time_vector);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
 
         /* insert back-10 + erase back-10 */
@@ -1982,14 +1982,14 @@ static void test_s_rand(void)
             auto it = ds_vector_s.begin() + (ds_vector_s.size() - 10);
             GET_DURATION({ ds_vector_s.insert(it, DS_ARG()); }, time_vector);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
         time_vector = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = ds_vector_s.begin() + (ds_vector_s.size() - 10);
             GET_DURATION({ ds_vector_s.erase(it); }, time_vector);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
 
         /* insert mid + erase mid */ /* only TIMES_FIND_V_L times */
@@ -2001,14 +2001,14 @@ static void test_s_rand(void)
             auto it = ds_vector_s.begin() + (ds_vector_s.size() / 2);
             GET_DURATION({ ds_vector_s.insert(it, DS_ARG()); }, time_vector);
         }
-        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
         time_vector = 0;
         for (int i = 0; i < TIMES_FIND_V_L; ++i) {
             auto it = ds_vector_s.begin() + (ds_vector_s.size() / 2);
             GET_DURATION({ ds_vector_s.erase(it); }, time_vector);
         }
-        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_vector / 1000), ds_vector_s.size());
+        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
 
         /* insert_n + insert_n mid + erase_range mid + remove all */
@@ -2020,11 +2020,11 @@ static void test_s_rand(void)
 
             time_vector = 0;
             GET_DURATION({ ds_vector_s.insert(ds_vector_s.end(), (size_t)TIMES_INSERT, fixbuf); }, time_vector);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), ds_vector_s.size());
+            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
             time_vector = 0;
             GET_DURATION({ ds_vector_s.insert(ds_vector_s.begin() + (ds_vector_s.size() / 2), (size_t)MID_N, fixbuf); }, time_vector);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_vector / 1000), ds_vector_s.size());
+            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
             time_vector = 0;
             {
@@ -2033,7 +2033,7 @@ static void test_s_rand(void)
                 auto   e = ds_vector_s.begin() + ((s + (size_t)MID_N) / 2);
                 GET_DURATION({ ds_vector_s.erase(b, e); }, time_vector);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_vector / 1000), ds_vector_s.size());
+            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), ds_vector_s.size());
 
             time_vector = 0;
             {
@@ -2041,7 +2041,7 @@ static void test_s_rand(void)
                 GET_DURATION({ ds_vector_s.erase(remove(ds_vector_s.begin(), ds_vector_s.end(), fixbuf), ds_vector_s.end()); }, time_vector);
                 removed = (ds_size_t)(curr - ds_vector_s.size());
             }
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_vector / 1000), removed, ds_vector_s.size());
+            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, ds_vector_s.size());
         }
 
 
@@ -2052,7 +2052,7 @@ static void test_s_rand(void)
         time_vector = 0;
         GET_DURATION({ sort(ds_vector_s.begin(), ds_vector_s.end()); }, time_vector);
         printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_vector / 1000), (int)is_sorted(ds_vector_s.begin(), ds_vector_s.end()), ds_vector_s.size());
+               (ssize_t)(time_vector / 1000), (int)is_sorted(ds_vector_s.begin(), ds_vector_s.end()), ds_vector_s.size());
 
         srand(SORT_SEED);
         ds_vector_s.clear(); ds_vector_s.shrink_to_fit(); for (int i = 0; i < TIMES_INSERT; ++i) ds_vector_s.push_back(DS_ARG());
@@ -2060,7 +2060,7 @@ static void test_s_rand(void)
         time_vector = 0;
         GET_DURATION({ sort(ds_vector_s.begin(), ds_vector_s.end(), greater<string>()); }, time_vector);
         printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_vector / 1000), (int)is_sorted(ds_vector_s.begin(), ds_vector_s.end(), greater<string>()), ds_vector_s.size());
+               (ssize_t)(time_vector / 1000), (int)is_sorted(ds_vector_s.begin(), ds_vector_s.end(), greater<string>()), ds_vector_s.size());
 
 #undef DS_ARG
     }
@@ -2082,51 +2082,51 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += count(ds_list_s.begin(), ds_list_s.end(), DS_ARG()); }, time_list);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (time_list / 1000), cnt, ds_list_s.size());
+            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_list / 1000), (ssize_t)cnt, ds_list_s.size());
         }
 
 
         /* erase_range */
         time_list = 0;
         GET_DURATION({ ds_list_s.erase(next(ds_list_s.begin()), prev(ds_list_s.end())); }, time_list);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - ds_list_s.size(), (time_list / 1000));
+        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - ds_list_s.size(), (ssize_t)(time_list / 1000));
         GET_DURATION({ ds_list_s.erase(ds_list_s.begin(), ds_list_s.end()); }, time_list);
 
 
         /* insert/push front + erase/pop front */
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_s.insert(ds_list_s.begin(), DS_ARG());       }, time_list);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_s.erase(ds_list_s.begin());                  }, time_list);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_s.push_front(DS_ARG());                       }, time_list);
-        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_s.pop_front();                                }, time_list);
-        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
 
         /* insert/push back + erase/pop back */
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_s.insert(ds_list_s.end(), DS_ARG());         }, time_list);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_s.erase(prev(ds_list_s.end()));              }, time_list);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_s.push_back(DS_ARG());                        }, time_list);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_list_s.pop_back();                                 }, time_list);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
 
         /* insert front+10 + erase front+10 */
@@ -2138,14 +2138,14 @@ static void test_s_rand(void)
             auto it = next(ds_list_s.begin(), 10);
             GET_DURATION({ ds_list_s.insert(it, DS_ARG()); }, time_list);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = next(ds_list_s.begin(), 10);
             GET_DURATION({ ds_list_s.erase(it); }, time_list);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
 
         /* insert back-10 + erase back-10 */
@@ -2157,14 +2157,14 @@ static void test_s_rand(void)
             auto it = prev(ds_list_s.end(), 10);
             GET_DURATION({ ds_list_s.insert(it, DS_ARG()); }, time_list);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             auto it = prev(ds_list_s.end(), 10);
             GET_DURATION({ ds_list_s.erase(it); }, time_list);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
 
         /* insert mid + erase mid */ /* only TIMES_INSERT / 5 times */
@@ -2176,7 +2176,7 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT / 5; ++i) { ds_list_s.insert(mid, DS_ARG()); }, time_list);
-            printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (time_list / 1000), ds_list_s.size());
+            printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), ds_list_s.size());
         }
 
         {
@@ -2184,7 +2184,7 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT / 5; ++i) { mid = ds_list_s.erase(mid); }, time_list);
-            printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (time_list / 1000), ds_list_s.size());
+            printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), ds_list_s.size());
         }
 
 
@@ -2197,11 +2197,11 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION({ ds_list_s.insert(ds_list_s.end(), (size_t)TIMES_INSERT, fixbuf); }, time_list);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), ds_list_s.size());
+            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), ds_list_s.size());
 
             time_list = 0;
             GET_DURATION({ ds_list_s.insert(next(ds_list_s.begin(), ds_list_s.size() / 2), (size_t)MID_N, fixbuf); }, time_list);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_list / 1000), ds_list_s.size());
+            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), ds_list_s.size());
 
             time_list = 0;
             {
@@ -2210,7 +2210,7 @@ static void test_s_rand(void)
                 auto   e = next(ds_list_s.begin(), (s + (size_t)MID_N) / 2);
                 GET_DURATION({ ds_list_s.erase(b, e); }, time_list);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, MID_N, (time_list / 1000), ds_list_s.size());
+            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), ds_list_s.size());
 
             time_list = 0;
             {
@@ -2218,7 +2218,7 @@ static void test_s_rand(void)
                 GET_DURATION({ ds_list_s.remove(fixbuf); }, time_list);
                 removed = (ds_size_t)(curr - ds_list_s.size());
             }
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (time_list / 1000), removed, ds_list_s.size());
+            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, ds_list_s.size());
         }
 
 
@@ -2229,7 +2229,7 @@ static void test_s_rand(void)
         time_list = 0;
         GET_DURATION({ ds_list_s.sort(); }, time_list);
         printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_list / 1000), (int)is_sorted(ds_list_s.begin(), ds_list_s.end()), ds_list_s.size());
+               (ssize_t)(time_list / 1000), (int)is_sorted(ds_list_s.begin(), ds_list_s.end()), ds_list_s.size());
 
         /* sort: 降序 —— 对应 main.c 的 clist_sort(l, list_sso_gt) */
         srand(SORT_SEED);
@@ -2238,7 +2238,7 @@ static void test_s_rand(void)
         time_list = 0;
         GET_DURATION({ ds_list_s.sort(greater<string>()); }, time_list);
         printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
-               (time_list / 1000), (int)is_sorted(ds_list_s.begin(), ds_list_s.end(), greater<string>()), ds_list_s.size());
+               (ssize_t)(time_list / 1000), (int)is_sorted(ds_list_s.begin(), ds_list_s.end(), greater<string>()), ds_list_s.size());
 
 #undef DS_ARG
     }
@@ -2308,7 +2308,7 @@ static void test_s_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (TIME_DS / 1000), (ssize_t)removed);
+        printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000), (ssize_t)removed);
     }
 }
 

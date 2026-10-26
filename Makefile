@@ -5,6 +5,7 @@ SLIB_NAME := libj_ds.a
 
 
 WITH_ALIGN=n
+WITH_32BIT=n
 
 WITH_LIST=n
 WITH_VECTOR=n
@@ -115,6 +116,11 @@ CXXFLAGS += -O2
 CXXFLAGS += -Werror
 ifeq ($(WITH_ALIGN), y)
 CXXFLAGS += -DJDSC_ALIGN=1
+endif
+
+ifeq ($(WITH_32BIT),y)
+CFLAGS   += -m32
+CXXFLAGS += -m32
 endif
 
 # Dynamic library name with version
@@ -395,6 +401,9 @@ cleanall : clean
 	@echo "$@"
 
 DCFLAGS += -shared -Wl,-soname,$(DLIB_NAME_WITHVER)
+ifeq ($(WITH_32BIT),y)
+DCFLAGS += -m32
+endif
 
 $(DLIB_NAME_WITHVER) : $(OBJS)
 	@$(CC) $(DCFLAGS) -o $@ $^

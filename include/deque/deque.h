@@ -56,8 +56,6 @@ typedef deque_reverse_iterator_t deque_r_iterator_t;
 
 typedef i_deque_t deque_t;
 
-bool cdeque_swap_at(deque_t* _this, deque_index_t i, deque_index_t j);
-
 /* Method 1 */
 static inline deque_size_t       cdeque_size(const deque_t* _this)                                        { return i_deque_size(_this); }
 static inline bool               __cdeque_empty(const deque_t* _this)                                     { return __i_deque_empty(_this); }
@@ -109,7 +107,6 @@ typedef struct class_deque {
     deque_value_t (*at)(const deque_t* _this, deque_index_t index);                                                       /* STL: ds->at(index) */
     deque_value_t (*back)(const deque_t* _this);
     deque_value_t (*front)(const deque_t* _this);
-    bool (*swap_at)(deque_t* _this, deque_index_t i, deque_index_t j);
     deque_iterator_t (*find)(const deque_t* _this, deque_data_t data);
     bool (*push_back)(deque_t* _this, deque_data_t data);
     bool (*push_front)(deque_t* _this, deque_data_t data);

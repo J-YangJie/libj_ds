@@ -719,6 +719,20 @@ void __deque_deinit(deque_t* deque)
     p_free(deque->bkt);
 }
 
+static inline
+deque_size_t __i_deque_bkt_size(deque_step_t step)
+{
+    deque_size_t target = (deque_size_t)(_I_DEQUE_BKT_BYTES / step);
+    deque_size_t size = 1;
+
+    if (target < _I_DEQUE_BKT_SIZE_MIN)
+        target = _I_DEQUE_BKT_SIZE_MIN;
+
+    while ((size << 1) <= target)
+        size <<= 1;
+    return size;
+}
+
 deque_t* __deque_new(const class_deque_ops_t* ops, deque_dtype_t data_type, deque_step_t step, deque_align_t align)
 {
     deque_t* deque;
@@ -765,9 +779,7 @@ deque_t* __deque_new(const class_deque_ops_t* ops, deque_dtype_t data_type, dequ
     deque->dtype    = data_type;
     deque->step     = step;
     deque->align    = align;
-    deque->bkt_size = step < (_I_DEQUE_BKT_BYTES / _I_DEQUE_BKT_SIZE_MIN)
-                        ? _I_DEQUE_BKT_BYTES / step
-                        : _I_DEQUE_BKT_SIZE_MIN;
+    deque->bkt_size = __i_deque_bkt_size(step);
 
     if (!__deque_init(deque))
         goto err;
@@ -791,72 +803,6 @@ void __deque_delete(deque_t** _this)
     p_free(*_this);
 }
 
-bool cdeque_swap_at(deque_t* _this, deque_index_t i, deque_index_t j)
-{
-    deque_step_t step;
-    deque_iterator_t ai;
-    deque_iterator_t bi;
-    uint8_t* t;
-    uint8_t tmp[32];
-
-    if (is_null(_this)
-        || i >= (deque_index_t)__i_deque_size(_this)
-        || j >= (deque_index_t)__i_deque_size(_this))
-        return false;
-
-    if (i == j)
-        return true;
-
-    step = _this->step;
-    ai = __i_deque_advance(_this->begin, i);
-    bi = __i_deque_advance(_this->begin, j);
-
-    switch (step) {
-    case 1: {
-        uint8_t v = *(uint8_t*)ai.cur; *(uint8_t*)ai.cur = *(uint8_t*)bi.cur; *(uint8_t*)bi.cur = v; return true;
-    }
-    case 2: {
-        uint16_t v = *(uint16_t*)ai.cur; *(uint16_t*)ai.cur = *(uint16_t*)bi.cur; *(uint16_t*)bi.cur = v; return true;
-    }
-    case 4: {
-        uint32_t v = *(uint32_t*)ai.cur; *(uint32_t*)ai.cur = *(uint32_t*)bi.cur; *(uint32_t*)bi.cur = v; return true;
-    }
-    case 8: {
-        uint64_t v = *(uint64_t*)ai.cur; *(uint64_t*)ai.cur = *(uint64_t*)bi.cur; *(uint64_t*)bi.cur = v; return true;
-    }
-    case 16:
-        if (!_this->sso) {
-            uint64_t a0 = *(uint64_t*)ai.cur,       a1 = *(uint64_t*)(ai.cur + 8);
-            uint64_t b0 = *(uint64_t*)bi.cur,       b1 = *(uint64_t*)(bi.cur + 8);
-            *(uint64_t*)ai.cur = b0; *(uint64_t*)(ai.cur + 8) = b1;
-            *(uint64_t*)bi.cur = a0; *(uint64_t*)(bi.cur + 8) = a1;
-            return true;
-        }
-        break;
-    default:
-        break;
-    }
-
-    if (step <= sizeof(tmp)) {
-        t = tmp;
-    } else {
-        t = (uint8_t*)p_malloc(step);
-        if (is_null(t))
-            return false;
-    }
-
-    memcpy(t, ai.cur, step);
-    __i_deque_slot_move(_this, ai.cur, bi.cur);
-    memcpy(bi.cur, t, step);
-    if (_this->sso)
-        __ds_ops_fix_sso((ds_data_t)bi.cur);
-
-    if (t != tmp)
-        p_free(t);
-
-    return true;
-}
-
 const class_deque_t* class_deque_ins(void)
 {
     static const class_deque_t ins = {
@@ -877,7 +823,6 @@ const class_deque_t* class_deque_ins(void)
         .at          = cdeque_at,
         .back        = cdeque_back,
         .front       = cdeque_front,
-        .swap_at     = cdeque_swap_at,
         .find        = cdeque_find,
         .push_back   = cdeque_push_back,
         .push_front  = cdeque_push_front,
