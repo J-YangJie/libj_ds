@@ -34,6 +34,7 @@ typedef i_priority_queue_t priority_queue_t;
 static inline priority_queue_size_t  cpqueue_size(const priority_queue_t* _this)                          { return i_priority_queue_size(_this); }
 static inline bool                   __cpqueue_empty(const priority_queue_t* _this)                       { return __i_priority_queue_empty(_this); }
 static inline bool                   cpqueue_push(priority_queue_t* _this, priority_queue_data_t data)    { return i_priority_queue_push(_this, data); }
+static inline priority_queue_value_t __cpqueue_top(const priority_queue_t* _this)                         { return __i_priority_queue_top(_this); }
 static inline priority_queue_value_t cpqueue_top(const priority_queue_t* _this)                           { return i_priority_queue_top(_this); }
 static inline void                   cpqueue_pop(priority_queue_t* _this)                                 { i_priority_queue_pop(_this); }
 static inline void                   cpqueue_swap(priority_queue_t* _this, priority_queue_t* other)       { i_priority_queue_swap(_this, other); }

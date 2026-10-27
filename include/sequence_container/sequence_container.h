@@ -108,6 +108,25 @@ ds_step_t __sequence_container_dtype_width(ds_dtype_t dtype)
     }
 }
 
+static inline
+bool __sequence_container_dtype_swap_compatible(ds_dtype_t a, ds_dtype_t b)
+{
+    if (a == b)
+        return true;
+
+    if ((a & SEQ_CNTR_DTYPE_MASK_STUN) || (b & SEQ_CNTR_DTYPE_MASK_STUN))
+        return false;
+
+    {
+        const size_t wa = __sequence_container_dtype_width(a);
+        const size_t wb = __sequence_container_dtype_width(b);
+        const bool   ua = 0 != (a & SEQ_CNTR_DTYPE_MASK_UINT);
+        const bool   ub = 0 != (b & SEQ_CNTR_DTYPE_MASK_UINT);
+
+        return 0 != wa && wa == wb && ua == ub;
+    }
+}
+
 typedef struct sequence_container_value {
     union {
         ds_data_t* d;

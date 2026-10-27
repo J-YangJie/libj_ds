@@ -32,8 +32,10 @@ typedef i_queue_t queue_t;
 /* Method 1 */
 static inline queue_size_t  cqueue_size(const queue_t* _this)               { return i_queue_size(_this); }
 static inline bool          __cqueue_empty(const queue_t* _this)            { return __i_queue_empty(_this); }
-static inline queue_value_t cqueue_front(const queue_t* _this)              { return i_queue_front(_this); }
+static inline queue_value_t __cqueue_back(const queue_t* _this)             { return __i_queue_back(_this); }
 static inline queue_value_t cqueue_back(const queue_t* _this)               { return i_queue_back(_this); }
+static inline queue_value_t __cqueue_front(const queue_t* _this)            { return __i_queue_front(_this); }
+static inline queue_value_t cqueue_front(const queue_t* _this)              { return i_queue_front(_this); }
 static inline bool          cqueue_push(queue_t* _this, queue_data_t data)  { return i_queue_push(_this, data); }
 static inline void          cqueue_pop(queue_t* _this)                      { i_queue_pop(_this); }
 static inline void          cqueue_swap(queue_t* _this, queue_t* other)     { i_queue_swap(_this, other); }
@@ -43,8 +45,8 @@ static inline queue_size_t  cqueue_clear(queue_t* _this)                    { re
 typedef struct class_queue {
     queue_size_t (*size)(const queue_t* _this);
     bool (*__empty)(const queue_t* _this);
-    queue_value_t (*front)(const queue_t* _this);
     queue_value_t (*back)(const queue_t* _this);
+    queue_value_t (*front)(const queue_t* _this);
     bool (*push)(queue_t* _this, queue_data_t data);
     void (*pop)(queue_t* _this);
     void (*swap)(queue_t* _this, queue_t* other);

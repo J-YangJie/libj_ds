@@ -396,11 +396,23 @@ list_value_t i_dlist_at(const i_list_t* _this, list_index_t index)
 
 /* checked */
 static inline
+list_value_t __i_dlist_back(const i_list_t* _this)
+{
+    return (list_value_t){ .u8 = __i_dlist_rbegin(_this)->data, };
+}
+
+static inline
 list_value_t i_dlist_back(const i_list_t* _this)
 {
     if (!is_null(_this) && !__i_dlist_empty(_this))
         return (list_value_t){ .u8 = __i_dlist_rbegin(_this)->data, };
     return (list_value_t){ .u8 = NULL, };
+}
+
+static inline
+list_value_t __i_dlist_front(const i_list_t* _this)
+{
+    return (list_value_t){ .u8 = __i_dlist_begin(_this)->data, };
 }
 
 /* checked */

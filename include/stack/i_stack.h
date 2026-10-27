@@ -60,6 +60,17 @@ bool __i_stack_empty(const i_stack_t* _this)
 }
 
 static inline
+stack_value_t __i_stack_top(const i_stack_t* _this)
+{
+    switch (_this->id) {
+    case __SEQUENCE_CONTAINER_BASE_VECTOR: return __cvector_back(_this->v);
+    case __SEQUENCE_CONTAINER_BASE_DEQUE:  return __cdeque_back(_this->d);
+    case __SEQUENCE_CONTAINER_BASE_LIST:   return __clist_back(_this->l);
+    default:                               return (stack_value_t){ .u8 = NULL };
+    }
+}
+
+static inline
 stack_value_t i_stack_top(const i_stack_t* _this)
 {
     if (!is_null(_this)) {
@@ -109,16 +120,19 @@ void i_stack_swap(i_stack_t* _this, i_stack_t* other)
         switch (_this->id) {
         case __SEQUENCE_CONTAINER_BASE_VECTOR:
             JDSC_ASSERT(   _this->v->ops   == other->v->ops /* Include sso */
+                        && __sequence_container_dtype_swap_compatible(_this->v->dtype, other->v->dtype)
                         && _this->v->step  == other->v->step 
                         && _this->v->align == other->v->align);
             break;
         case __SEQUENCE_CONTAINER_BASE_DEQUE:
             JDSC_ASSERT(   _this->d->ops   == other->d->ops /* Include sso */
+                        && __sequence_container_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
                         && _this->d->step  == other->d->step 
                         && _this->d->align == other->d->align);
             break;
         case __SEQUENCE_CONTAINER_BASE_LIST:
             JDSC_ASSERT(   _this->l->ops   == other->l->ops /* Include sso */
+                        && __sequence_container_dtype_swap_compatible(_this->l->dtype, other->l->dtype)
                         && _this->l->step  == other->l->step 
                         && _this->l->align == other->l->align 
                         && _this->l->pad   == other->l->pad);

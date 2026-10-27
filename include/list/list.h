@@ -62,7 +62,9 @@ static inline list_iterator_t    __clist_it(const list_t* _this, list_index_t in
 static inline list_iterator_t    clist_it(const list_t* _this, list_index_t index)                                              { return i_dlist_iterator(_this, index); }
 static inline list_value_t       __clist_at(const list_t* _this, list_index_t index)                                            { return __i_dlist_at(_this, index); }
 static inline list_value_t       clist_at(const list_t* _this, list_index_t index)                                              { return i_dlist_at(_this, index); }
+static inline list_value_t       __clist_back(const list_t* _this)                                                              { return __i_dlist_back(_this); }
 static inline list_value_t       clist_back(const list_t* _this)                                                                { return i_dlist_back(_this); }
+static inline list_value_t       __clist_front(const list_t* _this)                                                             { return __i_dlist_front(_this); }
 static inline list_value_t       clist_front(const list_t* _this)                                                               { return i_dlist_front(_this); }
 static inline list_iterator_t    clist_find(const list_t* _this, list_data_t data)                                              { return i_clist_find(_this, data); }
 static inline bool               clist_push_back(list_t* _this, list_data_t data)                                               { return i_dlist_push_back(_this, data); }

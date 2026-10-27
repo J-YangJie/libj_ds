@@ -67,6 +67,16 @@ bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data
 void i_priority_queue_pop(i_priority_queue_t* _this);
 
 static inline
+priority_queue_value_t __i_priority_queue_top(const i_priority_queue_t* _this)
+{
+    switch (_this->id) {
+    case __SEQUENCE_CONTAINER_BASE_VECTOR: return __cvector_front(_this->v);
+    case __SEQUENCE_CONTAINER_BASE_DEQUE:  return __cdeque_front(_this->d);
+    default:                               return (priority_queue_value_t){ .u8 = NULL };
+    }
+}
+
+static inline
 priority_queue_value_t i_priority_queue_top(const i_priority_queue_t* _this)
 {
     if (!is_null(_this)) {
@@ -95,11 +105,13 @@ void i_priority_queue_swap(i_priority_queue_t* _this, i_priority_queue_t* other)
         JDSC_ASSERT(_this->ops == other->ops); /* Include sso */
         switch (_this->id) {
         case __SEQUENCE_CONTAINER_BASE_VECTOR:
-            JDSC_ASSERT(   _this->v->step  == other->v->step
+            JDSC_ASSERT(__sequence_container_dtype_swap_compatible(_this->v->dtype, other->v->dtype)
+                        && _this->v->step  == other->v->step
                         && _this->v->align == other->v->align);
             break;
         case __SEQUENCE_CONTAINER_BASE_DEQUE:
-            JDSC_ASSERT(   _this->d->step  == other->d->step
+            JDSC_ASSERT(__sequence_container_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
+                        && _this->d->step  == other->d->step
                         && _this->d->align == other->d->align);
             break;
         default:

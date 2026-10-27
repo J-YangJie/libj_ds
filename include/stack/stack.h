@@ -32,6 +32,7 @@ typedef i_stack_t stack_t;
 /* Method 1 */
 static inline stack_size_t  cstack_size(const stack_t* _this)              { return i_stack_size(_this); }
 static inline bool          __cstack_empty(const stack_t* _this)           { return __i_stack_empty(_this); }
+static inline stack_value_t __cstack_top(const stack_t* _this)             { return __i_stack_top(_this); }
 static inline stack_value_t cstack_top(const stack_t* _this)               { return i_stack_top(_this); }
 static inline bool          cstack_push(stack_t* _this, stack_data_t data) { return i_stack_push(_this, data); }
 static inline void          cstack_pop(stack_t* _this)                     { i_stack_pop(_this); }

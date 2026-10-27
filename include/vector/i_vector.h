@@ -349,11 +349,23 @@ vector_value_t i_vector_at(const i_vector_t* _this, vector_index_t index)
 
 /* checked */
 static inline
+vector_value_t __i_vector_back(const i_vector_t* _this)
+{
+    return (vector_value_t){ .u8 = __i_vector_ptr_sub(_this->end, 1, _this->step), };
+}
+
+static inline
 vector_value_t i_vector_back(const i_vector_t* _this)
 {
     if (!is_null(_this) && !__i_vector_empty(_this))
         return (vector_value_t){ .u8 = __i_vector_ptr_sub(_this->end, 1, _this->step), };
     return (vector_value_t){ .u8 = NULL, };
+}
+
+static inline
+vector_value_t __i_vector_front(const i_vector_t* _this)
+{
+    return (vector_value_t){ .u8 = _this->begin, };
 }
 
 /* checked */

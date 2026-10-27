@@ -67,7 +67,9 @@ static inline vector_iterator_t   __cvector_it(const vector_t* _this, vector_ind
 static inline vector_iterator_t   cvector_it(const vector_t* _this, vector_index_t index)                      { return i_vector_iterator(_this, index); }
 static inline vector_value_t      __cvector_at(const vector_t* _this, vector_index_t index)                    { return __i_vector_at(_this, index); }
 static inline vector_value_t      cvector_at(const vector_t* _this, vector_index_t index)                      { return i_vector_at(_this, index); }
+static inline vector_value_t      __cvector_back(const vector_t* _this)                                        { return __i_vector_back(_this); }
 static inline vector_value_t      cvector_back(const vector_t* _this)                                          { return i_vector_back(_this); }
+static inline vector_value_t      __cvector_front(const vector_t* _this)                                       { return __i_vector_front(_this); }
 static inline vector_value_t      cvector_front(const vector_t* _this)                                         { return i_vector_front(_this); }
 static inline vector_iterator_t   cvector_find(const vector_t* _this, vector_data_t data)                      { return i_vector_find(_this, data); }
 static inline bool                cvector_push_back(vector_t* _this, vector_data_t data)                       { return i_vector_push_back(_this, data); }

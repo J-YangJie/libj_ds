@@ -418,7 +418,7 @@ static void test_i_for(void)
         {
             volatile stack_data_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = *(stack_data_t*)DSL(cstack, top)(ds_stack_i).d;
+                sink = *(stack_data_t*)__cstack_top(ds_stack_i).d;
             }, time_stack);
             (void)sink;
         }
@@ -428,7 +428,7 @@ static void test_i_for(void)
         {
             volatile queue_data_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = *(queue_data_t*)DSL(cqueue, front)(ds_queue_i).d;
+                sink = *(queue_data_t*)__cqueue_front(ds_queue_i).d;
             }, time_queue);
             (void)sink;
         }
@@ -438,7 +438,7 @@ static void test_i_for(void)
         {
             volatile priority_queue_data_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = *(priority_queue_data_t*)DSL(cpqueue, top)(ds_pqueue_i).d;
+                sink = *(priority_queue_data_t*)__cpqueue_top(ds_pqueue_i).d;
             }, time_pqueue);
             (void)sink;
         }
@@ -770,7 +770,7 @@ static void test_i_rand(void)
         {
             volatile stack_data_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = *(stack_data_t*)DSL(cstack, top)(ds_stack_i).d;
+                sink = *(stack_data_t*)__cstack_top(ds_stack_i).d;
             }, time_stack);
             (void)sink;
         }
@@ -780,7 +780,7 @@ static void test_i_rand(void)
         {
             volatile queue_data_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = *(queue_data_t*)DSL(cqueue, front)(ds_queue_i).d;
+                sink = *(queue_data_t*)__cqueue_front(ds_queue_i).d;
             }, time_queue);
             (void)sink;
         }
@@ -790,7 +790,7 @@ static void test_i_rand(void)
         {
             volatile priority_queue_data_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = *(priority_queue_data_t*)DSL(cpqueue, top)(ds_pqueue_i).d;
+                sink = *(priority_queue_data_t*)__cpqueue_top(ds_pqueue_i).d;
             }, time_pqueue);
             (void)sink;
         }
@@ -1659,7 +1659,7 @@ static void test_s_rand(void)
         {
             volatile size_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = DSL(cstack, top)(ds_stack_s).ssd->len;
+                sink = __cstack_top(ds_stack_s).ssd->len;
             }, time_stack);
             (void)sink;
         }
@@ -1670,7 +1670,7 @@ static void test_s_rand(void)
         {
             volatile size_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = DSL(cqueue, front)(ds_queue_s).ssd->len;
+                sink = __cqueue_front(ds_queue_s).ssd->len;
             }, time_queue);
             (void)sink;
         }
@@ -1681,7 +1681,7 @@ static void test_s_rand(void)
         {
             volatile size_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = DSL(cpqueue, top)(ds_pqueue_s).ssd->len;
+                sink = __cpqueue_top(ds_pqueue_s).ssd->len;
             }, time_pqueue);
             (void)sink;
         }

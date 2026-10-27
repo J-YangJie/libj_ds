@@ -56,16 +56,13 @@ bool __i_queue_empty(const i_queue_t* _this)
 }
 
 static inline
-queue_value_t i_queue_front(const i_queue_t* _this)
+queue_value_t __i_queue_back(const i_queue_t* _this)
 {
-    if (!is_null(_this)) {
-        switch (_this->id) {
-        case __SEQUENCE_CONTAINER_BASE_DEQUE: return cdeque_front(_this->d);
-        case __SEQUENCE_CONTAINER_BASE_LIST:  return clist_front(_this->l);
-        default:                              break;
-        }
+    switch (_this->id) {
+    case __SEQUENCE_CONTAINER_BASE_DEQUE: return __cdeque_back(_this->d);
+    case __SEQUENCE_CONTAINER_BASE_LIST:  return __clist_back(_this->l);
+    default:                              return (queue_value_t){ .u8 = NULL };
     }
-    return (queue_value_t){ .u8 = NULL };
 }
 
 static inline
@@ -75,6 +72,29 @@ queue_value_t i_queue_back(const i_queue_t* _this)
         switch (_this->id) {
         case __SEQUENCE_CONTAINER_BASE_DEQUE: return cdeque_back(_this->d);
         case __SEQUENCE_CONTAINER_BASE_LIST:  return clist_back(_this->l);
+        default:                              break;
+        }
+    }
+    return (queue_value_t){ .u8 = NULL };
+}
+
+static inline
+queue_value_t __i_queue_front(const i_queue_t* _this)
+{
+    switch (_this->id) {
+    case __SEQUENCE_CONTAINER_BASE_DEQUE: return __cdeque_front(_this->d);
+    case __SEQUENCE_CONTAINER_BASE_LIST:  return __clist_front(_this->l);
+    default:                              return (queue_value_t){ .u8 = NULL };
+    }
+}
+
+static inline
+queue_value_t i_queue_front(const i_queue_t* _this)
+{
+    if (!is_null(_this)) {
+        switch (_this->id) {
+        case __SEQUENCE_CONTAINER_BASE_DEQUE: return cdeque_front(_this->d);
+        case __SEQUENCE_CONTAINER_BASE_LIST:  return clist_front(_this->l);
         default:                              break;
         }
     }
@@ -115,11 +135,13 @@ void i_queue_swap(i_queue_t* _this, i_queue_t* other)
         switch (_this->id) {
         case __SEQUENCE_CONTAINER_BASE_DEQUE:
             JDSC_ASSERT(   _this->d->ops   == other->d->ops /* Include sso */
+                        && __sequence_container_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
                         && _this->d->step  == other->d->step 
                         && _this->d->align == other->d->align);
             break;
         case __SEQUENCE_CONTAINER_BASE_LIST:
             JDSC_ASSERT(   _this->l->ops   == other->l->ops /* Include sso */
+                        && __sequence_container_dtype_swap_compatible(_this->l->dtype, other->l->dtype)
                         && _this->l->step  == other->l->step 
                         && _this->l->align == other->l->align 
                         && _this->l->pad   == other->l->pad);
