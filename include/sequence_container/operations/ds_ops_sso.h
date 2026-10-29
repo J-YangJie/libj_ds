@@ -82,11 +82,11 @@ bool __ds_ops_is_local_sso(const ds_sso_t* s)
 }
 
 static inline
-void __ds_ops_move_sso(ds_sso_t* dst, const ds_sso_t* src)
+void __ds_ops_move_sso(ds_sso_t* dest, const ds_sso_t* src)
 {
-    *dst = *src;
+    *dest = *src;
     if (__ds_ops_is_local_sso(src))
-        dst->p = dst->buf;
+        dest->p = dest->buf;
 }
 
 static inline

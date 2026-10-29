@@ -65,13 +65,16 @@ priority_queue_t* __priority_queue_new(container_adaptor_base_t id, void* base, 
 void              __priority_queue_delete(priority_queue_t** _this);
 const class_priority_queue_t* class_priority_queue_ins(void);
 #define g_class_priority_queue()                           class_priority_queue_ins()
-#define cpqueue                                            g_class_priority_queue()
+#define cpriority_queue                                    g_class_priority_queue()
 #define PRIORITY_QUEUE_NEW_OPS_COMPLATE(_ops, _type_id, _type, _BASE_NAME, _capacity_init) \
         _PRIORITY_QUEUE_NEW_OPS_COMPLATE((_ops), (_type_id), _type, _BASE_NAME, (_capacity_init))
 #define PRIORITY_QUEUE_NEW_T(_type, _BASE_NAME)            _PRIORITY_QUEUE_NEW_OPS_T(NULL,   _type, _BASE_NAME, 0)
 #define PRIORITY_QUEUE_NEW_OPS_T(_ops, _type, _BASE_NAME)  _PRIORITY_QUEUE_NEW_OPS_T((_ops), _type, _BASE_NAME, 0)
 #define PRIORITY_QUEUE_NEW()                               _PRIORITY_QUEUE_NEW_OPS_T(NULL,   priority_queue_data_t, VECTOR, 0)
 #define PRIORITY_QUEUE_NEW_OPS(_ops)                       _PRIORITY_QUEUE_NEW_OPS_T((_ops), priority_queue_data_t, VECTOR, 0)
+#define PRIORITY_QUEUE_NEW_CHAR_T(_BASE_NAME)              _PRIORITY_QUEUE_NEW_OPS_T(g_class_priority_queue_ops_string(), priority_queue_data_t, _BASE_NAME, 0)
+#define PRIORITY_QUEUE_NEW_SSO_T(_BASE_NAME)               _PRIORITY_QUEUE_NEW_OPS_T(g_class_priority_queue_ops_sso(),    ds_sso_t,              _BASE_NAME, 0)
+#define PRIORITY_QUEUE_NEW_STRING_T(_BASE_NAME)            PRIORITY_QUEUE_NEW_SSO_T(_BASE_NAME)
 #define PRIORITY_QUEUE_NEW_CHAR()                          _PRIORITY_QUEUE_NEW_OPS_T(g_class_priority_queue_ops_string(), priority_queue_data_t, VECTOR, 0)
 #define PRIORITY_QUEUE_NEW_SSO()                           _PRIORITY_QUEUE_NEW_OPS_T(g_class_priority_queue_ops_sso(),    ds_sso_t,              VECTOR, 0)
 #define PRIORITY_QUEUE_NEW_STRING()                        PRIORITY_QUEUE_NEW_SSO()

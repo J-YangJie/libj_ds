@@ -18,8 +18,8 @@ WITH_MAP=y
 WITH_MULTIMAP=y
 WITH_SET=y
 WITH_MULTISET=y
-WITH_PERFORMANCE=y
-WITH_PERFORMANCE_STL=y
+WITH_PERFORMANCE=n
+WITH_PERFORMANCE_STL=n
 WITH_DEMO=y
 
 ifeq ($(WITH_STACK), y)
@@ -216,6 +216,9 @@ endif
 endif # WITH_PERFORMANCE_STL
 
 ifeq ($(WITH_DEMO), y)
+ifeq ($(WITH_PRIORITY_QUEUE), y)
+DEMO_BINS += demo/demo_pqueue_bin
+endif
 ifeq ($(WITH_VECTOR), y)
 # DEMO_BINS += demo/demo_vector_bin
 endif
@@ -391,6 +394,8 @@ performance_stl_% : performance_stl_%.o
 	@echo "make $@"
 
 performance_stl : $(PERFORMANCE_STL_BINS)
+
+# demo/demo_pqueue_bin : demo/demo_struct.h
 
 demo/%_bin : demo/%.c
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
