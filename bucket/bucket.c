@@ -1426,7 +1426,7 @@ typedef bucket_iterator_t* (*fp_insert)(bucket_t* _this, const class_bucket_ops_
 typedef bucket_iterator_t* (*fp_insert_replace)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_hash_t hash, bucket_key_t key, bucket_value_t value);
 typedef bucket_iterator_t* (*fp_erase)(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_iterator_t* iterator);
 
-/* __always_inline */ inline const class_bucket_t* class_bucket_ins(void)
+const class_bucket_t* class_bucket_ins(void)
 {
     static const class_bucket_t ins = {
         .size           = _bucket_size,
@@ -1448,7 +1448,7 @@ typedef bucket_iterator_t* (*fp_erase)(bucket_t* _this, const class_bucket_ops_t
     return &ins;
 }
 
-/* __always_inline */ inline const class_bucket_priv_t* class_bucket_priv_ins(void)
+const class_bucket_priv_t* class_bucket_priv_ins(void)
 {
     static const class_bucket_priv_t ins = {
         /* iterator */

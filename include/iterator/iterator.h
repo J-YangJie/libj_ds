@@ -22,6 +22,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <_compiler.h>
 
 #define it_hash(it_obj)        ((it_obj).d->hash)
 #define it_key(it_obj)         ((it_obj).d->key)
@@ -40,12 +41,14 @@
 #define it_sdata_safe(it_obj)  ((it_obj).d && it_sdata(it_obj)  ? it_sdata(it_obj)  : "null")
 
 
-static inline bool __it_eq(void* _d1, void* _d2)
+HEADER_STATIC_INLINE
+bool __it_eq(void* _d1, void* _d2)
 {
     return _d1 == _d2;
 }
 
-static inline bool __it_ne(void* _d1, void* _d2)
+HEADER_STATIC_INLINE
+bool __it_ne(void* _d1, void* _d2)
 {
     return _d1 != _d2;
 }

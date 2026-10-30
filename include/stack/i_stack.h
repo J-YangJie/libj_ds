@@ -34,7 +34,7 @@ typedef struct i_stack {
     };
 } i_stack_t;
 
-static inline
+HEADER_STATIC_INLINE
 stack_size_t i_stack_size(const i_stack_t* _this)
 {
     if (!is_null(_this)) {
@@ -48,7 +48,7 @@ stack_size_t i_stack_size(const i_stack_t* _this)
     return -1;
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __i_stack_empty(const i_stack_t* _this)
 {
     switch (_this->id) {
@@ -59,7 +59,7 @@ bool __i_stack_empty(const i_stack_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool i_stack_push(i_stack_t* _this, stack_data_t data)
 {
     if (!is_null(_this)) {
@@ -73,7 +73,7 @@ bool i_stack_push(i_stack_t* _this, stack_data_t data)
     return false;
 }
 
-static inline
+HEADER_STATIC_INLINE
 stack_value_t __i_stack_top(const i_stack_t* _this)
 {
     switch (_this->id) {
@@ -84,7 +84,7 @@ stack_value_t __i_stack_top(const i_stack_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 stack_value_t i_stack_top(const i_stack_t* _this)
 {
     if (!is_null(_this)) {
@@ -98,7 +98,7 @@ stack_value_t i_stack_top(const i_stack_t* _this)
     return (stack_value_t){ .u8 = NULL };
 }
 
-static inline
+HEADER_STATIC_INLINE
 void i_stack_pop(i_stack_t* _this)
 {
     if (!is_null(_this)) {
@@ -111,7 +111,7 @@ void i_stack_pop(i_stack_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 void i_stack_swap(i_stack_t* _this, i_stack_t* other)
 {
     void* p;
@@ -147,7 +147,7 @@ void i_stack_swap(i_stack_t* _this, i_stack_t* other)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 stack_size_t i_stack_clear(i_stack_t* _this)
 {
     if (!is_null(_this)) {

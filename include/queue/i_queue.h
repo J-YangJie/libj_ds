@@ -32,7 +32,7 @@ typedef struct i_queue {
     };
 } i_queue_t;
 
-static inline
+HEADER_STATIC_INLINE
 queue_size_t i_queue_size(const i_queue_t* _this)
 {
     if (!is_null(_this)) {
@@ -45,7 +45,7 @@ queue_size_t i_queue_size(const i_queue_t* _this)
     return -1;
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __i_queue_empty(const i_queue_t* _this)
 {
     switch (_this->id) {
@@ -55,7 +55,7 @@ bool __i_queue_empty(const i_queue_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool i_queue_push(i_queue_t* _this, queue_data_t data)
 {
     if (!is_null(_this)) {
@@ -68,7 +68,7 @@ bool i_queue_push(i_queue_t* _this, queue_data_t data)
     return false;
 }
 
-static inline
+HEADER_STATIC_INLINE
 queue_value_t __i_queue_back(const i_queue_t* _this)
 {
     switch (_this->id) {
@@ -78,7 +78,7 @@ queue_value_t __i_queue_back(const i_queue_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 queue_value_t i_queue_back(const i_queue_t* _this)
 {
     if (!is_null(_this)) {
@@ -91,7 +91,7 @@ queue_value_t i_queue_back(const i_queue_t* _this)
     return (queue_value_t){ .u8 = NULL };
 }
 
-static inline
+HEADER_STATIC_INLINE
 queue_value_t __i_queue_front(const i_queue_t* _this)
 {
     switch (_this->id) {
@@ -101,7 +101,7 @@ queue_value_t __i_queue_front(const i_queue_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 queue_value_t i_queue_front(const i_queue_t* _this)
 {
     if (!is_null(_this)) {
@@ -114,7 +114,7 @@ queue_value_t i_queue_front(const i_queue_t* _this)
     return (queue_value_t){ .u8 = NULL };
 }
 
-static inline
+HEADER_STATIC_INLINE
 void i_queue_pop(i_queue_t* _this)
 {
     if (!is_null(_this)) {
@@ -126,7 +126,7 @@ void i_queue_pop(i_queue_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 void i_queue_swap(i_queue_t* _this, i_queue_t* other)
 {
     void* p;
@@ -156,7 +156,7 @@ void i_queue_swap(i_queue_t* _this, i_queue_t* other)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 queue_size_t i_queue_clear(i_queue_t* _this)
 {
     if (!is_null(_this)) {

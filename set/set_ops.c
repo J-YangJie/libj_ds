@@ -21,7 +21,7 @@
 
 #include <operations/ds_ops_string.h>
 
-/* __always_inline */ inline const class_set_ops_t* class_set_ops_string_ins(void)
+const class_set_ops_t* class_set_ops_string_ins(void)
 {
     static const class_set_ops_t ins = {
         .valid_key = ds_ops_valid_data_default_string,

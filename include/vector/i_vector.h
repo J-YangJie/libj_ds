@@ -42,21 +42,21 @@ typedef struct i_vector {
 } i_vector_t;
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 uint8_t* ___i_vector_ptr_add(const uint8_t* p, ptrdiff_t n, vector_step_t step)
 {
     return (uint8_t*)p + (ptrdiff_t)step * n;
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 uint8_t* ___i_vector_ptr_sub(const uint8_t* p, ptrdiff_t n, vector_step_t step)
 {
     return ___i_vector_ptr_add(p, -n, step);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 ptrdiff_t ___i_vector_ptr_diff(const uint8_t* p1, const uint8_t* p2, vector_step_t step)
 {
     return (ptrdiff_t)((p1 - p2) / (ptrdiff_t)step);
@@ -67,14 +67,14 @@ ptrdiff_t ___i_vector_ptr_diff(const uint8_t* p1, const uint8_t* p2, vector_step
 #define __i_vector_ptr_diff(_p1, _p2, _step) ___i_vector_ptr_diff((_p1), (_p2), (_step))
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 bool i_vector_is_null_iterator(vector_iterator_t it)
 {
     return is_null(it.cur);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_null_iterator(void)
 {
     vector_iterator_t it;
@@ -83,7 +83,7 @@ vector_iterator_t i_vector_null_iterator(void)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_null_r_iterator(void)
 {
     vector_r_iterator_t rit;
@@ -92,7 +92,7 @@ vector_r_iterator_t i_vector_null_r_iterator(void)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_make_iterator(vector_step_t step, uint8_t* cur)
 {
     vector_iterator_t it;
@@ -102,7 +102,7 @@ vector_iterator_t __i_vector_make_iterator(vector_step_t step, uint8_t* cur)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_make_r_iterator(vector_step_t step, uint8_t* cur)
 {
     vector_r_iterator_t rit;
@@ -116,49 +116,49 @@ vector_r_iterator_t __i_vector_make_r_iterator(vector_step_t step, uint8_t* cur)
 
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_size_t __i_vector_size(const i_vector_t* _this)
 {
     return (vector_size_t)__i_vector_ptr_diff(_this->end, _this->begin, _this->step);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_size_t i_vector_size(const i_vector_t* _this)
 {
     return is_null(_this) ? -1 : __i_vector_size(_this);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 bool __i_vector_empty(const i_vector_t* _this)
 {
     return _this->end == _this->begin;
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_size_t __i_vector_capacity(const i_vector_t* _this)
 {
     return (vector_size_t)__i_vector_ptr_diff(_this->end_of_storage, _this->begin, _this->step);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_size_t i_vector_capacity(const i_vector_t* _this)
 {
     return is_null(_this) ? -1 : __i_vector_capacity(_this);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_end(const i_vector_t* _this)
 {
     return __i_vector_make_iterator(_this->step, _this->end);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_end(const i_vector_t* _this)
 {
     JDSC_ASSERT(!is_null(_this));
@@ -170,14 +170,14 @@ vector_iterator_t i_vector_end(const i_vector_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_begin(const i_vector_t* _this)
 {
     return __i_vector_make_iterator(_this->step, _this->begin);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_begin(const i_vector_t* _this)
 {
     JDSC_ASSERT(!is_null(_this));
@@ -189,7 +189,7 @@ vector_iterator_t i_vector_begin(const i_vector_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_next(vector_iterator_t it)
 {
     JDSC_ASSERT(!is_null(it.cur));
@@ -203,14 +203,14 @@ vector_iterator_t __i_vector_next(vector_iterator_t it)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_next(vector_iterator_t it)
 {
     return __i_vector_next(it);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_prev(vector_iterator_t it)
 {
     JDSC_ASSERT(!is_null(it.cur));
@@ -224,21 +224,21 @@ vector_iterator_t __i_vector_prev(vector_iterator_t it)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_prev(vector_iterator_t it)
 {
     return __i_vector_prev(it);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_rend(const i_vector_t* _this)
 {
     return __i_vector_make_r_iterator(_this->step, _this->rend);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_rend(const i_vector_t* _this)
 {
     JDSC_ASSERT(!is_null(_this));
@@ -250,7 +250,7 @@ vector_r_iterator_t i_vector_rend(const i_vector_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_rbegin(const i_vector_t* _this)
 {
     return __i_vector_make_r_iterator(_this->step, 
@@ -258,7 +258,7 @@ vector_r_iterator_t __i_vector_rbegin(const i_vector_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_rbegin(const i_vector_t* _this)
 {
     JDSC_ASSERT(!is_null(_this));
@@ -270,7 +270,7 @@ vector_r_iterator_t i_vector_rbegin(const i_vector_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_rnext(vector_r_iterator_t rit)
 {
     JDSC_ASSERT(!is_null(rit.cur));
@@ -284,14 +284,14 @@ vector_r_iterator_t __i_vector_rnext(vector_r_iterator_t rit)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_rnext(vector_r_iterator_t rit)
 {
     return __i_vector_rnext(rit);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_rprev(vector_r_iterator_t rit)
 {
     JDSC_ASSERT(!is_null(rit.cur));
@@ -305,7 +305,7 @@ vector_r_iterator_t __i_vector_rprev(vector_r_iterator_t rit)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_rprev(vector_r_iterator_t rit)
 {
     return __i_vector_rprev(rit);
@@ -316,14 +316,14 @@ vector_r_iterator_t i_vector_rprev(vector_r_iterator_t rit)
 
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_iterator(const i_vector_t* _this, vector_index_t index)
 {
     return __i_vector_make_iterator(_this->step, __i_vector_ptr_add(_this->begin, index, _this->step));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_iterator(const i_vector_t* _this, vector_index_t index)
 {
     if (!is_null(_this) && index < __i_vector_size(_this))
@@ -332,14 +332,14 @@ vector_iterator_t i_vector_iterator(const i_vector_t* _this, vector_index_t inde
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_value_t __i_vector_at(const i_vector_t* _this, vector_index_t index)
 {
     return (vector_value_t){ .u8 = __i_vector_iterator(_this, index).cur, };
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_value_t i_vector_at(const i_vector_t* _this, vector_index_t index)
 {
     if (!is_null(_this) && index < __i_vector_size(_this))
@@ -348,13 +348,13 @@ vector_value_t i_vector_at(const i_vector_t* _this, vector_index_t index)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_value_t __i_vector_back(const i_vector_t* _this)
 {
     return (vector_value_t){ .u8 = __i_vector_ptr_sub(_this->end, 1, _this->step), };
 }
 
-static inline
+HEADER_STATIC_INLINE
 vector_value_t i_vector_back(const i_vector_t* _this)
 {
     if (!is_null(_this) && !__i_vector_empty(_this))
@@ -362,14 +362,14 @@ vector_value_t i_vector_back(const i_vector_t* _this)
     return (vector_value_t){ .u8 = NULL, };
 }
 
-static inline
+HEADER_STATIC_INLINE
 vector_value_t __i_vector_front(const i_vector_t* _this)
 {
     return (vector_value_t){ .u8 = _this->begin, };
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_value_t i_vector_front(const i_vector_t* _this)
 {
     if (!is_null(_this) && !__i_vector_empty(_this))
@@ -417,7 +417,7 @@ vector_value_t i_vector_front(const i_vector_t* _this)
 
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t data)
 {
     if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
@@ -437,7 +437,7 @@ bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_data_t __i_vector_slot_read(const i_vector_t* _this, const uint8_t* slot)
 {
     const vector_dtype_t dtype = _this->dtype;
@@ -472,7 +472,7 @@ vector_data_t __i_vector_slot_read(const i_vector_t* _this, const uint8_t* slot)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 bool __i_vector_slot_equal(vector_step_t step, vector_data_t data, const void* slot)
 {
     switch (step) {
@@ -487,7 +487,7 @@ bool __i_vector_slot_equal(vector_step_t step, vector_data_t data, const void* s
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 void __i_vector_slot_move(const i_vector_t* _this, uint8_t* dest, const uint8_t* src)
 {
     if (dest != src) {
@@ -518,7 +518,7 @@ void __i_vector_slot_move(const i_vector_t* _this, uint8_t* dest, const uint8_t*
 
 /* checked */
 vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data);
-static inline
+HEADER_STATIC_INLINE
 bool i_vector_push_back(i_vector_t* _this, vector_data_t data)
 {
     uint8_t* slot;
@@ -541,7 +541,7 @@ bool i_vector_push_back(i_vector_t* _this, vector_data_t data)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 void i_vector_pop_back(i_vector_t* _this)
 {
     uint8_t* slot;
@@ -557,7 +557,7 @@ void i_vector_pop_back(i_vector_t* _this)
 
 /* checked */
 vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data);
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
 {
     if (is_null(_this) || i_vector_is_null_iterator(pos))
@@ -575,7 +575,7 @@ vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, ve
 
 /* checked */
 vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos);
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_erase(i_vector_t* _this, vector_iterator_t pos)
 {
     if (is_null(_this) || i_vector_is_null_iterator(pos) 
@@ -591,7 +591,7 @@ vector_iterator_t i_vector_erase(i_vector_t* _this, vector_iterator_t pos)
 
 /* checked */
 vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint8_t* end);
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_erase_range(i_vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
 {
     if (is_null(_this)
@@ -612,7 +612,7 @@ vector_iterator_t i_vector_erase_range(i_vector_t* _this, vector_iterator_t iter
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
 {
     uint8_t* p;
@@ -648,7 +648,7 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
 {
     vector_count_t ret = 0;
@@ -685,7 +685,7 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
 {
     vector_size_t ret = 0;
@@ -749,7 +749,7 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
 {
     vector_size_t ret = 0;
@@ -790,7 +790,7 @@ vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 bool i_vector_resize(i_vector_t* _this, vector_size_t n, vector_data_t default_data)
 {
     vector_size_t size;
@@ -809,7 +809,7 @@ bool i_vector_resize(i_vector_t* _this, vector_size_t n, vector_data_t default_d
 
 /* checked */
 bool __i_vector_reserve(i_vector_t* _this, vector_size_t n);
-static inline
+HEADER_STATIC_INLINE
 bool i_vector_reserve(i_vector_t* _this, vector_size_t n)
 {
     if (!is_null(_this))
@@ -819,7 +819,7 @@ bool i_vector_reserve(i_vector_t* _this, vector_size_t n)
 
 /* checked */
 void __i_vector_shrink_to_fit(i_vector_t* _this);
-static inline
+HEADER_STATIC_INLINE
 void i_vector_shrink_to_fit(i_vector_t* _this)
 {
     if (!is_null(_this))
@@ -827,7 +827,7 @@ void i_vector_shrink_to_fit(i_vector_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 vector_size_t i_vector_clear(i_vector_t* _this)
 {
     vector_size_t ret;

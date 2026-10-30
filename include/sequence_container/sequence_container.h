@@ -28,22 +28,26 @@
 #define BIT(n) (1UL << (n))
 #endif /* BIT */
 
-#define SEQ_CNTR_DTYPE_U8                BIT(2)
-#define SEQ_CNTR_DTYPE_U16               BIT(3)
-#define SEQ_CNTR_DTYPE_U32               BIT(4)
-#define SEQ_CNTR_DTYPE_S8                BIT(6)
-#define SEQ_CNTR_DTYPE_S16               BIT(7)
-#define SEQ_CNTR_DTYPE_S32               BIT(8)
+typedef enum sequence_container_data_type {
+    SEQ_CNTR_DTYPE_U8      = BIT(2),
+    SEQ_CNTR_DTYPE_U16     = BIT(3),
+    SEQ_CNTR_DTYPE_U32     = BIT(4),
 #ifdef JDSC_64BIT
-#define SEQ_CNTR_DTYPE_U64               BIT(5)
-#define SEQ_CNTR_DTYPE_S64               BIT(9)
+    SEQ_CNTR_DTYPE_U64     = BIT(5),
 #endif /* JDSC_64BIT */
-#define SEQ_CNTR_DTYPE_UINTPTR           BIT(10)
-#define SEQ_CNTR_DTYPE_INTPTR            BIT(11)
-#define SEQ_CNTR_DTYPE_STRUCT            BIT(12)
-#define SEQ_CNTR_DTYPE_UNION             BIT(13)
-#define SEQ_CNTR_DTYPE_PTR               SEQ_CNTR_DTYPE_INTPTR
-#define SEQ_CNTR_DTYPE_SSO               SEQ_CNTR_DTYPE_STRUCT
+    SEQ_CNTR_DTYPE_S8      = BIT(6),
+    SEQ_CNTR_DTYPE_S16     = BIT(7),
+    SEQ_CNTR_DTYPE_S32     = BIT(8),
+#ifdef JDSC_64BIT
+    SEQ_CNTR_DTYPE_S64     = BIT(9),
+#endif /* JDSC_64BIT */
+    SEQ_CNTR_DTYPE_UINTPTR = BIT(10),
+    SEQ_CNTR_DTYPE_INTPTR  = BIT(11),
+    SEQ_CNTR_DTYPE_STRUCT  = BIT(12),
+    SEQ_CNTR_DTYPE_UNION   = BIT(13),
+    SEQ_CNTR_DTYPE_PTR     = SEQ_CNTR_DTYPE_INTPTR,
+    SEQ_CNTR_DTYPE_SSO     = SEQ_CNTR_DTYPE_STRUCT,
+} sequence_container_data_type_t;
 
 #ifdef JDSC_64BIT
 #define SEQ_CNTR_DTYPE_MASK_U64          SEQ_CNTR_DTYPE_U64
@@ -82,13 +86,13 @@
 #define __SEQUENCE_CONTAINER_DTYPE_priority_queue_data_t  __SEQUENCE_CONTAINER_DTYPE_ds_data_t
 #define __SEQUENCE_CONTAINER_DTYPE_ds_sso_t               SEQ_CNTR_DTYPE_SSO
 
-static inline
+HEADER_STATIC_INLINE
 bool __sequence_container_dtype_valid(ds_dtype_t dtype)
 {
     return 0 != dtype && 0 == (dtype & (dtype - 1)) && 0 == (dtype & ~(ds_dtype_t)SEQ_CNTR_DTYPE_MASK_ALL);
 }
 
-static inline
+HEADER_STATIC_INLINE
 ds_step_t __sequence_container_dtype_width(ds_dtype_t dtype)
 {
     switch (dtype) {
@@ -104,7 +108,7 @@ ds_step_t __sequence_container_dtype_width(ds_dtype_t dtype)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __sequence_container_dtype_swap_compatible(ds_dtype_t a, ds_dtype_t b)
 {
     if (a == b)

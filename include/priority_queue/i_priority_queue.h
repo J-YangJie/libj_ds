@@ -35,7 +35,7 @@ typedef struct i_priority_queue {
     uint8_t* swap;
 } i_priority_queue_t;
 
-static inline
+HEADER_STATIC_INLINE
 priority_queue_size_t i_priority_queue_size(const i_priority_queue_t* _this)
 {
     if (!is_null(_this)) {
@@ -48,7 +48,7 @@ priority_queue_size_t i_priority_queue_size(const i_priority_queue_t* _this)
     return -1;
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __i_priority_queue_empty(const i_priority_queue_t* _this)
 {
     switch (_this->id) {
@@ -61,7 +61,7 @@ bool __i_priority_queue_empty(const i_priority_queue_t* _this)
 bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data);
 void i_priority_queue_pop(i_priority_queue_t* _this);
 
-static inline
+HEADER_STATIC_INLINE
 priority_queue_value_t __i_priority_queue_top(const i_priority_queue_t* _this)
 {
     switch (_this->id) {
@@ -71,7 +71,7 @@ priority_queue_value_t __i_priority_queue_top(const i_priority_queue_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 priority_queue_value_t i_priority_queue_top(const i_priority_queue_t* _this)
 {
     if (!is_null(_this)) {
@@ -91,7 +91,7 @@ priority_queue_value_t i_priority_queue_top(const i_priority_queue_t* _this)
     return (priority_queue_value_t){ .u8 = NULL };
 }
 
-static inline
+HEADER_STATIC_INLINE
 void i_priority_queue_swap(i_priority_queue_t* _this, i_priority_queue_t* other)
 {
     void* p;
@@ -119,7 +119,7 @@ void i_priority_queue_swap(i_priority_queue_t* _this, i_priority_queue_t* other)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 priority_queue_size_t i_priority_queue_clear(i_priority_queue_t* _this)
 {
     if (!is_null(_this)) {

@@ -38,19 +38,19 @@ typedef const struct rb_node* rbtree_const_iterator_t;
 #define __rbtree_is_end(_rbtree_iterator)    (__RBTREE_ITERATOR_END  == (unsigned long)_rbtree_iterator)
 #define __rbtree_is_rend(_rbtree_r_iterator) (__RBTREE_ITERATOR_REND == (unsigned long)_rbtree_r_iterator)
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_return_end(void)
 {
     return (rbtree_iterator_t)(uintptr_t)__RBTREE_ITERATOR_END;
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_return_rend(void)
 {
     return (rbtree_iterator_t)(uintptr_t)__RBTREE_ITERATOR_REND;
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __red_rb_leftmost(rbtree_const_iterator_t _it)
 {
     rbtree_iterator_t it = (rbtree_iterator_t)_it;
@@ -60,7 +60,7 @@ rbtree_iterator_t __red_rb_leftmost(rbtree_const_iterator_t _it)
     return it;
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __red_rb_rightmost(rbtree_const_iterator_t _it)
 {
     rbtree_iterator_t it = (rbtree_iterator_t)_it;
@@ -70,7 +70,7 @@ rbtree_iterator_t __red_rb_rightmost(rbtree_const_iterator_t _it)
     return it;
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __red_rb_next(rbtree_const_iterator_t _it)
 {
     rbtree_iterator_t p, it = (rbtree_iterator_t)_it;
@@ -87,7 +87,7 @@ rbtree_iterator_t __red_rb_next(rbtree_const_iterator_t _it)
     return p ? p : __rbtree_return_end();
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __red_rb_prev(rbtree_const_iterator_t _it)
 {
     rbtree_iterator_t p, it = (rbtree_iterator_t)_it;
@@ -104,20 +104,20 @@ rbtree_iterator_t __red_rb_prev(rbtree_const_iterator_t _it)
     return p ? p : __rbtree_return_rend();
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_end(const struct rb_root *root)
 {
     (void)root;
     return __rbtree_return_end();
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_begin(const struct rb_root *root)
 {
     return !root->rb_node ? __rbtree_end(root) : __red_rb_leftmost(root->rb_node);
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_next(const struct rb_root *root, rbtree_const_iterator_t it)
 {
     JDSC_ASSERT(!RB_EMPTY_ROOT(root));
@@ -137,7 +137,7 @@ rbtree_iterator_t __rbtree_next(const struct rb_root *root, rbtree_const_iterato
     return __red_rb_next(it);
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_prev(const struct rb_root *root, rbtree_const_iterator_t it)
 {
     rbtree_iterator_t t;
@@ -157,20 +157,20 @@ rbtree_iterator_t __rbtree_prev(const struct rb_root *root, rbtree_const_iterato
     return t;
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_rend(const struct rb_root *root)
 {
     (void)root;
     return __rbtree_return_rend();
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_rbegin(const struct rb_root *root)
 {
     return !root->rb_node ? __rbtree_rend(root) : __red_rb_rightmost(root->rb_node);
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_rnext(const struct rb_root *root, rbtree_const_iterator_t it)
 {
     JDSC_ASSERT(!RB_EMPTY_ROOT(root));
@@ -190,7 +190,7 @@ rbtree_iterator_t __rbtree_rnext(const struct rb_root *root, rbtree_const_iterat
     return __red_rb_prev(it);
 }
 
-static inline
+HEADER_STATIC_INLINE
 rbtree_iterator_t __rbtree_rprev(const struct rb_root *root, rbtree_const_iterator_t it)
 {
     rbtree_iterator_t t;

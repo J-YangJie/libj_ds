@@ -22,6 +22,7 @@
 
 #include <_types.h>
 #include <string.h>
+#include <_compiler.h>
 
 #define __DS_SSO_LOCAL_CAP 15
 
@@ -34,14 +35,14 @@ typedef struct ds_sso {
     };
 } ds_sso_t;
 
-static inline
+HEADER_STATIC_INLINE
 bool ds_ops_valid_data_default_sso(ds_data_t data)
 {
     const char* s = (char*)data;
     return s && 0 != s[0];
 }
 
-static inline
+HEADER_STATIC_INLINE
 int __ds_ops_cmp_sso(const ds_sso_t* l, const ds_sso_t* r)
 {
     size_t m = l->len < r->len ? l->len : r->len;
@@ -50,19 +51,19 @@ int __ds_ops_cmp_sso(const ds_sso_t* l, const ds_sso_t* r)
     return l->len < r->len ? -1 : l->len > r->len ? 1 : 0;
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right)
 {
     return 0 == __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right);
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __ds_ops_lt_default_sso(ds_data_t left, ds_data_t right)
 {
     return __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right) < 0;
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __ds_ops_gt_default_sso(ds_data_t left, ds_data_t right)
 {
     return __ds_ops_cmp_sso((const ds_sso_t*)left, (const ds_sso_t*)right) > 0;
@@ -75,13 +76,13 @@ void ds_ops_free_data_default_sso(ds_data_t* data);
 
 
 
-static inline
+HEADER_STATIC_INLINE
 bool __ds_ops_is_local_sso(const ds_sso_t* s)
 {
     return s->p == s->buf;
 }
 
-static inline
+HEADER_STATIC_INLINE
 void __ds_ops_move_sso(ds_sso_t* dest, const ds_sso_t* src)
 {
     *dest = *src;
@@ -89,7 +90,7 @@ void __ds_ops_move_sso(ds_sso_t* dest, const ds_sso_t* src)
         dest->p = dest->buf;
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __ds_ops_eq_sso(ds_data_t left, ds_data_t right)
 {
     const char*     l = (const char*)left;
@@ -98,7 +99,7 @@ bool __ds_ops_eq_sso(ds_data_t left, ds_data_t right)
     return llen == r->len && 0 == memcmp(l, r->p, llen);
 }
 
-static inline
+HEADER_STATIC_INLINE
 void __ds_ops_fix_sso(ds_data_t data)
 {
     ds_sso_t* s = (ds_sso_t*)data;

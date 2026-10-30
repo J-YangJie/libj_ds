@@ -19,6 +19,7 @@
 
 #include <sequence_container/operations/ds_ops_sso.h>
 
+#include <stddef.h> /* offsetof */
 #include <_memory.h>
 #include <_compiler_inter.h>
 

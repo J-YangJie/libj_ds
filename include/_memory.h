@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stddef.h>     /* size_t, max_align_t (C11) */
+#include <stdint.h>     /* uintptr_t, SIZE_MAX */
 #include <string.h>     /* memcpy */
 #include <sys/types.h>
 #include <_compiler_inter.h>
@@ -48,30 +48,26 @@ JDSC_MEMFUNC_PREFIX      void  _p_free(void** ptr)                   { if (NULL 
 
 
 
+
+
 #ifndef JDSC_ALIGNMEM
 #define JDSC_ALIGNMEM 1
-#endif /* JDSC_ALIGNMEM */
-
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
-#  define JDSC_ALIGN_DEFAULT  _Alignof(max_align_t)
-#elif defined(__GNUC__) || defined(__clang__)
-#  define JDSC_ALIGN_DEFAULT  __alignof__(long double)
-#elif defined(_MSC_VER)
-#  define JDSC_ALIGN_DEFAULT  (sizeof(void*) * 2)
-#else
-#  define JDSC_ALIGN_DEFAULT  (sizeof(void*) * 2)
 #endif
-
-#define JDSC_ALIGN_IS_VALID(a)  \
-    (0 != (a) && 0 == ((a) & ((a) - 1)))
-
 
 #if JDSC_ALIGNMEM
 
 #if defined(_WIN32) || defined(_MSC_VER)
-#  include <malloc.h>
-#  define JDSC_ALIGN_IMPL_MSVC  1
-#  define JDSC_ALIGN_IMPL_POSIX 0
+#   include <malloc.h>
+#   define JDSC_ALIGN_IMPL_MSVC  1
+#   define JDSC_ALIGN_IMPL_POSIX 0
+#   define JDSC_ALIGN_IMPL_ANDROID 0
+#   define JDSC_ALIGN_IMPL_FALLBACK 0
+#elif defined(__ANDROID__)
+#   include <malloc.h>
+#   define JDSC_ALIGN_IMPL_MSVC  0
+#   define JDSC_ALIGN_IMPL_POSIX 0
+#   define JDSC_ALIGN_IMPL_ANDROID 1
+#   define JDSC_ALIGN_IMPL_FALLBACK 0
 #elif defined(__unix__) || defined(__unix) || defined(__APPLE__) || \
       (defined(__STDC_HOSTED__) && __STDC_HOSTED__ && !defined(_WIN32))
    /*
@@ -80,15 +76,25 @@ JDSC_MEMFUNC_PREFIX      void  _p_free(void** ptr)                   { if (NULL 
     * Under strict -std=c99 / -std=c11 the build system MUST define:
     *     -D_POSIX_C_SOURCE=200112L
     */
-#  define JDSC_ALIGN_IMPL_MSVC  0
-#  define JDSC_ALIGN_IMPL_POSIX 1
+#   define JDSC_ALIGN_IMPL_MSVC  0
+#   define JDSC_ALIGN_IMPL_POSIX 1
+#   define JDSC_ALIGN_IMPL_ANDROID 0
+#   define JDSC_ALIGN_IMPL_FALLBACK 0
+#elif defined(__ICCARM__) || defined(__ARMCC_VERSION) || defined(__CC_ARM)
+#   define JDSC_ALIGN_IMPL_MSVC  0
+#   define JDSC_ALIGN_IMPL_POSIX 0
+#   define JDSC_ALIGN_IMPL_ANDROID 0
+#   define JDSC_ALIGN_IMPL_FALLBACK 1
 #else
-#  error "JDSC_ALIGNMEM=1 but no aligned allocation primitive for this platform. \
+#   error "JDSC_ALIGNMEM=1 but no aligned allocation primitive for this platform. \
 Define JDSC_ALIGNMEM=0 to disable, or add a platform adapter."
 #endif
 
+#define JDSC_ALIGN_IS_VALID(a)  \
+    (0 != (a) && 0 == ((a) & ((a) - 1)))
 
-JDSC_MEMFUNC_PREFIX void _p_aligned_free(void** ptr, size_t alignment)
+JDSC_MEMFUNC_PREFIX
+void _p_aligned_free(void** ptr, size_t alignment)
 {
     if (alignment <= JDSC_ALIGN_DEFAULT) {
         _p_free(ptr);
@@ -100,8 +106,10 @@ JDSC_MEMFUNC_PREFIX void _p_aligned_free(void** ptr, size_t alignment)
     if (NULL != ptr && NULL != *ptr) {
 #if JDSC_ALIGN_IMPL_MSVC
         _aligned_free(*ptr);
-#else
+#elif JDSC_ALIGN_IMPL_ANDROID || JDSC_ALIGN_IMPL_POSIX
         free(*ptr);
+#else
+        free(((void**)*ptr)[-1]);
 #endif
         *ptr = NULL;
     }
@@ -109,7 +117,8 @@ JDSC_MEMFUNC_PREFIX void _p_aligned_free(void** ptr, size_t alignment)
 #define p_aligned_free(ptr, align)  do { _p_aligned_free((void**)(&(ptr)), (align)); } while (0)
 
 
-JDSC_MEMFUNC_PREFIX void* _p_aligned_malloc(size_t alignment, size_t size)
+JDSC_MEMFUNC_PREFIX
+void* _p_aligned_malloc(size_t alignment, size_t size)
 {
     if (alignment <= JDSC_ALIGN_DEFAULT)
         return _p_malloc(size);
@@ -118,20 +127,33 @@ JDSC_MEMFUNC_PREFIX void* _p_aligned_malloc(size_t alignment, size_t size)
 
 #if JDSC_ALIGN_IMPL_MSVC
     return _aligned_malloc(size, alignment);
-#else
+#elif JDSC_ALIGN_IMPL_ANDROID
+    return memalign(alignment, size);
+#elif JDSC_ALIGN_IMPL_POSIX
     {
         void* p = NULL;
         if (0 != posix_memalign(&p, alignment, size))
             return NULL;
         return p;
     }
+#else
+    {
+        void* ptr = malloc(sizeof(void*) + alignment - 1 + size);
+        if (NULL != ptr) {
+            void* orig_ptr = ptr;
+            ptr = (void*)(((uintptr_t)ptr + sizeof(void*) + alignment - 1)
+                          & ~(uintptr_t)(alignment - 1));
+            ((void**)ptr)[-1] = orig_ptr;
+        }
+        return ptr;
+    }
 #endif
 }
 #define p_aligned_malloc(align, size)  _p_aligned_malloc((align), (size))
 
 
-JDSC_MEMFUNC_PREFIX void* _p_aligned_realloc(void* ptr, size_t alignment,
-                                              size_t size, size_t old_size)
+JDSC_MEMFUNC_PREFIX
+void* _p_aligned_realloc(void* ptr, size_t alignment, size_t size, size_t old_size)
 {
     if (0 != size) {
         if (alignment <= JDSC_ALIGN_DEFAULT)
@@ -178,7 +200,10 @@ JDSC_MEMFUNC_PREFIX void* _p_aligned_realloc(void* ptr, size_t alignment,
 
 
 
-static inline bool _is_null(const void* ptr)
+
+
+HEADER_STATIC_INLINE
+bool _is_null(const void* ptr)
 {
     return NULL == ptr;
 }

@@ -1066,7 +1066,7 @@ typedef hashmap_iterator_t* (*hm_fp_insert)(hashmap_t* _this, hashmap_key_t key,
 typedef hashmap_iterator_t* (*hm_fp_insert_replace)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
 typedef hashmap_iterator_t* (*hm_fp_erase)(hashmap_t* _this, hashmap_iterator_t* iterator);
 
-/* __always_inline */ inline const class_hashmap_t* class_hashmap_ins(void)
+const class_hashmap_t* class_hashmap_ins(void)
 {
     static const class_hashmap_t ins = {
         .size               = _hashmap_size,

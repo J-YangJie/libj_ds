@@ -47,21 +47,21 @@ typedef struct i_list {
 } i_list_t;
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_size_t __i_dlist_size(const i_list_t* _this)
 {
     return _this->size;
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_size_t i_dlist_size(const i_list_t* _this)
 {
     return unlikely(is_null(_this)) ? -1 : __i_dlist_size(_this);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 bool __i_dlist_empty(const i_list_t* _this)
 {
     return list_empty(&_this->head);
@@ -74,14 +74,14 @@ bool __i_dlist_empty(const i_list_t* _this)
 #define dlist_entry_lhead(_ptr) ((list_node_t*)(_ptr))
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_end(const i_list_t* _this)
 {
     return dlist_entry_lhead(&_this->head);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* i_dlist_end(const i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -90,14 +90,14 @@ list_node_t* i_dlist_end(const i_list_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_begin(const i_list_t* _this)
 {
     return dlist_entry_lhead(_this->head.next);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* i_dlist_begin(const i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -106,7 +106,7 @@ list_node_t* i_dlist_begin(const i_list_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_next(const i_list_t* _this, const list_node_t* node)
 {
     JDSC_ASSERT(!__i_dlist_empty(_this));
@@ -119,7 +119,7 @@ list_node_t* __i_dlist_next(const i_list_t* _this, const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* i_dlist_next(const i_list_t* _this, const list_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
@@ -128,7 +128,7 @@ list_node_t* i_dlist_next(const i_list_t* _this, const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_prev(const i_list_t* _this, const list_node_t* node)
 {
     JDSC_ASSERT(__i_dlist_begin(_this) != node);
@@ -136,7 +136,7 @@ list_node_t* __i_dlist_prev(const i_list_t* _this, const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* i_dlist_prev(const i_list_t* _this, const list_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
@@ -145,14 +145,14 @@ list_node_t* i_dlist_prev(const i_list_t* _this, const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_rend(const i_list_t* _this)
 {
     return dlist_entry_lhead(&_this->head);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* i_dlist_rend(const i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -161,14 +161,14 @@ list_node_t* i_dlist_rend(const i_list_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_rbegin(const i_list_t* _this)
 {
     return dlist_entry_lhead(_this->head.rnext);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* i_dlist_rbegin(const i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -177,7 +177,7 @@ list_node_t* i_dlist_rbegin(const i_list_t* _this)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_rnext(const i_list_t* _this, const list_node_t* node)
 {
     JDSC_ASSERT(!__i_dlist_empty(_this));
@@ -190,7 +190,7 @@ list_node_t* __i_dlist_rnext(const i_list_t* _this, const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* i_dlist_rnext(const i_list_t* _this, const list_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
@@ -199,7 +199,7 @@ list_node_t* i_dlist_rnext(const i_list_t* _this, const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_rprev(const i_list_t* _this, const list_node_t* node)
 {
     JDSC_ASSERT(__i_dlist_rbegin(_this) != node);
@@ -207,7 +207,7 @@ list_node_t* __i_dlist_rprev(const i_list_t* _this, const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* i_dlist_rprev(const i_list_t* _this, const list_node_t* node)
 {
     if (unlikely(is_null(_this) || is_null(node)))
@@ -222,7 +222,7 @@ list_node_t* i_dlist_rprev(const i_list_t* _this, const list_node_t* node)
 #define dlist_entry(_pdata) ((list_node_t*)((uint8_t*)(_pdata) - offsetof(list_node_t, data)))
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t __i_dlist_lnode_to_it(const list_node_t* node)
 {
     list_iterator_t it;
@@ -231,14 +231,14 @@ list_iterator_t __i_dlist_lnode_to_it(const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_it_to_lnode(list_iterator_t it)
 {
     return is_null(it.d) ? NULL : dlist_entry(it.d);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_r_iterator_t __i_dlist_lnode_to_rit(const list_node_t* node)
 {
     list_r_iterator_t r_it;
@@ -247,63 +247,63 @@ list_r_iterator_t __i_dlist_lnode_to_rit(const list_node_t* node)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_rit_to_lnode(list_r_iterator_t r_it)
 {
     return is_null(r_it.d) ? NULL : dlist_entry(r_it.d);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_end(const i_list_t* _this)
 {
     return __i_dlist_lnode_to_it(i_dlist_end(_this));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_begin(const i_list_t* _this)
 {
     return __i_dlist_lnode_to_it(i_dlist_begin(_this));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_next(const i_list_t* _this, list_iterator_t iterator)
 {
     return __i_dlist_lnode_to_it(i_dlist_next(_this, __i_dlist_it_to_lnode(iterator)));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_prev(const i_list_t* _this, list_iterator_t iterator)
 {
     return __i_dlist_lnode_to_it(i_dlist_prev(_this, __i_dlist_it_to_lnode(iterator)));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_r_iterator_t i_clist_rend(const i_list_t* _this)
 {
     return __i_dlist_lnode_to_rit(i_dlist_rend(_this));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_r_iterator_t i_clist_rbegin(const i_list_t* _this)
 {
     return __i_dlist_lnode_to_rit(i_dlist_rbegin(_this));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_r_iterator_t i_clist_rnext(const i_list_t* _this, list_r_iterator_t r_iterator)
 {
     return __i_dlist_lnode_to_rit(i_dlist_rnext(_this, __i_dlist_rit_to_lnode(r_iterator)));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_r_iterator_t i_clist_rprev(const i_list_t* _this, list_r_iterator_t r_iterator)
 {
     return __i_dlist_lnode_to_rit(i_dlist_rprev(_this, __i_dlist_rit_to_lnode(r_iterator)));
@@ -314,7 +314,7 @@ list_r_iterator_t i_clist_rprev(const i_list_t* _this, list_r_iterator_t r_itera
 
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_dlist_null_iterator(void)
 {
     list_iterator_t it;
@@ -323,7 +323,7 @@ list_iterator_t i_dlist_null_iterator(void)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_r_iterator_t i_dlist_null_r_iterator(void)
 {
     list_r_iterator_t rit;
@@ -332,7 +332,7 @@ list_r_iterator_t i_dlist_null_r_iterator(void)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t __i_dlist_make_iterator(const void* ptr)
 {
     list_iterator_t it;
@@ -341,7 +341,7 @@ list_iterator_t __i_dlist_make_iterator(const void* ptr)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_node_t* __i_dlist_it_list_node(const i_list_t* _this, list_index_t index)
 {
     list_node_t* it;
@@ -363,14 +363,14 @@ list_node_t* __i_dlist_it_list_node(const i_list_t* _this, list_index_t index)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t __i_dlist_iterator(const i_list_t* _this, list_index_t index)
 {
     return __i_dlist_make_iterator(__i_dlist_it_list_node(_this, index)->data);
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_dlist_iterator(const i_list_t* _this, list_index_t index)
 {
     if (!is_null(_this) && index < __i_dlist_size(_this))
@@ -379,14 +379,14 @@ list_iterator_t i_dlist_iterator(const i_list_t* _this, list_index_t index)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_value_t __i_dlist_at(const i_list_t* _this, list_index_t index)
 {
     return (list_value_t){ .u8 = (uint8_t*)__i_dlist_iterator(_this, index).d, };
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_value_t i_dlist_at(const i_list_t* _this, list_index_t index)
 {
     if (!is_null(_this) && index < __i_dlist_size(_this))
@@ -395,13 +395,13 @@ list_value_t i_dlist_at(const i_list_t* _this, list_index_t index)
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_value_t __i_dlist_back(const i_list_t* _this)
 {
     return (list_value_t){ .u8 = __i_dlist_rbegin(_this)->data, };
 }
 
-static inline
+HEADER_STATIC_INLINE
 list_value_t i_dlist_back(const i_list_t* _this)
 {
     if (!is_null(_this) && !__i_dlist_empty(_this))
@@ -409,14 +409,14 @@ list_value_t i_dlist_back(const i_list_t* _this)
     return (list_value_t){ .u8 = NULL, };
 }
 
-static inline
+HEADER_STATIC_INLINE
 list_value_t __i_dlist_front(const i_list_t* _this)
 {
     return (list_value_t){ .u8 = __i_dlist_begin(_this)->data, };
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_value_t i_dlist_front(const i_list_t* _this)
 {
     if (!is_null(_this) && !__i_dlist_empty(_this))
@@ -452,35 +452,35 @@ list_size_t i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data);
 list_size_t i_dlist_clear(i_list_t* _this);
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_find(const i_list_t* _this, list_data_t data)
 {
     return __i_dlist_lnode_to_it(i_dlist_find(_this, data));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_insert(i_list_t* _this, list_iterator_t iterator, list_data_t data)
 {
     return __i_dlist_lnode_to_it(i_dlist_insert(_this, __i_dlist_it_to_lnode(iterator), data));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_insert_n(i_list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data)
 {
     return __i_dlist_lnode_to_it(i_dlist_insert_n(_this, __i_dlist_it_to_lnode(iterator), n, data));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_erase(i_list_t* _this, list_iterator_t iterator)
 {
     return __i_dlist_lnode_to_it(i_dlist_erase(_this, __i_dlist_it_to_lnode(iterator)));
 }
 
 /* checked */
-static inline
+HEADER_STATIC_INLINE
 list_iterator_t i_clist_erase_range(i_list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)
 {
     return __i_dlist_lnode_to_it(i_dlist_erase_range(_this,

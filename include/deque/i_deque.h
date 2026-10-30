@@ -43,19 +43,19 @@ typedef struct i_deque {
     bool             sso;
 } i_deque_t;
 
-static inline
+HEADER_STATIC_INLINE
 uint8_t* ___i_deque_ptr_add(const uint8_t* p, ptrdiff_t n, deque_step_t step)
 {
     return (uint8_t*)p + (ptrdiff_t)step * n;
 }
 
-static inline
+HEADER_STATIC_INLINE
 uint8_t* ___i_deque_ptr_sub(const uint8_t* p, ptrdiff_t n, deque_step_t step)
 {
     return ___i_deque_ptr_add(p, -n, step);
 }
 
-static inline
+HEADER_STATIC_INLINE
 ptrdiff_t ___i_deque_ptr_diff(const uint8_t* p1, const uint8_t* p2, deque_step_t step)
 {
     return (ptrdiff_t)((p1 - p2) / (ptrdiff_t)step);
@@ -65,7 +65,7 @@ ptrdiff_t ___i_deque_ptr_diff(const uint8_t* p1, const uint8_t* p2, deque_step_t
 #define __i_deque_ptr_sub(_p, _n, _step)    ___i_deque_ptr_sub((_p), (ptrdiff_t)(_n), (_step))
 #define __i_deque_ptr_diff(_p1, _p2, _step) ___i_deque_ptr_diff((_p1), (_p2), (_step))
 
-static inline
+HEADER_STATIC_INLINE
 void __i_deque_set_bkt(deque_iterator_t* it, uint8_t** bkt)
 {
     ptrdiff_t n = it->end - it->begin;
@@ -74,7 +74,7 @@ void __i_deque_set_bkt(deque_iterator_t* it, uint8_t** bkt)
     it->end   = it->begin + n;
 }
 
-static inline
+HEADER_STATIC_INLINE
 void __i_deque_set_bkt_r(deque_r_iterator_t* rit, uint8_t** bkt)
 {
     ptrdiff_t n = rit->end - rit->begin;
@@ -83,7 +83,7 @@ void __i_deque_set_bkt_r(deque_r_iterator_t* rit, uint8_t** bkt)
     rit->end   = rit->begin + n;
 }
 
-static inline
+HEADER_STATIC_INLINE
 void __i_deque_set_bkt_n(deque_iterator_t* it, uint8_t** bkt, deque_size_t n, deque_step_t step)
 {
     it->step  = step;
@@ -92,7 +92,7 @@ void __i_deque_set_bkt_n(deque_iterator_t* it, uint8_t** bkt, deque_size_t n, de
     it->end   = __i_deque_ptr_add(it->begin, n, step);
 }
 
-static inline
+HEADER_STATIC_INLINE
 void __i_deque_set_bkt_n_r(deque_r_iterator_t* rit, uint8_t** bkt, deque_size_t n, deque_step_t step)
 {
     rit->step  = step;
@@ -101,7 +101,7 @@ void __i_deque_set_bkt_n_r(deque_r_iterator_t* rit, uint8_t** bkt, deque_size_t 
     rit->end   = __i_deque_ptr_add(rit->begin, n, step);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t __i_deque_advance_slow(deque_iterator_t it, deque_size_t n)
 {
     const ptrdiff_t off = n + __i_deque_ptr_diff(it.cur, it.begin, it.step);
@@ -121,7 +121,7 @@ deque_iterator_t __i_deque_advance_slow(deque_iterator_t it, deque_size_t n)
     return it;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t __i_deque_advance_fast(deque_iterator_t it, deque_size_t n)
 {
     const ptrdiff_t off = n + __i_deque_ptr_diff(it.cur, it.begin, it.step);
@@ -142,13 +142,13 @@ deque_iterator_t __i_deque_advance_fast(deque_iterator_t it, deque_size_t n)
     return it;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t __i_deque_advance(deque_iterator_t it, deque_size_t n)
 {
     return __i_deque_advance_fast(it, n);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_size_t __i_deque_iterator_distance(deque_iterator_t begin, deque_iterator_t end)
 {
     if (begin.bkt == end.bkt)
@@ -159,13 +159,13 @@ deque_size_t __i_deque_iterator_distance(deque_iterator_t begin, deque_iterator_
             + __i_deque_ptr_diff(begin.end, begin.cur, begin.step));
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool i_deque_is_null_iterator(deque_iterator_t it)
 {
     return is_null(it.cur);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_null_iterator(void)
 {
     deque_iterator_t it;
@@ -173,7 +173,7 @@ deque_iterator_t i_deque_null_iterator(void)
     return it;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t i_deque_null_r_iterator(void)
 {
     deque_r_iterator_t rit;
@@ -185,31 +185,31 @@ deque_r_iterator_t i_deque_null_r_iterator(void)
 
 
 
-static inline
+HEADER_STATIC_INLINE
 deque_size_t __i_deque_size(const i_deque_t* _this)
 {
     return __i_deque_iterator_distance(_this->begin, _this->end);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_size_t i_deque_size(const i_deque_t* _this)
 {
     return is_null(_this) ? -1 : __i_deque_size(_this);
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __i_deque_empty(const i_deque_t* _this)
 {
     return _this->end.cur == _this->begin.cur;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t __i_deque_end(const i_deque_t* _this)
 {
     return _this->end;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_end(const i_deque_t* _this)
 {
     JDSC_ASSERT(!is_null(_this));
@@ -220,13 +220,13 @@ deque_iterator_t i_deque_end(const i_deque_t* _this)
     return __i_deque_end(_this);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t __i_deque_begin(const i_deque_t* _this)
 {
     return _this->begin;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_begin(const i_deque_t* _this)
 {
     JDSC_ASSERT(!is_null(_this));
@@ -237,7 +237,7 @@ deque_iterator_t i_deque_begin(const i_deque_t* _this)
     return __i_deque_begin(_this);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t __i_deque_next(deque_iterator_t it)
 {
     JDSC_ASSERT(!is_null(it.cur) && !is_null(it.begin)
@@ -257,13 +257,13 @@ deque_iterator_t __i_deque_next(deque_iterator_t it)
     return it;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_next(deque_iterator_t it)
 {
     return __i_deque_next(it);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t __i_deque_prev(deque_iterator_t it)
 {
     JDSC_ASSERT(!is_null(it.cur) && !is_null(it.begin)
@@ -283,13 +283,13 @@ deque_iterator_t __i_deque_prev(deque_iterator_t it)
     return it;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_prev(deque_iterator_t it)
 {
     return __i_deque_prev(it);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t __i_deque_rend(const i_deque_t* _this)
 {
     deque_r_iterator_t rit;
@@ -303,7 +303,7 @@ deque_r_iterator_t __i_deque_rend(const i_deque_t* _this)
     return rit;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t i_deque_rend(const i_deque_t* _this)
 {
     JDSC_ASSERT(!is_null(_this));
@@ -314,7 +314,7 @@ deque_r_iterator_t i_deque_rend(const i_deque_t* _this)
     return __i_deque_rend(_this);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t __i_deque_rbegin(const i_deque_t* _this)
 {
     deque_r_iterator_t rit;
@@ -333,7 +333,7 @@ deque_r_iterator_t __i_deque_rbegin(const i_deque_t* _this)
     return rit;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t i_deque_rbegin(const i_deque_t* _this)
 {
     JDSC_ASSERT(!is_null(_this));
@@ -344,7 +344,7 @@ deque_r_iterator_t i_deque_rbegin(const i_deque_t* _this)
     return __i_deque_rbegin(_this);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t __i_deque_rnext(deque_r_iterator_t rit)
 {
     JDSC_ASSERT(!is_null(rit.cur) && !is_null(rit.begin)
@@ -373,13 +373,13 @@ deque_r_iterator_t __i_deque_rnext(deque_r_iterator_t rit)
     return rit;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t i_deque_rnext(deque_r_iterator_t rit)
 {
     return __i_deque_rnext(rit);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t __i_deque_rprev(deque_r_iterator_t rit)
 {
     JDSC_ASSERT(!is_null(rit.cur) && !is_null(rit.begin)
@@ -406,7 +406,7 @@ deque_r_iterator_t __i_deque_rprev(deque_r_iterator_t rit)
     return rit;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_r_iterator_t i_deque_rprev(deque_r_iterator_t rit)
 {
     return __i_deque_rprev(rit);
@@ -416,13 +416,13 @@ deque_r_iterator_t i_deque_rprev(deque_r_iterator_t rit)
 
 
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t __i_deque_iterator(const i_deque_t* _this, deque_index_t index)
 {
     return __i_deque_advance(_this->begin, index);
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_iterator(const i_deque_t* _this, deque_index_t index)
 {
     if (!is_null(_this) && index < __i_deque_size(_this))
@@ -430,13 +430,13 @@ deque_iterator_t i_deque_iterator(const i_deque_t* _this, deque_index_t index)
     return i_deque_null_iterator();
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_value_t __i_deque_at(const i_deque_t* _this, deque_index_t index)
 {
     return (deque_value_t){ .u8 = __i_deque_advance(_this->begin, index).cur, };
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_value_t i_deque_at(const i_deque_t* _this, deque_index_t index)
 {
     if (!is_null(_this) && index < __i_deque_size(_this))
@@ -444,13 +444,13 @@ deque_value_t i_deque_at(const i_deque_t* _this, deque_index_t index)
     return (deque_value_t){ .u8 = NULL, };
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_value_t __i_deque_back(const i_deque_t* _this)
 {
     return (deque_value_t){ .u8 = __i_deque_prev(__i_deque_end(_this)).cur, };
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_value_t i_deque_back(const i_deque_t* _this)
 {
     if (!is_null(_this) && !__i_deque_empty(_this))
@@ -458,13 +458,13 @@ deque_value_t i_deque_back(const i_deque_t* _this)
     return (deque_value_t){ .u8 = NULL, };
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_value_t __i_deque_front(const i_deque_t* _this)
 {
     return (deque_value_t){ .u8 = __i_deque_begin(_this).cur, };
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_value_t i_deque_front(const i_deque_t* _this)
 {
     if (!is_null(_this) && !__i_deque_empty(_this))
@@ -492,7 +492,7 @@ deque_value_t i_deque_front(const i_deque_t* _this)
  *                   DQ_MOVE, DQ_LESS, __i_deque_sort_lt)
  * ========================================================================== */
 /* TODO: 保留在这里？ */
-static inline
+HEADER_STATIC_INLINE
 bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
 {
     if (a.bkt != b.bkt)
@@ -521,7 +521,7 @@ bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
 
 
 
-static inline
+HEADER_STATIC_INLINE
 bool __i_deque_slot_write(const i_deque_t* _this, deque_data_t data, uint8_t* slot)
 {
     if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
@@ -540,7 +540,7 @@ bool __i_deque_slot_write(const i_deque_t* _this, deque_data_t data, uint8_t* sl
     return true;
 }
 
-static inline
+HEADER_STATIC_INLINE
 deque_data_t __i_deque_slot_read(const i_deque_t* _this, const uint8_t* slot)
 {
     const deque_dtype_t dtype = _this->dtype;
@@ -574,7 +574,7 @@ deque_data_t __i_deque_slot_read(const i_deque_t* _this, const uint8_t* slot)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool __i_deque_slot_equal(deque_step_t step, deque_data_t data, const uint8_t* slot)
 {
     switch (step) {
@@ -588,7 +588,7 @@ bool __i_deque_slot_equal(deque_step_t step, deque_data_t data, const uint8_t* s
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 void __i_deque_slot_memmove(const i_deque_t* _this, uint8_t* dest, const uint8_t* src)
 {
     if (dest != src) {
@@ -613,7 +613,7 @@ void __i_deque_slot_memmove(const i_deque_t* _this, uint8_t* dest, const uint8_t
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 void __i_deque_slot_move(const i_deque_t* _this, uint8_t* dest, const uint8_t* src)
 {
     if (is_null(_this->ops) || is_null(_this->ops->__move))
@@ -627,7 +627,7 @@ uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this);
 void __i_deque_pop_back_bkt_free(i_deque_t* _this);
 void __i_deque_pop_front_bkt_free(i_deque_t* _this);
 
-static inline
+HEADER_STATIC_INLINE
 bool i_deque_push_back(i_deque_t* _this, deque_data_t data)
 {
     uint8_t* slot;
@@ -656,7 +656,7 @@ bool i_deque_push_back(i_deque_t* _this, deque_data_t data)
     return true;
 }
 
-static inline
+HEADER_STATIC_INLINE
 bool i_deque_push_front(i_deque_t* _this, deque_data_t data)
 {
     uint8_t* slot;
@@ -687,7 +687,7 @@ bool i_deque_push_front(i_deque_t* _this, deque_data_t data)
     return true;
 }
 
-static inline
+HEADER_STATIC_INLINE
 void i_deque_pop_back(i_deque_t* _this)
 {
     if (is_null(_this) || __i_deque_empty(_this))
@@ -708,7 +708,7 @@ void i_deque_pop_back(i_deque_t* _this)
     }
 }
 
-static inline
+HEADER_STATIC_INLINE
 void i_deque_pop_front(i_deque_t* _this)
 {
     if (is_null(_this) || __i_deque_empty(_this))
@@ -730,7 +730,7 @@ void i_deque_pop_front(i_deque_t* _this)
 }
 
 deque_iterator_t __i_deque_insert(i_deque_t* _this, deque_iterator_t pos, deque_data_t data);
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_insert(i_deque_t* _this, deque_iterator_t pos, deque_data_t data)
 {
     if (is_null(_this) || i_deque_is_null_iterator(pos))
@@ -752,7 +752,7 @@ deque_iterator_t i_deque_insert(i_deque_t* _this, deque_iterator_t pos, deque_da
 }
 
 deque_iterator_t __i_deque_erase(i_deque_t* _this, deque_iterator_t pos);
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_erase(i_deque_t* _this, deque_iterator_t pos)
 {
     if (is_null(_this) || i_deque_is_null_iterator(pos) 
@@ -773,7 +773,7 @@ deque_iterator_t i_deque_erase(i_deque_t* _this, deque_iterator_t pos)
 }
 
 deque_iterator_t __i_deque_erase_range(i_deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);
-static inline
+HEADER_STATIC_INLINE
 deque_iterator_t i_deque_erase_range(i_deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end)
 {
     if (is_null(_this)

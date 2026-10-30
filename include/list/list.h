@@ -47,45 +47,45 @@ typedef list_reverse_iterator_t list_r_iterator_t;
 typedef i_list_t list_t;
 
 /* Method 1 */
-static inline list_size_t        clist_size(const list_t* _this)                                                                { return i_dlist_size(_this); }
-static inline bool               __clist_empty(const list_t* _this)                                                             { return __i_dlist_empty(_this); }
-static inline list_count_t       clist_count(const list_t* _this, list_data_t data)                                             { return i_dlist_count(_this, data); }
-static inline list_iterator_t    clist_end(const list_t* _this)                                                                 { return i_clist_end(_this); }
-static inline list_iterator_t    clist_begin(const list_t* _this)                                                               { return i_clist_begin(_this); }
-static inline list_iterator_t    clist_next(const list_t* _this, list_iterator_t iterator)                                      { return i_clist_next(_this, iterator); }
-static inline list_iterator_t    clist_prev(const list_t* _this, list_iterator_t iterator)                                      { return i_clist_prev(_this, iterator); }
-static inline list_r_iterator_t  clist_rend(const list_t* _this)                                                                { return i_clist_rend(_this); }
-static inline list_r_iterator_t  clist_rbegin(const list_t* _this)                                                              { return i_clist_rbegin(_this); }
-static inline list_r_iterator_t  clist_rnext(const list_t* _this, list_r_iterator_t r_iterator)                                 { return i_clist_rnext(_this, r_iterator); }
-static inline list_r_iterator_t  clist_rprev(const list_t* _this, list_r_iterator_t r_iterator)                                 { return i_clist_rprev(_this, r_iterator); }
-static inline list_iterator_t    __clist_it(const list_t* _this, list_index_t index)                                            { return __i_dlist_iterator(_this, index); }
-static inline list_iterator_t    clist_it(const list_t* _this, list_index_t index)                                              { return i_dlist_iterator(_this, index); }
-static inline list_value_t       __clist_at(const list_t* _this, list_index_t index)                                            { return __i_dlist_at(_this, index); }
-static inline list_value_t       clist_at(const list_t* _this, list_index_t index)                                              { return i_dlist_at(_this, index); }
-static inline list_value_t       __clist_back(const list_t* _this)                                                              { return __i_dlist_back(_this); }
-static inline list_value_t       clist_back(const list_t* _this)                                                                { return i_dlist_back(_this); }
-static inline list_value_t       __clist_front(const list_t* _this)                                                             { return __i_dlist_front(_this); }
-static inline list_value_t       clist_front(const list_t* _this)                                                               { return i_dlist_front(_this); }
-static inline list_iterator_t    clist_find(const list_t* _this, list_data_t data)                                              { return i_clist_find(_this, data); }
-static inline bool               clist_push_back(list_t* _this, list_data_t data)                                               { return i_dlist_push_back(_this, data); }
-static inline bool               clist_push_front(list_t* _this, list_data_t data)                                              { return i_dlist_push_front(_this, data); }
-static inline list_iterator_t    clist_insert(list_t* _this, list_iterator_t iterator, list_data_t data)                        { return i_clist_insert(_this, iterator, data); }
-static inline list_iterator_t    clist_insert_n(list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data)       { return i_clist_insert_n(_this, iterator, n, data); }
-static inline list_iterator_t    clist_erase(list_t* _this, list_iterator_t iterator)                                           { return i_clist_erase(_this, iterator); }
-static inline list_iterator_t    clist_erase_range(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end) { return i_clist_erase_range(_this, iterator_begin, iterator_end); }
-static inline void               clist_pop_back(list_t* _this)                                                                  { i_dlist_pop_back(_this); }
-static inline void               clist_pop_front(list_t* _this)                                                                 { i_dlist_pop_front(_this); }
-static inline list_size_t        clist_remove(list_t* _this, list_data_t data)                                                  { return i_dlist_remove(_this, data); }
-static inline list_size_t        clist_remove_if(list_t* _this, remove_if_condition cond)                                       { return i_dlist_remove_if(_this, cond); }
-static inline list_size_t        clist_unique(list_t* _this)                                                                    { return i_dlist_unique(_this); }
-static inline void               clist_reverse(list_t* _this)                                                                   { i_dlist_reverse(_this); }
-static inline void               clist_merge(list_t* _this, list_t* other, list_cmp_t cmp)                                      { i_dlist_merge(_this, other, cmp); }
-static inline void               clist_splice(list_t* _this, list_iterator_t iterator, list_t* other)                           { i_dlist_splice(_this, iterator, other); }
-static inline void               clist_splice_range(list_t* _this, list_iterator_t iterator, list_t* other, list_iterator_t iterator_begin, list_iterator_t iterator_end) { i_dlist_splice_range(_this, iterator, other, iterator_begin, iterator_end); }
-static inline bool               clist_resize(list_t* _this, list_size_t n, list_data_t default_data)                           { return i_dlist_resize(_this, n, default_data); }
-static inline void               clist_swap(list_t* _this, list_t* other)                                                       { i_dlist_swap(_this, other); }
-static inline list_size_t        clist_assign(list_t* _this, list_size_t n, list_data_t data)                                   { return i_dlist_assign(_this, n, data); }
-static inline list_size_t        clist_clear(list_t* _this)                                                                     { return i_dlist_clear(_this); }
+HEADER_STATIC_INLINE list_size_t        clist_size(const list_t* _this)                                                                { return i_dlist_size(_this); }
+HEADER_STATIC_INLINE bool               __clist_empty(const list_t* _this)                                                             { return __i_dlist_empty(_this); }
+HEADER_STATIC_INLINE list_count_t       clist_count(const list_t* _this, list_data_t data)                                             { return i_dlist_count(_this, data); }
+HEADER_STATIC_INLINE list_iterator_t    clist_end(const list_t* _this)                                                                 { return i_clist_end(_this); }
+HEADER_STATIC_INLINE list_iterator_t    clist_begin(const list_t* _this)                                                               { return i_clist_begin(_this); }
+HEADER_STATIC_INLINE list_iterator_t    clist_next(const list_t* _this, list_iterator_t iterator)                                      { return i_clist_next(_this, iterator); }
+HEADER_STATIC_INLINE list_iterator_t    clist_prev(const list_t* _this, list_iterator_t iterator)                                      { return i_clist_prev(_this, iterator); }
+HEADER_STATIC_INLINE list_r_iterator_t  clist_rend(const list_t* _this)                                                                { return i_clist_rend(_this); }
+HEADER_STATIC_INLINE list_r_iterator_t  clist_rbegin(const list_t* _this)                                                              { return i_clist_rbegin(_this); }
+HEADER_STATIC_INLINE list_r_iterator_t  clist_rnext(const list_t* _this, list_r_iterator_t r_iterator)                                 { return i_clist_rnext(_this, r_iterator); }
+HEADER_STATIC_INLINE list_r_iterator_t  clist_rprev(const list_t* _this, list_r_iterator_t r_iterator)                                 { return i_clist_rprev(_this, r_iterator); }
+HEADER_STATIC_INLINE list_iterator_t    __clist_it(const list_t* _this, list_index_t index)                                            { return __i_dlist_iterator(_this, index); }
+HEADER_STATIC_INLINE list_iterator_t    clist_it(const list_t* _this, list_index_t index)                                              { return i_dlist_iterator(_this, index); }
+HEADER_STATIC_INLINE list_value_t       __clist_at(const list_t* _this, list_index_t index)                                            { return __i_dlist_at(_this, index); }
+HEADER_STATIC_INLINE list_value_t       clist_at(const list_t* _this, list_index_t index)                                              { return i_dlist_at(_this, index); }
+HEADER_STATIC_INLINE list_value_t       __clist_back(const list_t* _this)                                                              { return __i_dlist_back(_this); }
+HEADER_STATIC_INLINE list_value_t       clist_back(const list_t* _this)                                                                { return i_dlist_back(_this); }
+HEADER_STATIC_INLINE list_value_t       __clist_front(const list_t* _this)                                                             { return __i_dlist_front(_this); }
+HEADER_STATIC_INLINE list_value_t       clist_front(const list_t* _this)                                                               { return i_dlist_front(_this); }
+HEADER_STATIC_INLINE list_iterator_t    clist_find(const list_t* _this, list_data_t data)                                              { return i_clist_find(_this, data); }
+HEADER_STATIC_INLINE bool               clist_push_back(list_t* _this, list_data_t data)                                               { return i_dlist_push_back(_this, data); }
+HEADER_STATIC_INLINE bool               clist_push_front(list_t* _this, list_data_t data)                                              { return i_dlist_push_front(_this, data); }
+HEADER_STATIC_INLINE list_iterator_t    clist_insert(list_t* _this, list_iterator_t iterator, list_data_t data)                        { return i_clist_insert(_this, iterator, data); }
+HEADER_STATIC_INLINE list_iterator_t    clist_insert_n(list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data)       { return i_clist_insert_n(_this, iterator, n, data); }
+HEADER_STATIC_INLINE list_iterator_t    clist_erase(list_t* _this, list_iterator_t iterator)                                           { return i_clist_erase(_this, iterator); }
+HEADER_STATIC_INLINE list_iterator_t    clist_erase_range(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end) { return i_clist_erase_range(_this, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE void               clist_pop_back(list_t* _this)                                                                  { i_dlist_pop_back(_this); }
+HEADER_STATIC_INLINE void               clist_pop_front(list_t* _this)                                                                 { i_dlist_pop_front(_this); }
+HEADER_STATIC_INLINE list_size_t        clist_remove(list_t* _this, list_data_t data)                                                  { return i_dlist_remove(_this, data); }
+HEADER_STATIC_INLINE list_size_t        clist_remove_if(list_t* _this, remove_if_condition cond)                                       { return i_dlist_remove_if(_this, cond); }
+HEADER_STATIC_INLINE list_size_t        clist_unique(list_t* _this)                                                                    { return i_dlist_unique(_this); }
+HEADER_STATIC_INLINE void               clist_reverse(list_t* _this)                                                                   { i_dlist_reverse(_this); }
+HEADER_STATIC_INLINE void               clist_merge(list_t* _this, list_t* other, list_cmp_t cmp)                                      { i_dlist_merge(_this, other, cmp); }
+HEADER_STATIC_INLINE void               clist_splice(list_t* _this, list_iterator_t iterator, list_t* other)                           { i_dlist_splice(_this, iterator, other); }
+HEADER_STATIC_INLINE void               clist_splice_range(list_t* _this, list_iterator_t iterator, list_t* other, list_iterator_t iterator_begin, list_iterator_t iterator_end) { i_dlist_splice_range(_this, iterator, other, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE bool               clist_resize(list_t* _this, list_size_t n, list_data_t default_data)                           { return i_dlist_resize(_this, n, default_data); }
+HEADER_STATIC_INLINE void               clist_swap(list_t* _this, list_t* other)                                                       { i_dlist_swap(_this, other); }
+HEADER_STATIC_INLINE list_size_t        clist_assign(list_t* _this, list_size_t n, list_data_t data)                                   { return i_dlist_assign(_this, n, data); }
+HEADER_STATIC_INLINE list_size_t        clist_clear(list_t* _this)                                                                     { return i_dlist_clear(_this); }
 
 /* Method 2 */
 typedef struct class_list {
@@ -104,7 +104,9 @@ typedef struct class_list {
     list_iterator_t (*it)(const list_t* _this, list_index_t index);                                                    /* return iterator by n(index) */
     list_value_t (*__at)(const list_t* _this, list_index_t index);                                                     /* STL: ds[index], but without checking parameters */
     list_value_t (*at)(const list_t* _this, list_index_t index);                                                       /* STL: ds->at(index) */
+    list_value_t (*__back)(const list_t* _this);
     list_value_t (*back)(const list_t* _this);
+    list_value_t (*__front)(const list_t* _this);
     list_value_t (*front)(const list_t* _this);
     list_iterator_t (*find)(const list_t* _this, list_data_t data);
     bool (*push_back)(list_t* _this, list_data_t data);
@@ -136,8 +138,8 @@ const class_list_t* class_list_ins(void);
 #define clist                        g_class_list()
 #define g_class_list_ops_string()    g_class_sequence_container_ops_string()
 #define g_class_list_ops_sso()       g_class_sequence_container_ops_sso()
-#define LIST_NEW_COMPLATE(_type_id, _type)            __list_new(NULL,   (_type_id), sizeof(_type), __alignof__(_type))
-#define LIST_NEW_OPS_COMPLATE(_ops, _type_id, _type)  __list_new((_ops), (_type_id), sizeof(_type), __alignof__(_type))
+#define LIST_NEW_COMPLATE(_type_id, _type)            __list_new(NULL,   (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
+#define LIST_NEW_OPS_COMPLATE(_ops, _type_id, _type)  __list_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
 #define LIST_NEW_T(_type)            LIST_NEW_OPS_COMPLATE((NULL), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
 #define LIST_NEW_OPS_T(_ops, _type)  LIST_NEW_OPS_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
 #define LIST_NEW()                   LIST_NEW_OPS_T(NULL,   list_data_t)
