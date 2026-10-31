@@ -4,7 +4,7 @@ DLIB_NAME := libj_ds.so
 SLIB_NAME := libj_ds.a
 
 
-WITH_ALIGNMEM=y
+WITH_ALIGNMEM=n
 WITH_32BIT=n
 
 WITH_LIST=n
@@ -221,6 +221,9 @@ DEMO_BINS += demo/demo_pqueue_bin
 endif
 ifeq ($(WITH_QUEUE), y)
 DEMO_BINS += demo/demo_queue_bin
+endif
+ifeq ($(WITH_STACK), y)
+DEMO_BINS += demo/demo_stack_bin
 endif
 ifeq ($(WITH_VECTOR), y)
 # DEMO_BINS += demo/demo_vector_bin
