@@ -219,6 +219,9 @@ ifeq ($(WITH_DEMO), y)
 ifeq ($(WITH_PRIORITY_QUEUE), y)
 DEMO_BINS += demo/demo_pqueue_bin
 endif
+ifeq ($(WITH_QUEUE), y)
+DEMO_BINS += demo/demo_queue_bin
+endif
 ifeq ($(WITH_VECTOR), y)
 # DEMO_BINS += demo/demo_vector_bin
 endif

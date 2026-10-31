@@ -70,6 +70,17 @@ bool __demo_struct_gt(ds_data_t left, ds_data_t right)
 }
 
 HEADER_STATIC_INLINE
+bool __demo_struct_eq(ds_data_t left, ds_data_t right)
+{
+    const demo_struct_t* l = (const demo_struct_t*)left;
+    const demo_struct_t* r = (const demo_struct_t*)right;
+    const int nl = l->id + *l->p + l->sub_struct->a;
+    const int nr = r->id + *r->p + r->sub_struct->a;
+
+    return nl == nr && __ds_ops_eq_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+}
+
+HEADER_STATIC_INLINE
 bool demo_struct_node_copy(ds_data_t in, ds_data_t* out)
 {
     const demo_struct_t* src = (const demo_struct_t*)in;
@@ -196,6 +207,15 @@ bool __demo_align_struct_gt(ds_data_t left, ds_data_t right)
     if (l->c != r->c)
         return l->c > r->c;
     return l->d > r->d;
+}
+
+HEADER_STATIC_INLINE
+bool __demo_align_struct_eq(ds_data_t left, ds_data_t right)
+{
+    const demo_align_struct_t* l = (const demo_align_struct_t*)left;
+    const demo_align_struct_t* r = (const demo_align_struct_t*)right;
+
+    return l->a == r->a && l->b == r->b && l->c == r->c && l->d == r->d;
 }
 
 HEADER_STATIC_INLINE

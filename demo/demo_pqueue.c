@@ -81,10 +81,10 @@ void demo_values(void)
         cds->push(demo, i);
         cds->push(other, i);
     }
-    // after for [ 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7, -8 ]
+    // after for [ 8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6 ]
 
-    ret = cds->size(demo);   // size = 8
-    ret = cds->size(other);  // size = 8
+    ret = cds->size(demo);   // size = 15
+    ret = cds->size(other);  // size = 15
 
     while (!cds->__empty(demo)) {
         pr_test("%d", *cds->top(demo).s32);
@@ -92,11 +92,11 @@ void demo_values(void)
     }
     pr_test("");
 
-    pr_test("Size before swap, demo [ %zd ], other [ %zd ]", cds->size(demo), cds->size(other));  // demo size = 0, other size = 8
+    pr_test("Size before swap, demo [ %zd ], other [ %zd ]", cds->size(demo), cds->size(other));  // demo size = 0, other size = 15
     cds->swap(demo, other);
-    pr_test("Size after  swap, demo [ %zd ], other [ %zd ]", cds->size(demo), cds->size(other));  // demo size = 8, other size = 0
+    pr_test("Size after  swap, demo [ %zd ], other [ %zd ]", cds->size(demo), cds->size(other));  // demo size = 15, other size = 0
 
-    ret = cds->clear(demo);  // [ ], return 8(8 elements has been removed)
+    ret = cds->clear(demo);  // [ ], return 15(15 elements has been removed)
     pr_test("Clear [ %zd ] elements from demo", ret);
     ret = cds->clear(other); // [ ], return 0(0 elements has been removed)
     pr_test("Clear [ %zd ] elements from other", ret);
