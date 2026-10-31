@@ -20,9 +20,9 @@
 #ifndef __J_I_VECTOR_H
 #define __J_I_VECTOR_H
 
-#include <stddef.h>
+#include <stddef.h> /* ptrdiff_t */
 #include <_compiler.h>
-#include <sort/sort_intro.h>   /* __i_vector_sort_define 用到 __i_sort_define */
+#include <sort/sort_intro.h>
 
 #ifndef is_null
 #define is_null(X) (!(X))
@@ -41,39 +41,34 @@ typedef struct i_vector {
     bool           sso;
 } i_vector_t;
 
-/* checked */
 HEADER_STATIC_INLINE
 uint8_t* ___i_vector_ptr_add(const uint8_t* p, ptrdiff_t n, vector_step_t step)
 {
     return (uint8_t*)p + (ptrdiff_t)step * n;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 uint8_t* ___i_vector_ptr_sub(const uint8_t* p, ptrdiff_t n, vector_step_t step)
 {
     return ___i_vector_ptr_add(p, -n, step);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 ptrdiff_t ___i_vector_ptr_diff(const uint8_t* p1, const uint8_t* p2, vector_step_t step)
 {
     return (ptrdiff_t)((p1 - p2) / (ptrdiff_t)step);
 }
 
-#define __i_vector_ptr_add(_p, _n, _step)    ___i_vector_ptr_add((_p), (ptrdiff_t)(_n), (_step))
-#define __i_vector_ptr_sub(_p, _n, _step)    ___i_vector_ptr_sub((_p), (ptrdiff_t)(_n), (_step))
-#define __i_vector_ptr_diff(_p1, _p2, _step) ___i_vector_ptr_diff((_p1), (_p2), (_step))
+#define __i_vector_ptr_add(_p, _n, _step)     ___i_vector_ptr_add((_p), (ptrdiff_t)(_n), (_step))
+#define __i_vector_ptr_sub(_p, _n, _step)     ___i_vector_ptr_sub((_p), (ptrdiff_t)(_n), (_step))
+#define __i_vector_ptr_diff(_p1, _p2, _step)  ___i_vector_ptr_diff((_p1), (_p2), (_step))
 
-/* checked */
 HEADER_STATIC_INLINE
 bool i_vector_is_null_iterator(vector_iterator_t it)
 {
     return is_null(it.cur);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_null_iterator(void)
 {
@@ -82,7 +77,6 @@ vector_iterator_t i_vector_null_iterator(void)
     return it;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_null_r_iterator(void)
 {
@@ -91,7 +85,6 @@ vector_r_iterator_t i_vector_null_r_iterator(void)
     return rit;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_make_iterator(vector_step_t step, uint8_t* cur)
 {
@@ -101,7 +94,6 @@ vector_iterator_t __i_vector_make_iterator(vector_step_t step, uint8_t* cur)
     return it;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_make_r_iterator(vector_step_t step, uint8_t* cur)
 {
@@ -115,49 +107,42 @@ vector_r_iterator_t __i_vector_make_r_iterator(vector_step_t step, uint8_t* cur)
 
 
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_size_t __i_vector_size(const i_vector_t* _this)
 {
     return (vector_size_t)__i_vector_ptr_diff(_this->end, _this->begin, _this->step);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_size_t i_vector_size(const i_vector_t* _this)
 {
     return is_null(_this) ? -1 : __i_vector_size(_this);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 bool __i_vector_empty(const i_vector_t* _this)
 {
     return _this->end == _this->begin;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_size_t __i_vector_capacity(const i_vector_t* _this)
 {
     return (vector_size_t)__i_vector_ptr_diff(_this->end_of_storage, _this->begin, _this->step);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_size_t i_vector_capacity(const i_vector_t* _this)
 {
     return is_null(_this) ? -1 : __i_vector_capacity(_this);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_end(const i_vector_t* _this)
 {
     return __i_vector_make_iterator(_this->step, _this->end);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_end(const i_vector_t* _this)
 {
@@ -169,14 +154,12 @@ vector_iterator_t i_vector_end(const i_vector_t* _this)
     return __i_vector_end(_this);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_begin(const i_vector_t* _this)
 {
     return __i_vector_make_iterator(_this->step, _this->begin);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_begin(const i_vector_t* _this)
 {
@@ -188,7 +171,6 @@ vector_iterator_t i_vector_begin(const i_vector_t* _this)
     return __i_vector_begin(_this);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_next(vector_iterator_t it)
 {
@@ -202,14 +184,12 @@ vector_iterator_t __i_vector_next(vector_iterator_t it)
     return it;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_next(vector_iterator_t it)
 {
     return __i_vector_next(it);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_prev(vector_iterator_t it)
 {
@@ -223,21 +203,18 @@ vector_iterator_t __i_vector_prev(vector_iterator_t it)
     return it;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_prev(vector_iterator_t it)
 {
     return __i_vector_prev(it);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_rend(const i_vector_t* _this)
 {
     return __i_vector_make_r_iterator(_this->step, _this->rend);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_rend(const i_vector_t* _this)
 {
@@ -249,7 +226,6 @@ vector_r_iterator_t i_vector_rend(const i_vector_t* _this)
     return __i_vector_rend(_this);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_rbegin(const i_vector_t* _this)
 {
@@ -257,7 +233,6 @@ vector_r_iterator_t __i_vector_rbegin(const i_vector_t* _this)
                 __i_vector_ptr_sub(_this->end, 1, _this->step));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_rbegin(const i_vector_t* _this)
 {
@@ -269,7 +244,6 @@ vector_r_iterator_t i_vector_rbegin(const i_vector_t* _this)
     return __i_vector_rbegin(_this);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_rnext(vector_r_iterator_t rit)
 {
@@ -283,14 +257,12 @@ vector_r_iterator_t __i_vector_rnext(vector_r_iterator_t rit)
     return rit;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_rnext(vector_r_iterator_t rit)
 {
     return __i_vector_rnext(rit);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t __i_vector_rprev(vector_r_iterator_t rit)
 {
@@ -304,7 +276,6 @@ vector_r_iterator_t __i_vector_rprev(vector_r_iterator_t rit)
     return rit;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_r_iterator_t i_vector_rprev(vector_r_iterator_t rit)
 {
@@ -315,14 +286,12 @@ vector_r_iterator_t i_vector_rprev(vector_r_iterator_t rit)
 
 
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t __i_vector_iterator(const i_vector_t* _this, vector_index_t index)
 {
     return __i_vector_make_iterator(_this->step, __i_vector_ptr_add(_this->begin, index, _this->step));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_iterator(const i_vector_t* _this, vector_index_t index)
 {
@@ -331,14 +300,12 @@ vector_iterator_t i_vector_iterator(const i_vector_t* _this, vector_index_t inde
     return i_vector_null_iterator();
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_value_t __i_vector_at(const i_vector_t* _this, vector_index_t index)
 {
     return (vector_value_t){ .u8 = __i_vector_iterator(_this, index).cur, };
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_value_t i_vector_at(const i_vector_t* _this, vector_index_t index)
 {
@@ -347,7 +314,6 @@ vector_value_t i_vector_at(const i_vector_t* _this, vector_index_t index)
     return (vector_value_t){ .u8 = NULL, };
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_value_t __i_vector_back(const i_vector_t* _this)
 {
@@ -368,7 +334,6 @@ vector_value_t __i_vector_front(const i_vector_t* _this)
     return (vector_value_t){ .u8 = _this->begin, };
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_value_t i_vector_front(const i_vector_t* _this)
 {
@@ -416,9 +381,8 @@ vector_value_t i_vector_front(const i_vector_t* _this)
 
 
 
-/* checked */
 HEADER_STATIC_INLINE
-bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t data)
+bool __i_vector_slot_write(const i_vector_t* _this, void* slot, vector_data_t data)
 {
     if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
         return _this->ops->copy_data(data, (vector_data_t*)slot);
@@ -436,9 +400,8 @@ bool __i_vector_slot_write(const i_vector_t* _this, uint8_t* slot, vector_data_t
     return true;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-vector_data_t __i_vector_slot_read(const i_vector_t* _this, const uint8_t* slot)
+vector_data_t __i_vector_slot_read(const i_vector_t* _this, const void* slot)
 {
     const vector_dtype_t dtype = _this->dtype;
 
@@ -471,7 +434,6 @@ vector_data_t __i_vector_slot_read(const i_vector_t* _this, const uint8_t* slot)
     }
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 bool __i_vector_slot_equal(vector_step_t step, vector_data_t data, const void* slot)
 {
@@ -486,9 +448,8 @@ bool __i_vector_slot_equal(vector_step_t step, vector_data_t data, const void* s
     }
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-void __i_vector_slot_move(const i_vector_t* _this, uint8_t* dest, const uint8_t* src)
+void __i_vector_slot_move(const i_vector_t* _this, void* dest, const void* src)
 {
     if (dest != src) {
         if (is_null(_this->ops) || is_null(_this->ops->__move)) {
@@ -516,15 +477,28 @@ void __i_vector_slot_move(const i_vector_t* _this, uint8_t* dest, const uint8_t*
     }
 }
 
-/* checked */
+vector_size_t __i_vector_max_size(const i_vector_t* _this);
 vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data);
+vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data);
+vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data);
+vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);
+vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos);
+vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint8_t* end);
+bool __i_vector_reserve(i_vector_t* _this, vector_size_t n);
+void __i_vector_shrink_to_fit(i_vector_t* _this);
+
 HEADER_STATIC_INLINE
-bool i_vector_push_back(i_vector_t* _this, vector_data_t data)
+vector_size_t i_vector_max_size(const i_vector_t* _this)
+{
+    if (!is_null(_this))
+        return __i_vector_max_size(_this);
+    return -1;
+}
+
+HEADER_STATIC_INLINE
+bool __i_vector_push_back(i_vector_t* _this, vector_data_t data)
 {
     uint8_t* slot;
-
-    if (is_null(_this))
-        return false;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return false;
@@ -540,14 +514,20 @@ bool i_vector_push_back(i_vector_t* _this, vector_data_t data)
     return !i_vector_is_null_iterator(__i_vector_insert_run(_this, slot, 1, data));
 }
 
-/* checked */
 HEADER_STATIC_INLINE
-void i_vector_pop_back(i_vector_t* _this)
+bool i_vector_push_back(i_vector_t* _this, vector_data_t data)
+{
+    if (!is_null(_this))
+        return __i_vector_push_back(_this, data);
+    return false;
+}
+
+HEADER_STATIC_INLINE
+void __i_vector_pop_back(i_vector_t* _this)
 {
     uint8_t* slot;
 
-    if (is_null(_this) || __i_vector_empty(_this))
-        return ;
+    JDSC_ASSERT(!__i_vector_empty(_this));
 
     _this->end = slot = _this->end - _this->step;
 
@@ -555,8 +535,13 @@ void i_vector_pop_back(i_vector_t* _this)
         _this->ops->free_data((vector_data_t*)slot);
 }
 
-/* checked */
-vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data);
+HEADER_STATIC_INLINE
+void i_vector_pop_back(i_vector_t* _this)
+{
+    if (!is_null(_this))
+        __i_vector_pop_back(_this);
+}
+
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
 {
@@ -564,17 +549,75 @@ vector_iterator_t i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vect
         return i_vector_null_iterator();
 
     if (_this->end == pos.cur) {
-        if (i_vector_push_back(_this, data))
-            return __i_vector_make_iterator(_this->step, 
-                                    __i_vector_ptr_sub(_this->end, 1, _this->step));
+        if (__i_vector_push_back(_this, data))
+            return __i_vector_make_iterator(_this->step, __i_vector_ptr_sub(_this->end, 1, _this->step));
         return i_vector_null_iterator();
     }
     return __i_vector_insert(_this, pos, data);
 }
-vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data);
 
-/* checked */
-vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos);
+HEADER_STATIC_INLINE
+bool __i_vector_replace(i_vector_t* _this, uint8_t* slot, vector_data_t data)
+{
+    if (_this->sso) {
+        if (data == (vector_data_t)((const ds_sso_t*)slot)->p)
+            return true;
+    } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && data == (vector_data_t)slot) {
+        return true;
+    } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data) &&
+               !is_null(_this->ops->free_data) &&
+               data == __i_vector_slot_read(_this, slot)) {
+        return true;
+    }
+
+    __i_vector_slot_move(_this, _this->rend, slot);
+    if (_this->sso)
+        __ds_ops_fix_sso((vector_data_t)_this->rend);
+
+    if (!__i_vector_slot_write(_this, slot, data)) {
+        __i_vector_slot_move(_this, slot, _this->rend);
+        if (_this->sso)
+            __ds_ops_fix_sso((vector_data_t)slot);
+        return false;
+    }
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+        _this->ops->free_data((vector_data_t*)_this->rend);
+
+    return true;
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_replace_it(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
+{
+    if (is_null(_this) || i_vector_is_null_iterator(pos)
+        || pos.cur < _this->begin || pos.cur >= _this->end)
+        return i_vector_null_iterator();
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return i_vector_null_iterator();
+
+    if (__i_vector_replace(_this, pos.cur, data))
+        return pos;
+    return i_vector_null_iterator();
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data_t data)
+{
+    uint8_t* slot;
+
+    if (!is_null(_this) && index < (vector_index_t)__i_vector_size(_this)) {
+        if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+            return i_vector_null_iterator();
+
+        slot = __i_vector_ptr_add(_this->begin, index, _this->step);
+        if (__i_vector_replace(_this, slot, data))
+            return __i_vector_make_iterator(_this->step, slot);
+    }
+    return i_vector_null_iterator();
+}
+
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_erase(i_vector_t* _this, vector_iterator_t pos)
 {
@@ -583,14 +626,12 @@ vector_iterator_t i_vector_erase(i_vector_t* _this, vector_iterator_t pos)
         return i_vector_null_iterator();
 
     if (__i_vector_ptr_sub(_this->end, 1, _this->step) == pos.cur) {
-        i_vector_pop_back(_this);
+        __i_vector_pop_back(_this);
         return __i_vector_end(_this);
     }
     return __i_vector_erase(_this, pos.cur);
 }
 
-/* checked */
-vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint8_t* end);
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_erase_range(i_vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
 {
@@ -602,7 +643,7 @@ vector_iterator_t i_vector_erase_range(i_vector_t* _this, vector_iterator_t iter
     if (_this->end == iterator_end.cur) {
         if (iterator_begin.cur <= iterator_end.cur && iterator_begin.cur >= _this->begin) {
             while (iterator_begin.cur != _this->end)
-                i_vector_pop_back(_this);
+                __i_vector_pop_back(_this);
             return __i_vector_end(_this);
         } else {
             return i_vector_null_iterator();
@@ -611,7 +652,6 @@ vector_iterator_t i_vector_erase_range(i_vector_t* _this, vector_iterator_t iter
     return __i_vector_erase_range(_this, iterator_begin.cur, iterator_end.cur);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
 {
@@ -624,30 +664,31 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
         return i_vector_null_iterator();
 
     if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
+        JDSC_ASSERT(!"The struct/union container has no ops->__eq!");
         return i_vector_null_iterator();
     }
 
+    const vector_step_t step = _this->step;
+
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
-        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (__i_vector_slot_equal(_this->step, data, p))
-                return __i_vector_make_iterator(_this->step, p);
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
+            if (__i_vector_slot_equal(step, data, p))
+                return __i_vector_make_iterator(step, p);
         }
     } else if (_this->sso) {
-        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
             if (__ds_ops_eq_sso(data, (vector_data_t)p))
-                return __i_vector_make_iterator(_this->step, p);
+                return __i_vector_make_iterator(step, p);
         }
     } else {
-        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
             if (_this->ops->__eq(data, __i_vector_slot_read(_this, p)))
-                return __i_vector_make_iterator(_this->step, p);
+                return __i_vector_make_iterator(step, p);
         }
     }
-    return __i_vector_make_iterator(_this->step, _this->end);
+    return __i_vector_make_iterator(step, _this->end);
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
 {
@@ -661,22 +702,24 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
         return -1;
 
     if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
+        JDSC_ASSERT(!"The struct/union container has no ops->__eq!");
         return -1;
     }
 
+    const vector_step_t step = _this->step;
+
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
-        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
-            if (__i_vector_slot_equal(_this->step, data, p))
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
+            if (__i_vector_slot_equal(step, data, p))
                 ret++;
         }
     } else if (_this->sso) {
-        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
             if (__ds_ops_eq_sso(data, (vector_data_t)p))
                 ret++;
         }
     } else {
-        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step)) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
             if (_this->ops->__eq(data, __i_vector_slot_read(_this, p)))
                 ret++;
         }
@@ -684,21 +727,18 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
     return ret;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
 {
     vector_size_t ret = 0;
-    uint8_t* l;
-    uint8_t* r;
-    uint8_t* end;
+    uint8_t* l, * r, * end;
 
     if (is_null(_this)
         || (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
     if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
+        JDSC_ASSERT(!"The struct/union container has no ops->__eq!");
         return -1;
     }
 
@@ -707,18 +747,28 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
     end = _this->end;
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
-        for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
-            if (!__i_vector_slot_equal(step, data, r)) {
-                __i_vector_slot_move(_this, l, r);
-                l = __i_vector_ptr_add(l, 1, step);
-            } else {
-                if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+        if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
+            for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+                if (!__i_vector_slot_equal(step, data, r)) {
+                    __i_vector_slot_move(_this, l, r);
+                    l = __i_vector_ptr_add(l, 1, step);
+                } else {
+                    ret++;
+                }
+            }
+        } else {
+            for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+                if (!__i_vector_slot_equal(step, data, r)) {
+                    __i_vector_slot_move(_this, l, r);
+                    l = __i_vector_ptr_add(l, 1, step);
+                } else {
                     _this->ops->free_data((vector_data_t*)r);
-                ret++;
+                    ret++;
+                }
             }
         }
     } else if (_this->sso) {
-        for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
             if (!__ds_ops_eq_sso(data, (vector_data_t)r)) {
                 if (l != r) {
                     memmove(l, r, sizeof(ds_sso_t));
@@ -726,13 +776,13 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
                 }
                 l = __i_vector_ptr_add(l, 1, step);
             } else {
-                if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+                /* if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) */
                     _this->ops->free_data((vector_data_t*)r);
                 ret++;
             }
         }
     } else {
-        for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
             if (!_this->ops->__eq(data, __i_vector_slot_read(_this, r))) {
                 __i_vector_slot_move(_this, l, r);
                 l = __i_vector_ptr_add(l, 1, step);
@@ -748,14 +798,11 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
     return ret;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
 {
     vector_size_t ret = 0;
-    uint8_t* l;
-    uint8_t* r;
-    uint8_t* end;
+    uint8_t* l, * r, * end;
 
     if (is_null(_this) || is_null(cond))
         return -1;
@@ -765,19 +812,19 @@ vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
     end = _this->end;
 
     if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
-        for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
             if (!cond(__i_vector_slot_read(_this, r))) {
                 __i_vector_slot_move(_this, l, r);
-                l = __i_vector_ptr_add(l, 1, _this->step);
+                l = __i_vector_ptr_add(l, 1, step);
             } else {
                 ret++;
             }
         }
     } else {
-        for ( ; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
             if (!cond(__i_vector_slot_read(_this, r))) {
                 __i_vector_slot_move(_this, l, r);
-                l = __i_vector_ptr_add(l, 1, _this->step);
+                l = __i_vector_ptr_add(l, 1, step);
             } else {
                 _this->ops->free_data((vector_data_t*)r);
                 ret++;
@@ -789,7 +836,6 @@ vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
     return ret;
 }
 
-/* checked */
 HEADER_STATIC_INLINE
 bool i_vector_resize(i_vector_t* _this, vector_size_t n, vector_data_t default_data)
 {
@@ -807,8 +853,6 @@ bool i_vector_resize(i_vector_t* _this, vector_size_t n, vector_data_t default_d
     return !i_vector_is_null_iterator(i_vector_insert_n(_this, __i_vector_end(_this), n - size, default_data));
 }
 
-/* checked */
-bool __i_vector_reserve(i_vector_t* _this, vector_size_t n);
 HEADER_STATIC_INLINE
 bool i_vector_reserve(i_vector_t* _this, vector_size_t n)
 {
@@ -817,8 +861,6 @@ bool i_vector_reserve(i_vector_t* _this, vector_size_t n)
     return false;
 }
 
-/* checked */
-void __i_vector_shrink_to_fit(i_vector_t* _this);
 HEADER_STATIC_INLINE
 void i_vector_shrink_to_fit(i_vector_t* _this)
 {
@@ -826,7 +868,25 @@ void i_vector_shrink_to_fit(i_vector_t* _this)
         return __i_vector_shrink_to_fit(_this);
 }
 
-/* checked */
+HEADER_STATIC_INLINE
+void i_vector_swap(i_vector_t* _this, i_vector_t* other)
+{
+    uint8_t* t;
+
+    if (is_null(_this) || is_null(other) || _this == other)
+        return ;
+
+    JDSC_ASSERT(   _this->ops   == other->ops /* Include sso */
+                && __sequence_container_dtype_swap_compatible(_this->dtype, other->dtype)
+                && _this->step  == other->step
+                && _this->align == other->align);
+
+    t = _this->rend;           _this->rend           = other->rend;           other->rend           = t;
+    t = _this->begin;          _this->begin          = other->begin;          other->begin          = t;
+    t = _this->end;            _this->end            = other->end;            other->end            = t;
+    t = _this->end_of_storage; _this->end_of_storage = other->end_of_storage; other->end_of_storage = t;
+}
+
 HEADER_STATIC_INLINE
 vector_size_t i_vector_clear(i_vector_t* _this)
 {
@@ -840,12 +900,61 @@ vector_size_t i_vector_clear(i_vector_t* _this)
         return ret;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
-        for (uint8_t* p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, _this->step))
+        const vector_step_t step = _this->step;
+
+        for (uint8_t* p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step))
             _this->ops->free_data((vector_data_t*)p);
     }
 
     _this->end = _this->begin;
     return ret;
+}
+
+HEADER_STATIC_INLINE
+vector_size_t i_vector_assign(i_vector_t* _this, vector_size_t n, vector_data_t data)
+{
+    vector_iterator_t it;
+
+    if (is_null(_this) || n < 0)
+        return -1;
+
+    if (0 == n) {
+        i_vector_clear(_this);
+        return 0;
+    }
+
+    it = i_vector_insert_n(_this, i_vector_end(_this), n, data);
+    if (i_vector_is_null_iterator(it))
+        return -1;
+
+    i_vector_erase_range(_this, i_vector_begin(_this), it);
+    return n;
+}
+
+HEADER_STATIC_INLINE
+vector_size_t i_vector_assign_range(i_vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
+{
+    vector_iterator_t it;
+    vector_size_t n;
+
+    if (is_null(_this) || i_vector_is_null_iterator(iterator_begin) || i_vector_is_null_iterator(iterator_end))
+        return -1;
+
+    n = (vector_size_t)__i_vector_ptr_diff(iterator_end.cur, iterator_begin.cur, _this->step);
+    if (n < 0)
+        return -1;
+
+    if (0 == n) {
+        i_vector_clear(_this);
+        return 0;
+    }
+
+    it = i_vector_insert_range(_this, i_vector_end(_this), iterator_begin, iterator_end);
+    if (i_vector_is_null_iterator(it))
+        return -1;
+
+    i_vector_erase_range(_this, i_vector_begin(_this), it);
+    return n;
 }
 
 #endif /* __J_I_VECTOR_H */

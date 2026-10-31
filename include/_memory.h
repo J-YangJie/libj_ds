@@ -96,6 +96,7 @@ Define JDSC_ALIGNMEM=0 to disable, or add a platform adapter."
 JDSC_MEMFUNC_PREFIX
 void _p_aligned_free(void** ptr, size_t alignment)
 {
+    /* Retained the unaligned memory interface for performance. */
     if (alignment <= JDSC_ALIGN_DEFAULT) {
         _p_free(ptr);
         return ;
@@ -120,6 +121,7 @@ void _p_aligned_free(void** ptr, size_t alignment)
 JDSC_MEMFUNC_PREFIX
 void* _p_aligned_malloc(size_t alignment, size_t size)
 {
+    /* Retained the unaligned memory interface for performance. */
     if (alignment <= JDSC_ALIGN_DEFAULT)
         return _p_malloc(size);
 
@@ -156,6 +158,7 @@ JDSC_MEMFUNC_PREFIX
 void* _p_aligned_realloc(void* ptr, size_t alignment, size_t size, size_t old_size)
 {
     if (0 != size) {
+        /* Retained the unaligned memory interface for performance. */
         if (alignment <= JDSC_ALIGN_DEFAULT)
             return _p_realloc(ptr, size);
 

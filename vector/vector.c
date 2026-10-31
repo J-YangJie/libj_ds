@@ -20,18 +20,17 @@
 
 #include <vector/vector.h>
 
+#include <string.h>
 #include <_log.h>
 #include <_memory.h>
 #include <_compiler_inter.h>
 #include <linux/_compiler.h>
-#include <string.h>
 
 #define TAG "[vector]"
 
 #define _I_VECTOR_CAPACITY_INIT  4
 
-/* checked */
-static JDSC_INLINE_FORCE_POLICY
+static JDSC_INLINE
 bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data)
 {
     const vector_step_t step = _this->step;
@@ -60,7 +59,6 @@ bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_
             default: return false;
             }
 
-            suc++;
             pos = __i_vector_ptr_add(pos, 1, step);
         }
 
@@ -69,7 +67,7 @@ bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_
 
 err:
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
-        for (vector_size_t i = 0; i < suc; ++i) {
+        while (suc-- > 0) {
             pos = __i_vector_ptr_sub(pos, 1, step);
             _this->ops->free_data((vector_data_t*)pos);
         }
@@ -77,7 +75,6 @@ err:
     return false;
 }
 
-/* checked */
 static JDSC_INLINE
 void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_t* src, vector_size_t n)
 {
@@ -86,23 +83,18 @@ void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_
     if (unlikely(n <= 0 || dest == src))
         return ;
 
-    if (_this->sso) {
-        uint8_t* p   = dest;
-        uint8_t* end = __i_vector_ptr_add(dest, n, step);
-
-        memmove(dest, src, (size_t)(n * step));
-        for (; p != end; p += step)
-            __ds_ops_fix_sso((vector_data_t)p);
-        return ;
-    }
-
     if (is_null(_this->ops) || is_null(_this->ops->__move)) {
         memmove(dest, src, (size_t)(n * step));
-        return ;
-    }
 
-    {
-        void (*move)(vector_data_t, vector_data_t) = _this->ops->__move;
+        if (_this->sso) {
+            uint8_t* p   = dest;
+            uint8_t* end = __i_vector_ptr_add(p, n, step);
+
+            for (; end != p; p += step)
+                __ds_ops_fix_sso((vector_data_t)p);
+        }
+    } else {
+        void (*__move)(vector_data_t, vector_data_t) = _this->ops->__move;
         const size_t d = (size_t)dest;
         const size_t s = (size_t)src;
         uint8_t* _src  = (uint8_t*)src;
@@ -112,22 +104,20 @@ void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_
             dest = __i_vector_ptr_add(dest, n - 1, step);
             _src = __i_vector_ptr_add(_src, n - 1, step);
             for (i = 0; i < n; ++i, dest -= step, _src -= step)
-                move((vector_data_t)dest, (vector_data_t)_src);
+                __move((vector_data_t)dest, (vector_data_t)_src);
         } else {
             for (i = 0; i < n; ++i, dest += step, _src += step)
-                move((vector_data_t)dest, (vector_data_t)_src);
+                __move((vector_data_t)dest, (vector_data_t)_src);
         }
     }
 }
 
-static
-uint8_t* __vector_realloc_buf(i_vector_t* _this, vector_size_t ncap)
+static JDSC_INLINE
+uint8_t* __i_vector_realloc_buf(i_vector_t* _this, vector_size_t ncap)
 {
     const vector_step_t step = _this->step;
     const vector_size_t used = __i_vector_size(_this);
-    uint8_t* oh = _this->rend;
-    uint8_t* nh;
-    uint8_t* nb;
+    uint8_t* nh, * oh = _this->rend;
     vector_size_t i;
 
     JDSC_ASSERT(ncap >= used);
@@ -138,10 +128,12 @@ uint8_t* __vector_realloc_buf(i_vector_t* _this, vector_size_t ncap)
         if (is_null(nh))
             return NULL;
 
-        if (nh != oh && _this->sso) {
-            nb = __i_vector_ptr_add(nh, 1, step);
-            for (i = 0; i < used; ++i)
-                __ds_ops_fix_sso((vector_data_t)__i_vector_ptr_add(nb, i, step));
+        if (oh != nh && _this->sso) {
+            uint8_t* p   = __i_vector_ptr_add(nh, 1, step);
+            uint8_t* end = __i_vector_ptr_add(p, used, step);
+
+            for (; end != p; p += step)
+                __ds_ops_fix_sso((vector_data_t)p);
         }
         return nh;
     } else {
@@ -150,7 +142,7 @@ uint8_t* __vector_realloc_buf(i_vector_t* _this, vector_size_t ncap)
             return NULL;
 
         {
-            nb = __i_vector_ptr_add(nh, 1, step);
+            uint8_t* nb = __i_vector_ptr_add(nh, 1, step);
             for (i = 0; i < used; ++i)
                 _this->ops->__move( (vector_data_t)__i_vector_ptr_add(nb, i, step),
                                     (vector_data_t)__i_vector_ptr_add(_this->begin, i, step));
@@ -160,7 +152,26 @@ uint8_t* __vector_realloc_buf(i_vector_t* _this, vector_size_t ncap)
     }
 }
 
-/* checked */
+#include <limits.h>
+#include <stdint.h> /* SIZE_MAX */
+
+#ifndef SSIZE_MAX
+#define SSIZE_MAX ((ssize_t)(SIZE_MAX / 2))
+#endif
+
+static JDSC_INLINE_FORCE
+vector_size_t ___i_vector_max_size(vector_step_t step)
+{
+    return 0 == step ? -1 : (SSIZE_MAX / step) - 1;
+}
+
+JDSC_INLINE
+vector_size_t __i_vector_max_size(const i_vector_t* _this)
+{
+    return ___i_vector_max_size(_this->step);
+}
+
+JDSC_INLINE
 bool __i_vector_reserve(i_vector_t* _this, vector_size_t n)
 {
     const vector_step_t step = _this->step;
@@ -168,31 +179,26 @@ bool __i_vector_reserve(i_vector_t* _this, vector_size_t n)
     const vector_size_t ncap = n, ocap = __i_vector_capacity(_this);
     uint8_t* nh;
 
-    if (unlikely(ncap < 0))
+    if (unlikely(n < 0 || n > __i_vector_max_size(_this)))
         return false;
 
     if (ncap <= ocap)
         return true;
 
-    /* TODO: 确定这样设置界限？ */
-    if (unlikely((size_t)ncap >= (SIZE_MAX / step) - 1))
-        return false;
-
-    nh = __vector_realloc_buf(_this, ncap);
+    nh = __i_vector_realloc_buf(_this, ncap);
     if (is_null(nh))
         return false;
 
     pr_notice("Head [ %p -> %p ], capacity [ %zd -> %zd ] by [ reserve ]",
                 _this->rend, nh, ocap, ncap);
 
-    _this->rend = nh;
+    _this->rend  = nh;
     _this->begin = __i_vector_ptr_add(_this->rend, 1, step);
-    _this->end = __i_vector_ptr_add(_this->begin, size, step);
+    _this->end   = __i_vector_ptr_add(_this->begin, size, step);
     _this->end_of_storage = __i_vector_ptr_add(_this->begin, ncap, step);
     return true;
 }
 
-/* checked */
 void __i_vector_shrink_to_fit(i_vector_t* _this)
 {
     const vector_step_t step = _this->step;
@@ -200,41 +206,35 @@ void __i_vector_shrink_to_fit(i_vector_t* _this)
     const vector_size_t ncap = size, ocap = __i_vector_capacity(_this);
     uint8_t* nh;
 
-    if (ncap == ocap)
+    if (unlikely(ncap == ocap))
         return ;
 
-    nh = __vector_realloc_buf(_this, ncap);
+    nh = __i_vector_realloc_buf(_this, ncap);
     if (is_null(nh))
         return ;
 
     pr_notice("Head [ %p -> %p ], capacity [ %zd -> %zd ] by [ shrink_to_fit ]",
                 _this->rend, nh, ocap, ncap);
 
-    _this->rend = nh;
+    _this->rend  = nh;
     _this->begin = __i_vector_ptr_add(_this->rend, 1, step);
-    _this->end = __i_vector_ptr_add(_this->begin, size, step);
+    _this->end   = __i_vector_ptr_add(_this->begin, size, step);
     _this->end_of_storage = _this->end;
 }
 
-/* checked */
 static JDSC_INLINE_FORCE_POLICY
 vector_size_t __i_vector_check_len(const i_vector_t* _this, vector_size_t n)
 {
     const vector_size_t size = __i_vector_size(_this);
-    vector_size_t len;
+    const vector_size_t max_grow = __i_vector_max_size(_this) - size;
 
-    if (n < 1)
-        n = 1;
-
-    len = size + (size > n ? size : n);
-
-    if (unlikely(len < size)) /* overflow */
+    JDSC_ASSERT(max_grow >= n);
+    if (max_grow < n)
         return -1;
 
-    return len < _this->capacity_init ? _this->capacity_init : len;
+    return size + (max_grow > size ? size > n ? size : n : max_grow);
 }
 
-/* checked */
 /* Non independent logical function */
 JDSC_INLINE_POLICY
 vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data)
@@ -248,7 +248,7 @@ vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_
 
     off   = __i_vector_ptr_diff(pos, _this->begin, step);
     move  = (vector_size_t)__i_vector_ptr_diff(_this->end, pos, step);
-    avail = __i_vector_capacity(_this) - __i_vector_size(_this);
+    avail = (vector_size_t)__i_vector_ptr_diff(_this->end_of_storage, _this->end, step);
 
     if (n > avail) {
         if (!__i_vector_reserve(_this, __i_vector_check_len(_this, n)))
@@ -268,7 +268,6 @@ err_slot:
     return i_vector_null_iterator();
 }
 
-/* checked */
 vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
 {
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
@@ -276,7 +275,6 @@ vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, ve
     return __i_vector_insert_run(_this, pos.cur, 1, data);
 }
 
-/* checked */
 vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data)
 {
     if (unlikely(is_null(_this) || i_vector_is_null_iterator(pos) || n < 0))
@@ -290,11 +288,80 @@ vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, ve
     return __i_vector_insert_run(_this, pos.cur, n, data);
 }
 
-/* checked */
+vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
+{
+    const uint8_t* src = iterator_begin.cur;
+    ptrdiff_t off;
+    vector_size_t n, move, avail, i;
+    uint8_t* p;
+
+    if (unlikely(is_null(_this) || i_vector_is_null_iterator(pos) || i_vector_is_null_iterator(iterator_begin) || i_vector_is_null_iterator(iterator_end)))
+        return i_vector_null_iterator();
+
+    if (unlikely(pos.cur < _this->begin || pos.cur > _this->end))
+        return i_vector_null_iterator();
+
+    const vector_step_t step = _this->step;
+    n = (vector_size_t)__i_vector_ptr_diff(iterator_end.cur, iterator_begin.cur, step);
+    if (unlikely(n < 0))
+        return i_vector_null_iterator();
+
+    if (unlikely(0 == n))
+        return pos;
+
+    off   = __i_vector_ptr_diff(pos.cur, _this->begin, step);
+    move  = (vector_size_t)__i_vector_ptr_diff(_this->end, pos.cur, step);
+    avail = (vector_size_t)__i_vector_ptr_diff(_this->end_of_storage, _this->end, step);
+
+    if (n > avail) {
+        if (!__i_vector_reserve(_this, __i_vector_check_len(_this, n)))
+            return i_vector_null_iterator();
+        pos.cur = __i_vector_ptr_add(_this->begin, off, step);
+    }
+
+    p = pos.cur;
+    __i_vector_slot_move_n(_this, __i_vector_ptr_add(p, n, step), p, move);
+    _this->end = __i_vector_ptr_add(_this->end, n, step);
+
+    if (!_this->sso && (is_null(_this->ops) || is_null(_this->ops->copy_data))) {
+        memmove(p, src, (size_t)(n * step));
+    } else {
+        for (i = 0; i < n; ++i) {
+            vector_data_t v;
+
+            if (_this->sso)
+                v = (vector_data_t)((const ds_sso_t*)src)->p;
+            else
+                v = __i_vector_slot_read(_this, src);
+
+            if (!__i_vector_slot_write(_this, p, v))
+                goto err;
+
+            p = __i_vector_ptr_add(p, 1, step);
+            src = __i_vector_ptr_add(src, 1, step);
+        }
+    }
+
+    return __i_vector_make_iterator(step, pos.cur);
+
+err:
+    {
+        if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
+            while (i-- > 0)
+                _this->ops->free_data((vector_data_t*)__i_vector_ptr_add(pos.cur, i, step));
+        }
+
+        __i_vector_slot_move_n(_this, pos.cur, __i_vector_ptr_add(pos.cur, n, step), move);
+        _this->end = __i_vector_ptr_sub(_this->end, n, step);
+        return i_vector_null_iterator();
+    }
+}
+
+/* Non independent logical function */
 vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos)
 {
     const vector_step_t step = _this->step;
-    vector_size_t n = (vector_size_t)__i_vector_ptr_diff(_this->end, pos, step);
+    const vector_size_t n = (vector_size_t)__i_vector_ptr_diff(_this->end, pos, step);
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
         _this->ops->free_data((vector_data_t*)pos);
@@ -304,11 +371,10 @@ vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos)
     return __i_vector_make_iterator(step, pos);
 }
 
-/* checked */
 vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint8_t* end)
 {
     const vector_step_t step = _this->step;
-    vector_size_t n = __i_vector_ptr_diff(_this->end, end, step);
+    const vector_size_t n = (vector_size_t)__i_vector_ptr_diff(_this->end, end, step);
 
     if (unlikely(begin > end || begin < _this->begin || end > _this->end))
         return i_vector_null_iterator();
@@ -326,16 +392,15 @@ vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint
     return __i_vector_make_iterator(step, begin);
 }
 
-/* checked */
-static
+static JDSC_INLINE
 bool __vector_init(vector_t* vector)
 {
     vector_size_t alloc = vector->capacity_init > 0 ? vector->capacity_init + 1 : 1;
 
-    vector->rend  = (uint8_t*)p_aligned_malloc(vector->align, alloc * vector->step);
+    vector->rend = (uint8_t*)p_aligned_malloc(vector->align, alloc * vector->step);
     if (is_null(vector->rend)) {
-        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for vector buffer!",
-                        __func__, alloc * vector->step);
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu(%zd * %zu) bytes for vector buffer!",
+                        __func__, alloc * vector->step, alloc, vector->step);
         return false;
     }
 
@@ -345,23 +410,22 @@ bool __vector_init(vector_t* vector)
     return true;
 }
 
-/* checked */
-static
+static JDSC_INLINE
 void __vector_deinit(vector_t* vector)
 {
     i_vector_clear(vector);
     p_aligned_free(vector->rend, vector->align);
 }
 
-/* checked */
 vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, vector_step_t step, vector_align_t align, vector_size_t capacity_init)
 {
     vector_t* vector;
 
-    if (step <= 0 || capacity_init < 0) {
-        JDSC_ASSERT_NEW(0, "%s: Invalid step %zu or capacity_init %zd "
-                        "(step must be greater than zero and capacity_init must not be negative)!",
-                        __func__, step, capacity_init);
+    if (step <= 0 || align > step || (0 != align && (0 != (align & (align - 1)) || 0 != (step % align))) || capacity_init < 0 || capacity_init > ___i_vector_max_size(step)) {
+        JDSC_ASSERT_NEW(0, "%s: Invalid step %zu, align %zu or capacity_init %zd "
+                        "(step must be greater than zero, align must be zero or a power of two that does not exceed and divides step, "
+                        "and capacity_init must be in [0, max_size(%zd)])!",
+                        __func__, step, align, capacity_init, ___i_vector_max_size(step));
         return NULL;
     }
 
@@ -409,8 +473,6 @@ vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, 
     if (!__vector_init(vector))
         goto err;
 
-    // vector->capacity_init = 0 == vector->capacity_init ? _I_VECTOR_CAPACITY_INIT : vector->capacity_init;
-
     vector->ops = ops;
     if (g_class_vector_ops_sso() == vector->ops)
         vector->sso = true;
@@ -421,7 +483,6 @@ err:
     return NULL;
 }
 
-/* checked */
 void __vector_delete(vector_t** _this)
 {
     if (is_null(_this) || is_null(*_this))
@@ -435,6 +496,7 @@ const class_vector_t* class_vector_ins(void)
 {
     static const class_vector_t ins = {
         .size           = cvector_size,
+        .max_size       = cvector_max_size,
         .capacity       = cvector_capacity,
         .__empty        = __cvector_empty,
         .count          = cvector_count,
@@ -458,14 +520,20 @@ const class_vector_t* class_vector_ins(void)
         .push_back      = cvector_push_back,
         .insert         = cvector_insert,
         .insert_n       = cvector_insert_n,
+        .insert_range   = cvector_insert_range,
+        .replace_it     = cvector_replace_it,
+        .replace_index  = cvector_replace_index,
         .erase          = cvector_erase,
         .erase_range    = cvector_erase_range,
         .pop_back       = cvector_pop_back,
         .remove         = cvector_remove,
         .remove_if      = cvector_remove_if,
+        .assign         = cvector_assign,
+        .assign_range   = cvector_assign_range,
         .resize         = cvector_resize,
         .reserve        = cvector_reserve,
         .shrink_to_fit  = cvector_shrink_to_fit,
+        .swap           = cvector_swap,
         .clear          = cvector_clear,
     };
     return &ins;
