@@ -76,6 +76,64 @@ err:
 }
 
 static JDSC_INLINE
+bool __i_vector_slot_write_n_range(const i_vector_t* _this, uint8_t* dest, const uint8_t* src, vector_size_t n)
+{
+    const vector_step_t step = _this->step;
+    vector_size_t suc = 0;
+
+    if (is_null(_this->ops) || is_null(_this->ops->copy_data)) {
+        memcpy(dest, src, (size_t)(n * step));
+        return true;
+    }
+
+    if (_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
+        if (_this->sso) {
+            while (n-- > 0) {
+                if (ds_ops_copy_data_same_sso((vector_data_t)src, (vector_data_t*)dest))
+                    suc++;
+                else
+                    goto err;
+
+                dest = __i_vector_ptr_add(dest, 1, step);
+                src  = __i_vector_ptr_add(src, 1, step);
+            }
+        } else {
+            while (n-- > 0) {
+                if (_this->ops->copy_data((vector_data_t)src, (vector_data_t*)dest))
+                    suc++;
+                else
+                    goto err;
+
+                dest = __i_vector_ptr_add(dest, 1, step);
+                src  = __i_vector_ptr_add(src, 1, step);
+            }
+        }
+    } else if (_this->dtype & SEQ_CNTR_DTYPE_MASK_NUM) {
+        while (n-- > 0) {
+            if (_this->ops->copy_data(__i_vector_slot_read(_this, src), (vector_data_t*)dest))
+                suc++;
+            else
+                goto err;
+            dest = __i_vector_ptr_add(dest, 1, step);
+            src  = __i_vector_ptr_add(src, 1, step);
+        }
+    } else {
+        return false;
+    }
+
+    return true;
+
+err:
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
+        while (suc-- > 0) {
+            dest = __i_vector_ptr_sub(dest, 1, step);
+            _this->ops->free_data((vector_data_t*)dest);
+        }
+    }
+    return false;
+}
+
+static JDSC_INLINE
 void __i_vector_slot_move_n(const i_vector_t* _this, uint8_t* dest, const uint8_t* src, vector_size_t n)
 {
     const vector_step_t step = _this->step;
@@ -292,8 +350,7 @@ vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos
 {
     const uint8_t* src = iterator_begin.cur;
     ptrdiff_t off;
-    vector_size_t n, move, avail, i;
-    uint8_t* p;
+    vector_size_t n, move, avail;
 
     if (unlikely(is_null(_this) || i_vector_is_null_iterator(pos) || i_vector_is_null_iterator(iterator_begin) || i_vector_is_null_iterator(iterator_end)))
         return i_vector_null_iterator();
@@ -319,42 +376,18 @@ vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos
         pos.cur = __i_vector_ptr_add(_this->begin, off, step);
     }
 
-    p = pos.cur;
-    __i_vector_slot_move_n(_this, __i_vector_ptr_add(p, n, step), p, move);
+    __i_vector_slot_move_n(_this, __i_vector_ptr_add(pos.cur, n, step), pos.cur, move);
     _this->end = __i_vector_ptr_add(_this->end, n, step);
 
-    if (!_this->sso && (is_null(_this->ops) || is_null(_this->ops->copy_data))) {
-        memmove(p, src, (size_t)(n * step));
-    } else {
-        for (i = 0; i < n; ++i) {
-            vector_data_t v;
-
-            if (_this->sso)
-                v = (vector_data_t)((const ds_sso_t*)src)->p;
-            else
-                v = __i_vector_slot_read(_this, src);
-
-            if (!__i_vector_slot_write(_this, p, v))
-                goto err;
-
-            p = __i_vector_ptr_add(p, 1, step);
-            src = __i_vector_ptr_add(src, 1, step);
-        }
-    }
+    if (!__i_vector_slot_write_n_range(_this, pos.cur, src, n))
+        goto err;
 
     return __i_vector_make_iterator(step, pos.cur);
 
 err:
-    {
-        if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
-            while (i-- > 0)
-                _this->ops->free_data((vector_data_t*)__i_vector_ptr_add(pos.cur, i, step));
-        }
-
-        __i_vector_slot_move_n(_this, pos.cur, __i_vector_ptr_add(pos.cur, n, step), move);
-        _this->end = __i_vector_ptr_sub(_this->end, n, step);
-        return i_vector_null_iterator();
-    }
+    __i_vector_slot_move_n(_this, pos.cur, __i_vector_ptr_add(pos.cur, n, step), move);
+    _this->end = __i_vector_ptr_sub(_this->end, n, step);
+    return i_vector_null_iterator();
 }
 
 /* Non independent logical function */
@@ -390,6 +423,79 @@ vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint
     __i_vector_slot_move_n(_this, begin, end, n);
     _this->end = __i_vector_ptr_add(begin, n, step);
     return __i_vector_make_iterator(step, begin);
+}
+
+bool __i_vector_assign_grow_fill(i_vector_t* _this, vector_size_t n, vector_data_t data)
+{
+    const vector_step_t step = _this->step;
+    vector_size_t cap = __i_vector_capacity(_this);
+    uint8_t* nh, * nb, * p;
+
+    if (unlikely(n <= 0 || n > ___i_vector_max_size(step)))
+        return false;
+
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
+        return false;
+
+    cap = cap >= n ? cap : n;
+    nh = (uint8_t*)p_aligned_malloc(_this->align, (size_t)(cap + 1) * step);
+    if (is_null(nh))
+        return false;
+
+    nb = __i_vector_ptr_add(nh, 1, step);
+    if (!__i_vector_slot_write_n(_this, nb, n, data))
+        goto err;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step))
+            _this->ops->free_data((vector_data_t*)p);
+    }
+    p_aligned_free(_this->rend, _this->align);
+
+    _this->rend  = nh;
+    _this->begin = nb;
+    _this->end   = __i_vector_ptr_add(_this->begin, n, step);
+    _this->end_of_storage = __i_vector_ptr_add(_this->begin, cap, step);
+    return true;
+
+err:
+    p_aligned_free(nh, _this->align);
+    return false;
+}
+
+bool __i_vector_assign_grow_range(i_vector_t* _this, vector_size_t n, const uint8_t* src)
+{
+    const vector_step_t step = _this->step;
+    vector_size_t cap = __i_vector_capacity(_this);
+    uint8_t* nh, * nb, * p;
+
+    if (unlikely(n <= 0 || n > ___i_vector_max_size(step)))
+        return false;
+
+    cap = cap >= n ? cap : n;
+    nh = (uint8_t*)p_aligned_malloc(_this->align, (size_t)(cap + 1) * step);
+    if (is_null(nh))
+        return false;
+
+    nb = __i_vector_ptr_add(nh, 1, step);
+    if (!__i_vector_slot_write_n_range(_this, nb, src, n))
+        goto err;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step))
+            _this->ops->free_data((vector_data_t*)p);
+    }
+    p_aligned_free(_this->rend, _this->align);
+
+    _this->rend  = nh;
+    _this->begin = nb;
+    _this->end   = __i_vector_ptr_add(_this->begin, n, step);
+    _this->end_of_storage = __i_vector_ptr_add(_this->begin, cap, step);
+    return true;
+
+err:
+    p_aligned_free(nh, _this->align);
+    return false;
 }
 
 static JDSC_INLINE

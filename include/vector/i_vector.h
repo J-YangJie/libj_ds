@@ -317,28 +317,30 @@ vector_value_t i_vector_at(const i_vector_t* _this, vector_index_t index)
 HEADER_STATIC_INLINE
 vector_value_t __i_vector_back(const i_vector_t* _this)
 {
+    JDSC_ASSERT(!__i_vector_empty(_this));
     return (vector_value_t){ .u8 = __i_vector_ptr_sub(_this->end, 1, _this->step), };
 }
 
 HEADER_STATIC_INLINE
 vector_value_t i_vector_back(const i_vector_t* _this)
 {
-    if (!is_null(_this) && !__i_vector_empty(_this))
-        return (vector_value_t){ .u8 = __i_vector_ptr_sub(_this->end, 1, _this->step), };
+    if (!is_null(_this))
+        return __i_vector_back(_this);
     return (vector_value_t){ .u8 = NULL, };
 }
 
 HEADER_STATIC_INLINE
 vector_value_t __i_vector_front(const i_vector_t* _this)
 {
+    JDSC_ASSERT(!__i_vector_empty(_this));
     return (vector_value_t){ .u8 = _this->begin, };
 }
 
 HEADER_STATIC_INLINE
 vector_value_t i_vector_front(const i_vector_t* _this)
 {
-    if (!is_null(_this) && !__i_vector_empty(_this))
-        return (vector_value_t){ .u8 = _this->begin, };
+    if (!is_null(_this))
+        return __i_vector_front(_this);
     return (vector_value_t){ .u8 = NULL, };
 }
 
@@ -486,6 +488,8 @@ vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos);
 vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint8_t* end);
 bool __i_vector_reserve(i_vector_t* _this, vector_size_t n);
 void __i_vector_shrink_to_fit(i_vector_t* _this);
+bool __i_vector_assign_grow_fill(i_vector_t* _this, vector_size_t n, vector_data_t data);
+bool __i_vector_assign_grow_range(i_vector_t* _this, vector_size_t n, const uint8_t* src);
 
 HEADER_STATIC_INLINE
 vector_size_t i_vector_max_size(const i_vector_t* _this)
@@ -560,13 +564,12 @@ HEADER_STATIC_INLINE
 bool __i_vector_replace(i_vector_t* _this, uint8_t* slot, vector_data_t data)
 {
     if (_this->sso) {
-        if (data == (vector_data_t)((const ds_sso_t*)slot)->p)
+        if (data == __ds_ops_char_addr_sso((vector_data_t)slot))
             return true;
     } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && data == (vector_data_t)slot) {
         return true;
-    } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data) &&
-               !is_null(_this->ops->free_data) &&
-               data == __i_vector_slot_read(_this, slot)) {
+    } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data) 
+               && !is_null(_this->ops->free_data) && data == __i_vector_slot_read(_this, slot)) {
         return true;
     }
 
@@ -663,10 +666,7 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return i_vector_null_iterator();
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"The struct/union container has no ops->__eq!");
-        return i_vector_null_iterator();
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     const vector_step_t step = _this->step;
 
@@ -677,7 +677,7 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
         }
     } else if (_this->sso) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
-            if (__ds_ops_eq_sso(data, (vector_data_t)p))
+            if (__ds_ops_eq_diff_sso(data, (vector_data_t)p))
                 return __i_vector_make_iterator(step, p);
         }
     } else {
@@ -701,10 +701,7 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return -1;
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"The struct/union container has no ops->__eq!");
-        return -1;
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     const vector_step_t step = _this->step;
 
@@ -715,7 +712,7 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
         }
     } else if (_this->sso) {
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
-            if (__ds_ops_eq_sso(data, (vector_data_t)p))
+            if (__ds_ops_eq_diff_sso(data, (vector_data_t)p))
                 ret++;
         }
     } else {
@@ -737,10 +734,7 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
         || (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"The struct/union container has no ops->__eq!");
-        return -1;
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     const vector_step_t step = _this->step;
     l = r = _this->begin;
@@ -769,7 +763,7 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
         }
     } else if (_this->sso) {
         for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
-            if (!__ds_ops_eq_sso(data, (vector_data_t)r)) {
+            if (!__ds_ops_eq_diff_sso(data, (vector_data_t)r)) {
                 if (l != r) {
                     memmove(l, r, sizeof(ds_sso_t));
                     __ds_ops_fix_sso((vector_data_t)l); /* __i_vector_slot_move(_this, l, r); */
@@ -820,6 +814,16 @@ vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
                 ret++;
             }
         }
+    } else if (_this->sso) {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+            if (!cond(__ds_ops_char_addr_sso((vector_data_t)r))) {
+                __i_vector_slot_move(_this, l, r);
+                l = __i_vector_ptr_add(l, 1, step);
+            } else {
+                _this->ops->free_data((vector_data_t*)r);
+                ret++;
+            }
+        }
     } else {
         for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
             if (!cond(__i_vector_slot_read(_this, r))) {
@@ -834,6 +838,68 @@ vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
 
     _this->end = l;
     return ret;
+}
+
+HEADER_STATIC_INLINE vector_size_t i_vector_clear(i_vector_t* _this);
+/*
+ * Unlike STL's in-place assign: this keeps rollback on copy failure and
+ * trades a little performance for it.
+ */
+HEADER_STATIC_INLINE
+bool i_vector_assign(i_vector_t* _this, vector_size_t n, vector_data_t data)
+{
+    vector_iterator_t it;
+    vector_size_t avail;
+
+    if (is_null(_this) || n < 0)
+        return false;
+
+    if (0 == n) {
+        i_vector_clear(_this);
+        return true;
+    }
+
+    avail = __i_vector_capacity(_this) - __i_vector_size(_this);
+    if (n > avail)
+        return __i_vector_assign_grow_fill(_this, n, data);
+
+    it = i_vector_insert_n(_this, __i_vector_end(_this), n, data);
+    if (i_vector_is_null_iterator(it))
+        return false;
+
+    i_vector_erase_range(_this, __i_vector_begin(_this), it);
+    return true;
+}
+
+/* Same rollback-over-efficiency strategy as i_vector_assign(); see above. */
+HEADER_STATIC_INLINE
+bool i_vector_assign_range(i_vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
+{
+    vector_iterator_t it;
+    vector_size_t n, avail;
+
+    if (is_null(_this) || i_vector_is_null_iterator(iterator_begin) || i_vector_is_null_iterator(iterator_end))
+        return false;
+
+    n = (vector_size_t)__i_vector_ptr_diff(iterator_end.cur, iterator_begin.cur, _this->step);
+    if (n < 0)
+        return false;
+
+    if (0 == n) {
+        i_vector_clear(_this);
+        return true;
+    }
+
+    avail = __i_vector_capacity(_this) - __i_vector_size(_this);
+    if (n > avail)
+        return __i_vector_assign_grow_range(_this, n, iterator_begin.cur);
+
+    it = i_vector_insert_range(_this, __i_vector_end(_this), iterator_begin, iterator_end);
+    if (i_vector_is_null_iterator(it))
+        return false;
+
+    i_vector_erase_range(_this, __i_vector_begin(_this), it);
+    return true;
 }
 
 HEADER_STATIC_INLINE
@@ -908,53 +974,6 @@ vector_size_t i_vector_clear(i_vector_t* _this)
 
     _this->end = _this->begin;
     return ret;
-}
-
-HEADER_STATIC_INLINE
-vector_size_t i_vector_assign(i_vector_t* _this, vector_size_t n, vector_data_t data)
-{
-    vector_iterator_t it;
-
-    if (is_null(_this) || n < 0)
-        return -1;
-
-    if (0 == n) {
-        i_vector_clear(_this);
-        return 0;
-    }
-
-    it = i_vector_insert_n(_this, i_vector_end(_this), n, data);
-    if (i_vector_is_null_iterator(it))
-        return -1;
-
-    i_vector_erase_range(_this, i_vector_begin(_this), it);
-    return n;
-}
-
-HEADER_STATIC_INLINE
-vector_size_t i_vector_assign_range(i_vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
-{
-    vector_iterator_t it;
-    vector_size_t n;
-
-    if (is_null(_this) || i_vector_is_null_iterator(iterator_begin) || i_vector_is_null_iterator(iterator_end))
-        return -1;
-
-    n = (vector_size_t)__i_vector_ptr_diff(iterator_end.cur, iterator_begin.cur, _this->step);
-    if (n < 0)
-        return -1;
-
-    if (0 == n) {
-        i_vector_clear(_this);
-        return 0;
-    }
-
-    it = i_vector_insert_range(_this, i_vector_end(_this), iterator_begin, iterator_end);
-    if (i_vector_is_null_iterator(it))
-        return -1;
-
-    i_vector_erase_range(_this, i_vector_begin(_this), it);
-    return n;
 }
 
 #endif /* __J_I_VECTOR_H */

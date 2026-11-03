@@ -84,8 +84,8 @@ HEADER_STATIC_INLINE vector_iterator_t    cvector_erase_range(vector_t* _this, v
 HEADER_STATIC_INLINE void                 cvector_pop_back(vector_t* _this)                                                   { i_vector_pop_back(_this); }
 HEADER_STATIC_INLINE vector_size_t        cvector_remove(vector_t* _this, vector_data_t data)                                 { return i_vector_remove(_this, data); }
 HEADER_STATIC_INLINE vector_size_t        cvector_remove_if(vector_t* _this, remove_if_condition cond)                        { return i_vector_remove_if(_this, cond); }
-HEADER_STATIC_INLINE vector_size_t        cvector_assign(vector_t* _this, vector_size_t n, vector_data_t data)                { return i_vector_assign(_this, n, data); }
-HEADER_STATIC_INLINE vector_size_t        cvector_assign_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_assign_range(_this, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE bool                 cvector_assign(vector_t* _this, vector_size_t n, vector_data_t data)                { return i_vector_assign(_this, n, data); }
+HEADER_STATIC_INLINE bool                 cvector_assign_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_assign_range(_this, iterator_begin, iterator_end); }
 HEADER_STATIC_INLINE bool                 cvector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data)        { return i_vector_resize(_this, n, default_data); }
 HEADER_STATIC_INLINE bool                 cvector_reserve(vector_t* _this, vector_size_t n)                                   { return i_vector_reserve(_this, n); }
 HEADER_STATIC_INLINE void                 cvector_shrink_to_fit(vector_t* _this)                                              { i_vector_shrink_to_fit(_this); }
@@ -119,7 +119,7 @@ typedef struct class_vector {
     bool (*push_back)(vector_t* _this, vector_data_t data);
     vector_iterator_t (*insert)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);                        /* insert data before `iterator` */
     vector_iterator_t (*insert_n)(vector_t* _this, vector_iterator_t iterator, vector_size_t n, vector_data_t data);
-    vector_iterator_t (*insert_range)(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);
+    vector_iterator_t (*insert_range)(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end); /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
     vector_iterator_t (*replace_it)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);
     vector_iterator_t (*replace_index)(vector_t* _this, vector_index_t index, vector_data_t data);                       /* v[index] = data */
     vector_iterator_t (*erase)(vector_t* _this, vector_iterator_t iterator);
@@ -127,8 +127,8 @@ typedef struct class_vector {
     void (*pop_back)(vector_t* _this);
     vector_size_t (*remove)(vector_t* _this, vector_data_t data);
     vector_size_t (*remove_if)(vector_t* _this, remove_if_condition cond);
-    vector_size_t (*assign)(vector_t* _this, vector_size_t n, vector_data_t data);
-    vector_size_t (*assign_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);
+    bool (*assign)(vector_t* _this, vector_size_t n, vector_data_t data);
+    bool (*assign_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);             /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
     bool (*resize)(vector_t* _this, vector_size_t n, vector_data_t default_data);
     bool (*reserve)(vector_t* _this, vector_size_t n);
     void (*shrink_to_fit)(vector_t* _this);

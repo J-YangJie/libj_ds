@@ -423,10 +423,7 @@ deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data)
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return i_deque_null_iterator();
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
-        return i_deque_null_iterator();
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
@@ -473,10 +470,7 @@ deque_count_t i_deque_count(const i_deque_t* _this, deque_data_t data)
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
-        return -1;
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
@@ -523,10 +517,7 @@ deque_size_t i_deque_remove(i_deque_t* _this, deque_data_t data)
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
-        return -1;
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     l = r = _this->begin;
     end = _this->end;

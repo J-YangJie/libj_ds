@@ -74,8 +74,8 @@
 #define JDSC_ASSERT(expr)                assert(expr)
 #define JDSC_ASSERT_NEW(expr, fmt, ...)  do { if (!(expr)) { pr_err(fmt, ##__VA_ARGS__); assert(0); } } while (0)
 #else
-#define JDSC_ASSERT(expr)                do { (void)0; } while(0)
-#define JDSC_ASSERT_NEW(expr, fmt, ...)  do { if (!(expr)) { pr_err(fmt, ##__VA_ARGS__); } } while(0)
+#define JDSC_ASSERT(expr)                do { (void)0; } while (0)
+#define JDSC_ASSERT_NEW(expr, fmt, ...)  do { if (!(expr)) { pr_err(fmt, ##__VA_ARGS__); } } while (0)
 #endif /* JDSC_DEBUG */
 
 

@@ -54,8 +54,9 @@
 //#define TEST_SET            1
 //#define TEST_MULTIMAP       1
 //#define TEST_MULTISET       1
-//#define TEST_LIST           1
 //#define TEST_VECTOR         1
+//#define TEST_DEQUE          1
+//#define TEST_LIST           1
 //#define TEST_STACK_VECTOR   1
 //#define TEST_STACK_DEQUE    1
 //#define TEST_STACK_LIST     1
@@ -1044,6 +1045,13 @@ static void test_i_rand(void)
 #ifdef TEST_VECTOR
     if (1)
     {
+
+#if 1
+#define DS_CAP(_ds)   do { printf("%zd - %zd = %zd\n", cvector_capacity(_ds), cvector_size(_ds), cvector_capacity(_ds) - cvector_size(_ds)); } while (0)
+#else
+#define DS_CAP(_ds)   do { } while (0)
+#endif
+
         /* count */
         {
             vector_count_t cnt = 0;
@@ -1161,7 +1169,7 @@ static void test_i_rand(void)
 
             time_vector = 0;
             GET_DURATION({ DSL(cvector, insert_n)(ds_vector_i, __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) / 2), (vector_size_t)MID_N, 9); }, time_vector);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s insert_n@mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             time_vector = 0;
             {
@@ -1170,11 +1178,83 @@ static void test_i_rand(void)
                 vector_iterator_t e  = __cvector_it(ds_vector_i, (s + MID_N) / 2);
                 GET_DURATION({ DSL(cvector, erase_range)(ds_vector_i, b, e); }, time_vector);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s erase_range@mid  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             time_vector = 0;
             GET_DURATION({ removed = DSL(cvector, remove)(ds_vector_i, 9); }, time_vector);
             printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, DSL(cvector, size)(ds_vector_i));
+        }
+
+
+        /* insert_n + insert_range */
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
+        {
+            vector_t* src = VECTOR_NEW();
+
+            DSL(cvector, insert_n)(ds_vector_i, DSL(cvector, end)(ds_vector_i), (vector_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+            DSL(cvector, insert_n)(src,         DSL(cvector, end)(src),         (vector_size_t)TIMES_INSERT / 1, rand() % TIMES_FIND);
+
+            time_vector = 0;
+            GET_DURATION({ DSL(cvector, insert_range)(ds_vector_i, 
+                                                      __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) / 2), 
+                                                      __cvector_it(src, DSL(cvector, size)(src) * 0.25), 
+                                                      __cvector_it(src, DSL(cvector, size)(src) * 0.75)); }, time_vector);
+            printf("RESULT %s insert_range@mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+
+            VECTOR_DELETE(&src);
+        }
+
+
+        /* insert_n + assign_range */
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
+        {
+            vector_t* src = VECTOR_NEW();
+
+            DSL(cvector, reserve)(ds_vector_i, (vector_size_t)TIMES_INSERT);
+            DSL(cvector, insert_n)(ds_vector_i, DSL(cvector, end)(ds_vector_i), (vector_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+            DSL(cvector, insert_n)(src,         DSL(cvector, end)(src),         (vector_size_t)(TIMES_INSERT * 1.2), rand() % TIMES_FIND);
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ DSL(cvector, assign_range)(ds_vector_i, 
+                                                      __cvector_it(src, 1), 
+                                                      __cvector_it(src, (vector_size_t)TIMES_INSERT / 2 - 1)); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ DSL(cvector, assign_range)(ds_vector_i, 
+                                                      __cvector_it(src, 1), 
+                                                      __cvector_it(src, DSL(cvector, size)(src) - 1)); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, DSL(cvector, size)(src) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+
+            VECTOR_DELETE(&src);
+        }
+
+
+        /* insert_n + assign */
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
+        {
+            vector_t* src = VECTOR_NEW();
+
+            DSL(cvector, reserve)(ds_vector_i, (vector_size_t)TIMES_INSERT);
+            DSL(cvector, insert_n)(ds_vector_i, DSL(cvector, end)(ds_vector_i), (vector_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ DSL(cvector, assign)(ds_vector_i, (vector_size_t)TIMES_INSERT / 2 - 2, rand() % TIMES_FIND); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ DSL(cvector, assign)(ds_vector_i, (vector_size_t)(TIMES_INSERT * 1.2) - 2, rand() % TIMES_FIND); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+
+            VECTOR_DELETE(&src);
         }
 
 
@@ -1198,6 +1278,8 @@ static void test_i_rand(void)
                (ssize_t)(time_vector / 1000),
                sort_vt_ides_sorted((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur),
                DSL(cvector, size)(ds_vector_i));
+
+#undef DS_CAP
     }
 #endif
 
@@ -1954,6 +2036,12 @@ static void test_s_rand(void)
 
 #define DS_ARG()   ((vector_data_t)s_pool_str(dst))
 
+#if 1
+#define DS_CAP(_ds)   do { printf("%zd - %zd = %zd\n", cvector_capacity(_ds), cvector_size(_ds), cvector_capacity(_ds) - cvector_size(_ds)); } while (0)
+#else
+#define DS_CAP(_ds)   do { } while (0)
+#endif
+
         /* count */
         {
             vector_count_t cnt = 0;
@@ -2089,6 +2177,78 @@ static void test_s_rand(void)
         }
 
 
+        /* insert_n + insert_range */
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
+        {
+            vector_t* src = VECTOR_NEW_STRING();
+
+            DSL(cvector, insert_n)(ds_vector_s, DSL(cvector, end)(ds_vector_s), (vector_size_t)TIMES_INSERT / 2, DS_ARG());
+            DSL(cvector, insert_n)(src,         DSL(cvector, end)(src),         (vector_size_t)TIMES_INSERT / 1, DS_ARG());
+
+            time_vector = 0;
+            GET_DURATION({ DSL(cvector, insert_range)(ds_vector_s, 
+                                                      __cvector_it(ds_vector_s, DSL(cvector, size)(ds_vector_s) / 2), 
+                                                      __cvector_it(src, DSL(cvector, size)(src) * 0.25), 
+                                                      __cvector_it(src, DSL(cvector, size)(src) * 0.75)); }, time_vector);
+            printf("RESULT %s insert_range@mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+
+            VECTOR_DELETE(&src);
+        }
+
+
+        /* insert_n + assign_range */
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
+        {
+            vector_t* src = VECTOR_NEW_STRING();
+
+            DSL(cvector, reserve)(ds_vector_s, (vector_size_t)TIMES_INSERT);
+            DSL(cvector, insert_n)(ds_vector_s, DSL(cvector, end)(ds_vector_s), (vector_size_t)TIMES_INSERT / 2, DS_ARG());
+            DSL(cvector, insert_n)(src,         DSL(cvector, end)(src),         (vector_size_t)(TIMES_INSERT * 1.2), DS_ARG());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ DSL(cvector, assign_range)(ds_vector_s, 
+                                                      __cvector_it(src, 1), 
+                                                      __cvector_it(src, (vector_size_t)TIMES_INSERT / 2 - 1)); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ DSL(cvector, assign_range)(ds_vector_s, 
+                                                      __cvector_it(src, 1), 
+                                                      __cvector_it(src, DSL(cvector, size)(src) - 1)); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, DSL(cvector, size)(src) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+
+            VECTOR_DELETE(&src);
+        }
+
+
+        /* insert_n + assign */
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
+        {
+            vector_t* src = VECTOR_NEW_STRING();
+
+            DSL(cvector, reserve)(ds_vector_s, (vector_size_t)TIMES_INSERT);
+            DSL(cvector, insert_n)(ds_vector_s, DSL(cvector, end)(ds_vector_s), (vector_size_t)TIMES_INSERT / 2, DS_ARG());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ DSL(cvector, assign)(ds_vector_s, (vector_size_t)TIMES_INSERT / 2 - 2, DS_ARG()); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ DSL(cvector, assign)(ds_vector_s, (vector_size_t)(TIMES_INSERT * 1.2) - 2, DS_ARG()); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+
+            VECTOR_DELETE(&src);
+        }
+
+
         /* sort */
         srand(SORT_SEED);
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_s, DS_ARG());
@@ -2110,6 +2270,7 @@ static void test_s_rand(void)
                sort_vt_sdes_sorted((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur),
                DSL(cvector, size)(ds_vector_s));
 
+#undef DS_CAP
 #undef DS_ARG
     }
 #endif

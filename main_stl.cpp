@@ -51,9 +51,9 @@ typedef ssize_t  ds_size_t;
 //#define TEST_SET            1
 //#define TEST_MULTIMAP       1
 //#define TEST_MULTISET       1
-//#define TEST_LIST           1
 //#define TEST_VECTOR         1
 //#define TEST_DEQUE          1
+//#define TEST_LIST           1
 //#define TEST_STACK_VECTOR   1
 //#define TEST_STACK_DEQUE    1
 //#define TEST_STACK_LIST     1
@@ -993,6 +993,13 @@ static void test_i_rand(void)
 #ifdef TEST_VECTOR
     if (1)
     {
+
+#if 1
+#define DS_CAP(_ds)   do { printf("%zd - %zd = %zd\n", (_ds).capacity(), (_ds).size(), (_ds).capacity() - (_ds).size()); } while (0)
+#else
+#define DS_CAP(_ds)   do { } while (0)
+#endif
+
         /* count */
         {
             long cnt = 0;
@@ -1131,6 +1138,69 @@ static void test_i_rand(void)
         }
 
 
+        /* insert_n + insert_range */
+        ds_vector_i.clear(); ds_vector_i.shrink_to_fit();
+        {
+            vector<ds_data_t> src;
+
+            ds_vector_i.insert(ds_vector_i.end(), (size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+            src.insert(src.end(),                 (size_t)TIMES_INSERT / 1, rand() % TIMES_FIND);
+
+            time_vector = 0;
+            GET_DURATION({ ds_vector_i.insert(ds_vector_i.begin() + (ds_vector_i.size() / 2),
+                                              src.begin() + (src.size() * 0.25),
+                                              src.begin() + (src.size() * 0.75)); }, time_vector);
+            printf("RESULT %s insert_range@mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), ds_vector_i.size());
+        }
+
+
+        /* insert_n + assign_range */
+        ds_vector_i.clear(); ds_vector_i.shrink_to_fit();
+        {
+            vector<ds_data_t> src;
+
+            ds_vector_i.reserve((size_t)TIMES_INSERT);
+            ds_vector_i.insert(ds_vector_i.end(), (size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+            src.insert(src.end(),                 (size_t)(TIMES_INSERT * 1.2), rand() % TIMES_FIND);
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ ds_vector_i.assign(src.begin() + 1,
+                                              src.begin() + ((size_t)TIMES_INSERT / 2 - 1)); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), ds_vector_i.size());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ ds_vector_i.assign(src.begin() + 1,
+                                              src.begin() + (src.size() - 1)); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)src.size() - 2, (ssize_t)(time_vector / 1000), ds_vector_i.size());
+        }
+
+
+        /* insert_n + assign */
+        ds_vector_i.clear(); ds_vector_i.shrink_to_fit();
+        {
+            vector<ds_data_t> src;
+
+            ds_vector_i.reserve((size_t)TIMES_INSERT);
+            ds_vector_i.insert(ds_vector_i.end(), (size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ ds_vector_i.assign((size_t)TIMES_INSERT / 2 - 2, rand() % TIMES_FIND); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), ds_vector_i.size());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ ds_vector_i.assign((size_t)(TIMES_INSERT * 1.2) - 2, rand() % TIMES_FIND); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_vector / 1000), ds_vector_i.size());
+        }
+
+
         /* sort */
         srand(SORT_SEED);
         ds_vector_i.clear(); ds_vector_i.shrink_to_fit(); for (int i = 0; i < TIMES_INSERT; ++i) ds_vector_i.push_back((ds_data_t)(rand()));
@@ -1147,6 +1217,8 @@ static void test_i_rand(void)
         GET_DURATION({ sort(ds_vector_i.begin(), ds_vector_i.end(), greater<ds_data_t>()); }, time_vector);
         printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000), (int)is_sorted(ds_vector_i.begin(), ds_vector_i.end(), greater<ds_data_t>()), ds_vector_i.size());
+
+#undef DS_CAP
     }
 #endif
 
@@ -1906,6 +1978,12 @@ static void test_s_rand(void)
 
 #define DS_ARG()   (s_pool_str(dst))
 
+#if 1
+#define DS_CAP(_ds)   do { printf("%zd - %zd = %zd\n", (_ds).capacity(), (_ds).size(), (_ds).capacity() - (_ds).size()); } while (0)
+#else
+#define DS_CAP(_ds)   do { } while (0)
+#endif
+
         /* count */
         {
             long cnt = 0;
@@ -2045,6 +2123,69 @@ static void test_s_rand(void)
         }
 
 
+        /* insert_n + insert_range */
+        ds_vector_s.clear(); ds_vector_s.shrink_to_fit();
+        {
+            vector<string> src;
+
+            ds_vector_s.insert(ds_vector_s.end(), (size_t)TIMES_INSERT / 2, DS_ARG());
+            src.insert(src.end(),                 (size_t)TIMES_INSERT / 1, DS_ARG());
+
+            time_vector = 0;
+            GET_DURATION({ ds_vector_s.insert(ds_vector_s.begin() + (ds_vector_s.size() / 2),
+                                              src.begin() + (src.size() * 0.25),
+                                              src.begin() + (src.size() * 0.75)); }, time_vector);
+            printf("RESULT %s insert_range@mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), ds_vector_s.size());
+        }
+
+
+        /* insert_n + assign_range */
+        ds_vector_s.clear(); ds_vector_s.shrink_to_fit();
+        {
+            vector<string> src;
+
+            ds_vector_s.reserve((size_t)TIMES_INSERT);
+            ds_vector_s.insert(ds_vector_s.end(), (size_t)TIMES_INSERT / 2, DS_ARG());
+            src.insert(src.end(),                 (size_t)(TIMES_INSERT * 1.2), DS_ARG());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ ds_vector_s.assign(src.begin() + 1,
+                                              src.begin() + ((size_t)TIMES_INSERT / 2 - 1)); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), ds_vector_s.size());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ ds_vector_s.assign(src.begin() + 1,
+                                              src.begin() + (src.size() - 1)); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)src.size() - 2, (ssize_t)(time_vector / 1000), ds_vector_s.size());
+        }
+
+
+        /* insert_n + assign */
+        ds_vector_s.clear(); ds_vector_s.shrink_to_fit();
+        {
+            vector<string> src;
+
+            ds_vector_s.reserve((size_t)TIMES_INSERT);
+            ds_vector_s.insert(ds_vector_s.end(), (size_t)TIMES_INSERT / 2, DS_ARG());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ ds_vector_s.assign((size_t)TIMES_INSERT / 2 - 2, DS_ARG()); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), ds_vector_s.size());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ ds_vector_s.assign((size_t)(TIMES_INSERT * 1.2) - 2, DS_ARG()); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_vector / 1000), ds_vector_s.size());
+        }
+
+
         /* sort */
         srand(SORT_SEED);
         ds_vector_s.clear(); ds_vector_s.shrink_to_fit(); for (int i = 0; i < TIMES_INSERT; ++i) ds_vector_s.push_back(DS_ARG());
@@ -2062,6 +2203,7 @@ static void test_s_rand(void)
         printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000), (int)is_sorted(ds_vector_s.begin(), ds_vector_s.end(), greater<string>()), ds_vector_s.size());
 
+#undef DS_CAP
 #undef DS_ARG
     }
 #endif
