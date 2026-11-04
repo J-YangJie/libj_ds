@@ -20,83 +20,14 @@
 
 #include <list/list.h>
 
+#include <string.h>
 #include <_log.h>
 #include <_memory.h>
 #include <_compiler_inter.h>
 #include <linux/_compiler.h>
-#include <string.h>
+#include <linux/list.h>
 
 #define TAG "[list]"
-
-/* checked */
-static inline
-bool __i_dlist_slot_write(const i_list_t* _this, uint8_t* slot, list_data_t data)
-{
-    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
-        return _this->ops->copy_data(data, (list_data_t*)slot);
-
-    switch (_this->step)
-    {
-    case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
-    case 2: *(uint16_t*)slot = (uint16_t)data; break;
-    case 4: *(uint32_t*)slot = (uint32_t)data; break;
-#ifdef JDSC_64BIT
-    case 8: *(uint64_t*)slot = (uint64_t)data; break;
-#endif /* JDSC_64BIT */
-    default: return false;
-    }
-    return true;
-}
-
-/* checked */
-static inline
-list_data_t __i_dlist_slot_read(const i_list_t* _this, const uint8_t* slot)
-{
-    const list_dtype_t dtype = _this->dtype;
-
-    if (dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
-        return (list_data_t)(uintptr_t)slot;
-    } else if (dtype & SEQ_CNTR_DTYPE_MASK_SINT) {
-        switch (_this->step)
-        {
-        case 1: return (int8_t)*(const int8_t*)slot;
-        case 2: return (int16_t)*(const int16_t*)slot;
-        case 4: return (int32_t)*(const int32_t*)slot;
-#ifdef JDSC_64BIT
-        case 8: return (int64_t)*(const int64_t*)slot;
-#endif /* JDSC_64BIT */
-        default: return (list_data_t)(uintptr_t)slot;
-        }
-    } else if (dtype & SEQ_CNTR_DTYPE_MASK_UINT) {
-        switch (_this->step)
-        {
-        case 1: return *(const uint8_t*)slot;
-        case 2: return *(const uint16_t*)slot;
-        case 4: return *(const uint32_t*)slot;
-#ifdef JDSC_64BIT
-        case 8: return (list_data_t)*(const uint64_t*)slot;
-#endif /* JDSC_64BIT */
-        default: return (list_data_t)(uintptr_t)slot;
-        }
-    } else {
-        return (list_data_t)(uintptr_t)slot;
-    }
-}
-
-/* checked */
-static inline
-bool __i_dlist_slot_equal(list_step_t step, list_data_t data, const uint8_t* slot)
-{
-    switch (step) {
-    case 1: return (uint8_t)data  == *(const uint8_t*)slot;
-    case 2: return (uint16_t)data == *(const uint16_t*)slot;
-    case 4: return (uint32_t)data == *(const uint32_t*)slot;
-#ifdef JDSC_64BIT
-    case 8: return (uint64_t)data == *(const uint64_t*)slot;
-#endif /* JDSC_64BIT */
-    default: return false;
-    }
-}
 
 #if JDSC_ALIGNMEM
 #define __i_dlist_node_pad(_this)   ((_this)->pad)
@@ -104,11 +35,10 @@ bool __i_dlist_slot_equal(list_step_t step, list_data_t data, const uint8_t* slo
 #define __i_dlist_node_pad(_this)   0
 #endif
 
-/* checked */
-static inline
+static JDSC_INLINE
 list_node_t* __i_dlist_make_list_node(const i_list_t* _this, list_data_t data)
 {
-    size_t pad = __i_dlist_node_pad(_this);
+    list_pad_t pad = __i_dlist_node_pad(_this);
     uint8_t* base = (uint8_t*)p_aligned_malloc(_this->align, pad + sizeof(list_node_t) + _this->step);
     list_node_t* n;
 
@@ -125,11 +55,30 @@ list_node_t* __i_dlist_make_list_node(const i_list_t* _this, list_data_t data)
     return n;
 }
 
-/* checked */
-static inline
+static JDSC_INLINE
+list_node_t* __i_dlist_make_list_node_copy_sso(const i_list_t* _this, const list_node_t* src)
+{
+    list_pad_t pad = __i_dlist_node_pad(_this);
+    uint8_t* base = (uint8_t*)p_aligned_malloc(_this->align, pad + sizeof(list_node_t) + _this->step);
+    list_node_t* n;
+
+    if (is_null(base))
+        return NULL;
+
+    n = (list_node_t*)(base + pad);
+
+    if (!ds_ops_copy_data_same_sso((list_data_t)src->data, (list_data_t*)n->data)) {
+        p_aligned_free(base, _this->align);
+        return NULL;
+    }
+
+    return n;
+}
+
+static JDSC_INLINE
 void __i_dlist_destroy_list_node(const i_list_t* _this, list_node_t* node)
 {
-    size_t pad = __i_dlist_node_pad(_this);
+    list_pad_t pad = __i_dlist_node_pad(_this);
     uint8_t* base = (uint8_t*)node - pad;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
@@ -138,8 +87,7 @@ void __i_dlist_destroy_list_node(const i_list_t* _this, list_node_t* node)
     p_aligned_free(base, _this->align);
 }
 
-/* checked */
-static inline
+static JDSC_INLINE
 list_node_t* __i_dlist_push_back(i_list_t* _this, list_data_t data)
 {
     list_node_t* n;
@@ -156,7 +104,6 @@ list_node_t* __i_dlist_push_back(i_list_t* _this, list_data_t data)
     return n;
 }
 
-/* checked */
 bool i_dlist_push_back(i_list_t* _this, list_data_t data)
 {
     if (unlikely(is_null(_this)))
@@ -164,8 +111,7 @@ bool i_dlist_push_back(i_list_t* _this, list_data_t data)
     return !is_null(__i_dlist_push_back(_this, data));
 }
 
-/* checked */
-static inline
+static JDSC_INLINE
 list_node_t* __i_dlist_push_front(i_list_t* _this, list_data_t data)
 {
     list_node_t* n;
@@ -182,7 +128,6 @@ list_node_t* __i_dlist_push_front(i_list_t* _this, list_data_t data)
     return n;
 }
 
-/* checked */
 bool i_dlist_push_front(i_list_t* _this, list_data_t data)
 {
     if (unlikely(is_null(_this)))
@@ -190,8 +135,7 @@ bool i_dlist_push_front(i_list_t* _this, list_data_t data)
     return !is_null(__i_dlist_push_front(_this, data));
 }
 
-/* checked */
-static inline
+static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 list_node_t* ___i_dlist_insert(i_list_t* _this, list_node_t* pos, list_node_t* node)
 {
     __list_add(&node->node, pos->node.prev, &pos->node);
@@ -199,14 +143,10 @@ list_node_t* ___i_dlist_insert(i_list_t* _this, list_node_t* pos, list_node_t* n
     return node;
 }
 
-/* checked */
-static inline
-list_node_t* __i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data)
+static JDSC_INLINE
+list_node_t* __i_dlist_insert_valid(i_list_t* _this, list_node_t* pos, list_data_t data)
 {
     list_node_t* n;
-
-    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
-        return NULL;
 
     n = __i_dlist_make_list_node(_this, data);
     if (is_null(n))
@@ -216,7 +156,18 @@ list_node_t* __i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t dat
     return n;
 }
 
-/* checked */
+static JDSC_INLINE
+list_node_t* __i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data)
+{
+    if (unlikely(__i_dlist_empty(_this) && __i_dlist_end(_this) != pos))
+        return NULL;
+
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
+        return NULL;
+
+    return __i_dlist_insert_valid(_this, pos, data);
+}
+
 list_node_t* i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data)
 {
     if (unlikely(is_null(_this) || is_null(pos)))
@@ -224,19 +175,27 @@ list_node_t* i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data)
     return __i_dlist_insert(_this, pos, data);
 }
 
-/* checked */
-static inline list_node_t* __i_dlist_erase(i_list_t* _this, list_node_t* pos);
+static JDSC_INLINE list_node_t* __i_dlist_erase(i_list_t* _this, list_node_t* pos);
 static
 list_node_t* __i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, list_data_t data)
 {
     list_size_t i;
     list_node_t* t, * first;
 
+    if (unlikely(n < 0))
+        return NULL;
+
+    if (unlikely(__i_dlist_empty(_this) && __i_dlist_end(_this) != pos))
+        return NULL;
+
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return NULL;
 
+    if (unlikely(0 == n))
+        return pos;
+
     first = __i_dlist_insert(_this, pos, data);
-    if (unlikely(is_null(first)))
+    if (is_null(first))
         return NULL;
 
     for (i = 1; i < n; ++i) {
@@ -250,25 +209,80 @@ list_node_t* __i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n
     return first;
 
 err:
-    while ((first =__i_dlist_erase(_this, first)) != pos);
+    while ((first = __i_dlist_erase(_this, first)) != pos);
     return NULL;
 }
 
-/* checked */
 list_node_t* i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, list_data_t data)
 {
-    if (unlikely(is_null(_this) || is_null(pos) || n < 0))
-        return NULL;
-
-    if (unlikely(0 == n))
-        return pos;
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+    if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
     return __i_dlist_insert_n(_this, pos, n, data);
 }
 
-/* checked */
+static JDSC_INLINE
+list_node_t* __i_dlist_insert_range(i_list_t* _this, list_node_t* pos, list_node_t* begin, list_node_t* end)
+{
+    list_size_t suc = 0;
+    list_node_t* it, * n, * first = __i_dlist_prev(pos);
+
+    if (unlikely(__i_dlist_empty(_this) && __i_dlist_end(_this) != pos))
+        return NULL;
+
+    if (unlikely(begin == end))
+        return pos;
+
+    if (_this->sso) {
+        for (it = begin; end != it; it = __i_dlist_next(it)) {
+            n = __i_dlist_make_list_node_copy_sso(_this, it);
+            if (is_null(n))
+                goto err;
+
+            ___i_dlist_insert(_this, pos, n);
+            suc++;
+        }
+    } else {
+        for (it = begin; end != it; it = __i_dlist_next(it)) {
+            if (is_null(__i_dlist_insert_valid(_this, pos, __i_dlist_slot_read(_this, it->data))))
+                goto err;
+            suc++;
+        }
+    }
+    return __i_dlist_next(first);
+
+err:
+    while (suc-- > 0)
+        __i_dlist_erase(_this, __i_dlist_next(first));
+    return NULL;
+}
+
+list_node_t* i_dlist_insert_range(i_list_t* _this, list_node_t* pos, list_node_t* begin, list_node_t* end)
+{
+    if (unlikely(is_null(_this) || is_null(pos) || is_null(begin) || is_null(end)))
+        return NULL;
+    return __i_dlist_insert_range(_this, pos, begin, end);
+}
+
+static JDSC_INLINE
+list_node_t* __i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
+{
+    list_node_t* n;
+
+    n = __i_dlist_insert(_this, pos, data);
+
+    if (!is_null(n))
+        __i_dlist_erase(_this, pos);
+
+    return n;
+}
+
+list_node_t* i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
+{
+    if (unlikely(is_null(_this) || is_null(pos)))
+        return NULL;
+    return __i_dlist_replace(_this, pos, data);
+}
+
 static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 void ___i_dlist_erase(i_list_t* _this, list_node_t* pos)
 {
@@ -276,21 +290,18 @@ void ___i_dlist_erase(i_list_t* _this, list_node_t* pos)
     _this->size--;
 }
 
-/* checked */
-static inline
+static JDSC_INLINE
 void __i_dlist_pop_back(i_list_t* _this)
 {
     list_node_t* n;
 
-    if (unlikely(__i_dlist_empty(_this)))
-        return ;
+    JDSC_ASSERT(!__i_dlist_empty(_this));
 
-    n = __i_dlist_rbegin(_this); /* iterator at back */
+    n = __i_dlist_rbegin(_this);
     ___i_dlist_erase(_this, n);
     __i_dlist_destroy_list_node(_this, n);
 }
 
-/* checked */
 void i_dlist_pop_back(i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -298,21 +309,18 @@ void i_dlist_pop_back(i_list_t* _this)
     __i_dlist_pop_back(_this);
 }
 
-/* checked */
-static inline
+static JDSC_INLINE
 void __i_dlist_pop_front(i_list_t* _this)
 {
     list_node_t* n;
 
-    if (unlikely(__i_dlist_empty(_this)))
-        return ;
+    JDSC_ASSERT(!__i_dlist_empty(_this));
 
-    n = __i_dlist_begin(_this); /* iterator at front */
+    n = __i_dlist_begin(_this);
     ___i_dlist_erase(_this, n);
     __i_dlist_destroy_list_node(_this, n);
 }
 
-/* checked */
 void i_dlist_pop_front(i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -320,25 +328,22 @@ void i_dlist_pop_front(i_list_t* _this)
     __i_dlist_pop_front(_this);
 }
 
-/* checked */
-static inline
+static JDSC_INLINE
 list_node_t* __i_dlist_erase(i_list_t* _this, list_node_t* pos)
 {
     list_node_t* n;
 
+    /* The input parameter is `iterator`, and there's no need 
+       to check whether it equals `rend` */
     if (unlikely(__i_dlist_empty(_this) || __i_dlist_end(_this) == pos) /* || __i_dlist_rend(_this) == pos*/)
         return NULL;
 
-    n = __i_dlist_next(pos);
-    if (unlikely(is_null(n)))
-        return NULL;
-
+    n = __i_dlist_next(pos); /* No need to check null */
     ___i_dlist_erase(_this, pos);
     __i_dlist_destroy_list_node(_this, pos);
     return n;
 }
 
-/* checked */
 list_node_t* i_dlist_erase(i_list_t* _this, list_node_t* pos)
 {
     if (unlikely(is_null(_this) || is_null(pos)))
@@ -346,7 +351,6 @@ list_node_t* i_dlist_erase(i_list_t* _this, list_node_t* pos)
     return __i_dlist_erase(_this, pos);
 }
 
-/* checked */
 static
 list_node_t* __i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_t* end)
 {
@@ -358,13 +362,10 @@ list_node_t* __i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_nod
     while (__i_dlist_end(_this) != pos && end != pos)
         pos = __i_dlist_erase(_this, pos);
 
-    if (__i_dlist_end(_this) == pos) {
-        JDSC_ASSERT(end == pos);
-    }
+    JDSC_ASSERT(end == pos);
     return pos;
 }
 
-/* checked */
 list_node_t* i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_t* end)
 {
     if (unlikely(is_null(_this) || is_null(begin) || is_null(end)))
@@ -372,7 +373,6 @@ list_node_t* i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_
     return __i_dlist_erase_range(_this, begin, end);
 }
 
-/* checked */
 static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
 {
@@ -385,7 +385,7 @@ list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
         }
     } else if (_this->sso) {
         list_for_each_entry(n, &_this->head, node) {
-            if (__ds_ops_eq_diff_sso(data, (list_data_t)(uintptr_t)n->data))
+            if (__ds_ops_eq_diff_sso(data, (list_data_t)n->data))
                 return n;
         }
     } else {
@@ -397,7 +397,6 @@ list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
     return NULL;
 }
 
-/* checked */
 list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data)
 {
     list_node_t* n;
@@ -408,34 +407,30 @@ list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data)
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return NULL;
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
-        return NULL;
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     n = ___i_dlist_find(_this, data);
     return is_null(n) ? i_dlist_end(_this) : n;
 }
 
-/* checked */
 static JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
 list_count_t ___i_dlist_count(const i_list_t* _this, list_data_t data)
 {
     list_size_t ret = 0;
-    list_node_t* t, * n;
+    list_node_t* n;
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
-        list_for_each_entry_safe(n, t, &_this->head, node) {
+        list_for_each_entry(n, &_this->head, node) {
             if (__i_dlist_slot_equal(_this->step, data, n->data))
                 ret++;
         }
     } else if (_this->sso) {
-        list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (__ds_ops_eq_diff_sso(data, (list_data_t)(uintptr_t)n->data))
+        list_for_each_entry(n, &_this->head, node) {
+            if (__ds_ops_eq_diff_sso(data, (list_data_t)n->data))
                 ret++;
         }
     } else {
-        list_for_each_entry_safe(n, t, &_this->head, node) {
+        list_for_each_entry(n, &_this->head, node) {
             if (_this->ops->__eq(data, __i_dlist_slot_read(_this, n->data)))
                 ret++;
         }
@@ -443,7 +438,6 @@ list_count_t ___i_dlist_count(const i_list_t* _this, list_data_t data)
     return ret;
 }
 
-/* checked */
 list_count_t i_dlist_count(const i_list_t* _this, list_data_t data)
 {
     if (unlikely(is_null(_this)))
@@ -452,15 +446,11 @@ list_count_t i_dlist_count(const i_list_t* _this, list_data_t data)
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
-        return -1;
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     return ___i_dlist_count(_this, data);
 }
 
-/* checked */
 list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
 {
     list_size_t ret = 0;
@@ -469,13 +459,10 @@ list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
     if (unlikely(is_null(_this)))
         return -1;
 
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+    if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return -1;
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
-        return -1;
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
@@ -488,7 +475,7 @@ list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
         }
     } else if (_this->sso) {
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (!__ds_ops_eq_diff_sso(data, (list_data_t)(uintptr_t)n->data))
+            if (!__ds_ops_eq_diff_sso(data, (list_data_t)n->data))
                 continue;
 
             ___i_dlist_erase(_this, n);
@@ -509,7 +496,6 @@ list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
     return ret;
 }
 
-/* checked */
 list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond)
 {
     list_size_t ret = 0;
@@ -518,276 +504,152 @@ list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond)
     if (unlikely(is_null(_this) || is_null(cond)))
         return -1;
 
-    list_for_each_entry_safe(n, t, &_this->head, node) {
-        if (!cond(__i_dlist_slot_read(_this, n->data)))
-            continue;
+    if (_this->sso) {
+        list_for_each_entry_safe(n, t, &_this->head, node) {
+            if (!cond(__ds_ops_char_addr_sso((list_data_t)n->data)))
+                continue;
 
-        ___i_dlist_erase(_this, n);
-        __i_dlist_destroy_list_node(_this, n);
-        ret++;
+            ___i_dlist_erase(_this, n);
+            __i_dlist_destroy_list_node(_this, n);
+            ret++;
+        }
+    } else {
+        list_for_each_entry_safe(n, t, &_this->head, node) {
+            if (!cond(__i_dlist_slot_read(_this, n->data)))
+                continue;
+
+            ___i_dlist_erase(_this, n);
+            __i_dlist_destroy_list_node(_this, n);
+            ret++;
+        }
     }
 
     return ret;
 }
 
-/* checked */
-static inline
-bool __i_dlist_value_eq_stored(const i_list_t* _this, list_data_t left, list_data_t right)
-{
-    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
-        return left == right;
-    } else if (_this->sso) {
-        return __ds_ops_eq_same_sso(left, right);
-    } else {
-        return _this->ops->__eq(left, right);
-    }
-}
-
-/* checked */
 list_size_t i_dlist_unique(i_list_t* _this)
 {
     list_size_t ret = 0;
-    list_node_t* first;
-    list_node_t* next;
+    list_node_t* t, *n;
 
     if (unlikely(is_null(_this)))
         return -1;
 
-    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))) {
-        JDSC_ASSERT(!"struct/union container has no __eq");
-        return -1;
-    }
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
 
     if (__i_dlist_size(_this) < 2)
         return 0;
 
-    first = __i_dlist_begin(_this);
-    next  = __i_dlist_next(first);
+    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
+        n = __i_dlist_begin(_this);
+        uint8_t* slot = n->data;
 
-    while (__i_dlist_end(_this) != next) {
-        if (__i_dlist_value_eq_stored(_this,
-                __i_dlist_slot_read(_this, first->data),
-                __i_dlist_slot_read(_this, next->data))) {
-            next = __i_dlist_erase(_this, next);
+        list_for_each_entry_safe_continue(n, t, &_this->head, node) {
+            if (!__i_dlist_slot_equal_slot(_this->step, slot, n->data)) {
+                slot = n->data;
+                continue;
+            }
+
+            ___i_dlist_erase(_this, n);
+            __i_dlist_destroy_list_node(_this, n);
             ret++;
-        } else {
-            first = next;
-            next  = __i_dlist_next(next);
+        }
+    } else if (_this->sso) {
+        n = __i_dlist_begin(_this);
+        uint8_t* slot = n->data;
+
+        list_for_each_entry_safe_continue(n, t, &_this->head, node) {
+            if (!__ds_ops_eq_same_sso((list_data_t)slot, (list_data_t)n->data)) {
+                slot = n->data;
+                continue;
+            }
+
+            ___i_dlist_erase(_this, n);
+            __i_dlist_destroy_list_node(_this, n);
+            ret++;
+        }
+    } else {
+        n = __i_dlist_begin(_this);
+        list_data_t slot = __i_dlist_slot_read(_this, n->data);
+
+        list_for_each_entry_safe_continue(n, t, &_this->head, node) {
+            if (!_this->ops->__eq(slot, __i_dlist_slot_read(_this, n->data))) {
+                slot = __i_dlist_slot_read(_this, n->data);
+                continue;
+            }
+
+            ___i_dlist_erase(_this, n);
+            __i_dlist_destroy_list_node(_this, n);
+            ret++;
         }
     }
 
     return ret;
 }
 
-/* checked */
-static inline
-void __i_dlist_reverse_self(i_list_t* _this)
+static list_size_t __i_dlist_clear(i_list_t* _this);
+static JDSC_INLINE
+bool __i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data)
 {
-    struct list_head* p;
+    list_node_t* first;
 
-    if (__i_dlist_size(_this) < 2)
-        return ;
+    if (unlikely(n < 0))
+        return false;
 
-    p = &_this->head;
-    do {
-        struct list_head* t = p->next;
+    if (unlikely(0 == n)) {
+        __i_dlist_clear(_this);
+        return true;
+    }
 
-        p->next = p->prev;
-        p->prev = t;
-        p = p->prev;
-    } while (p != &_this->head);
+    first = __i_dlist_insert_n(_this, __i_dlist_end(_this), n, data);
+    if (is_null(first))
+        return false;
+
+    __i_dlist_erase_range(_this, __i_dlist_begin(_this), first);
+    return true;
 }
 
-/* checked */
-void i_dlist_reverse(i_list_t* _this)
+bool i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data)
 {
     if (unlikely(is_null(_this)))
-        return ;
-
-    __i_dlist_reverse_self(_this);
+        return false;
+    return __i_dlist_assign(_this, n, data);
 }
 
-/* checked */
-static inline
-void __i_dlist_transfer(struct list_head* pos, struct list_head* first, struct list_head* last)
+static JDSC_INLINE
+bool __i_dlist_assign_range(i_list_t* _this, list_node_t* begin, list_node_t* end)
 {
-    struct list_head* tmp;
-
-    if (pos == last)
-        return ;
-
-    /* Remove [first, last) from its old position. */
-    last->prev->next  = pos;
-    first->prev->next = last;
-    pos->prev->next   = first;
-
-    /* Splice [first, last) into its new position. */
-    tmp         = pos->prev;
-    pos->prev   = last->prev;
-    last->prev  = first->prev;
-    first->prev = tmp;
-}
-
-/* checked */
-void i_dlist_splice(i_list_t* _this, list_iterator_t iterator, i_list_t* other)
-{
-    list_node_t* pos;
-
-    if (unlikely(is_null(_this) || is_null(other) || is_null(iterator.d)))
-        return ;
-
-    if (_this == other || __i_dlist_empty(other))
-        return ;
-
-    if (_this->step != other->step || _this->ops != other->ops || _this->dtype != other->dtype)
-        return ;
-
-    pos = __i_dlist_it_to_lnode(iterator);
-    __i_dlist_transfer(&pos->node, other->head.next, &other->head);
-
-    _this->size += other->size;
-    other->size = 0;
-}
-
-/* checked */
-void i_dlist_splice_range(i_list_t* _this, list_iterator_t iterator, i_list_t* other,
-                          list_iterator_t iterator_begin, list_iterator_t iterator_end)
-{
-    list_node_t* pos;
     list_node_t* first;
-    list_node_t* last;
-    list_node_t* it;
-    list_size_t n = 0;
 
-    if (unlikely(is_null(_this) || is_null(other)
-                 || is_null(iterator.d) || is_null(iterator_begin.d) || is_null(iterator_end.d)))
-        return ;
-
-    if (_this->step != other->step || _this->ops != other->ops || _this->dtype != other->dtype)
-        return ;
-
-    if (__i_dlist_empty(other) || iterator_begin.d == iterator_end.d)
-        return ;
-
-    pos   = __i_dlist_it_to_lnode(iterator);
-    first = __i_dlist_it_to_lnode(iterator_begin);
-    last  = __i_dlist_it_to_lnode(iterator_end);
-
-    for (it = first; __i_dlist_end(other) != it && it != last && n <= other->size; it = __i_dlist_next(it)) {
-        if (_this == other && it == pos)
-            return ;
-        n++;
+    if (unlikely(begin == end)) {
+        __i_dlist_clear(_this);
+        return true;
     }
 
-    if (it != last) /* `last` is not reachable from `first` in `other` */
-        return ;
+    first = __i_dlist_insert_range(_this, __i_dlist_end(_this), begin, end);
+    if (is_null(first))
+        return false;
 
-    __i_dlist_transfer(&pos->node, &first->node, &last->node);
-
-    _this->size += n;
-    other->size -= n;
+    __i_dlist_erase_range(_this, __i_dlist_begin(_this), first);
+    return true;
 }
 
-/* checked */
-void i_dlist_merge(i_list_t* _this, i_list_t* other, list_cmp_t cmp)
+bool i_dlist_assign_range(i_list_t* _this, list_node_t* begin, list_node_t* end)
 {
-    struct list_head* first1;
-    struct list_head* last1;
-    struct list_head* first2;
-    struct list_head* last2;
-
-    if (unlikely(is_null(_this) || is_null(other) || is_null(cmp)))
-        return ;
-
-    if (_this == other || __i_dlist_empty(other))
-        return ;
-
-    JDSC_ASSERT(_this->step == other->step
-                && _this->ops == other->ops
-                && _this->dtype == other->dtype);
-    if (_this->step != other->step || _this->ops != other->ops || _this->dtype != other->dtype)
-        return ;
-
-    first1 = _this->head.next;
-    last1  = &_this->head;
-    first2 = other->head.next;
-    last2  = &other->head;
-
-    while (first1 != last1 && first2 != last2) {
-        if (cmp(__i_dlist_slot_read(_this, ((list_node_t*)(void*)first2)->data),
-                __i_dlist_slot_read(_this, ((list_node_t*)(void*)first1)->data))) {
-            struct list_head* next = first2->next;
-
-            __i_dlist_transfer(first1, first2, next);
-            first2 = next;
-        } else {
-            first1 = first1->next;
-        }
-    }
-
-    if (first2 != last2)
-        __i_dlist_transfer(last1, first2, last2);
-
-    _this->size += other->size;
-    other->size = 0;
+    if (unlikely(is_null(_this) || is_null(begin) || is_null(end)))
+        return false;
+    return __i_dlist_assign_range(_this, begin, end);
 }
 
-/* checked */
-void __i_dlist_swap_head(i_list_t* _this, i_list_t* other)
-{
-    struct list_head* a = &_this->head;
-    struct list_head* b = &other->head;
-    list_size_t s;
-
-    if (a->next != a) {
-        if (b->next != b) {
-            struct list_head* t;
-
-            t = a->next; a->next = b->next; b->next = t;
-            t = a->prev; a->prev = b->prev; b->prev = t;
-            a->next->prev = a;
-            a->prev->next = a;
-            b->next->prev = b;
-            b->prev->next = b;
-        } else {
-            b->next = a->next;
-            b->prev = a->prev;
-            b->next->prev = b;
-            b->prev->next = b;
-            INIT_LIST_HEAD(a);
-        }
-    } else if (b->next != b) {
-        a->next = b->next;
-        a->prev = b->prev;
-        a->next->prev = a;
-        a->prev->next = a;
-        INIT_LIST_HEAD(b);
-    }
-
-    s = _this->size;
-    _this->size = other->size;
-    other->size = s;
-}
-
-/* checked */
-void i_dlist_swap(i_list_t* _this, i_list_t* other)
-{
-    if (unlikely(is_null(_this) || is_null(other) || _this == other))
-        return ;
-
-    if (_this->step != other->step || _this->ops != other->ops || _this->dtype != other->dtype)
-        return ;
-
-    __i_dlist_swap_head(_this, other);
-}
-
-/* checked */
-static inline
+static JDSC_INLINE
 bool __i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data)
 {
     list_size_t size = __i_dlist_size(_this);
 
-    if (n == size)
+    if (unlikely(n < 0))
+        return false;
+
+    if (unlikely(n == size))
         return true;
 
     if (n < size)
@@ -795,7 +657,6 @@ bool __i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data)
     return !is_null(__i_dlist_insert_n(_this, __i_dlist_end(_this), n - size, default_data));
 }
 
-/* checked */
 bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data)
 {
     if (unlikely(is_null(_this)))
@@ -803,35 +664,101 @@ bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data)
     return __i_dlist_resize(_this, n, default_data);
 }
 
-/* checked */
-static list_size_t __i_dlist_clear(i_list_t* _this);
-static inline
-list_size_t __i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data)
+static JDSC_INLINE
+void __i_dlist_sort_swap_head(struct list_head* a, struct list_head* b)
 {
-    list_node_t* e;
+    if (!list_empty(a)) {
+        if (!list_empty(b)) {
+            struct list_head* tmp;
 
-    if (unlikely(0 == n)) {
-        __i_dlist_clear(_this);
-        return 0;
+            tmp = a->next; a->next = b->next; b->next = tmp;
+            tmp = a->prev; a->prev = b->prev; b->prev = tmp;
+            a->next->prev = a;
+            a->prev->next = a;
+            b->next->prev = b;
+            b->prev->next = b;
+        } else {
+            b->next = a->next;
+            b->prev = a->prev;
+            a->next = a->prev = a;
+            b->next->prev = b;
+            b->prev->next = b;
+        }
+    } else if (!list_empty(b)) {
+        a->next = b->next;
+        a->prev = b->prev;
+        b->next = b->prev = b;
+        a->next->prev = a;
+        a->prev->next = a;
     }
-
-    e = __i_dlist_insert_n(_this, __i_dlist_end(_this), n, data);
-    if (unlikely(is_null(e)))
-        return -1;
-
-    __i_dlist_erase_range(_this, __i_dlist_begin(_this), e);
-    return n;
 }
 
-/* checked */
-list_size_t i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data)
+void i_dlist_sort(i_list_t* _this, __list_lt_t __lt)
 {
-    if (unlikely(is_null(_this)))
-        return -1;
-    return __i_dlist_assign(_this, n, data);
+    struct list_head carry;
+    struct list_head bins[64];
+    struct list_head* fill;
+    struct list_head* counter;
+    int i;
+
+    if (unlikely(is_null(_this) || is_null(__lt)))
+        return ;
+
+    if (unlikely(__i_dlist_size(_this) < 2))
+        return ;
+
+    INIT_LIST_HEAD(&carry);
+    for (i = 0; i < 64; ++i)
+        INIT_LIST_HEAD(&bins[i]);
+
+    /* Keep the std algorithm. */
+    fill = bins;
+    do {
+        ___i_dlist_splice_range(&carry, _this->head.next, _this->head.next->next);
+
+        for (counter = bins; counter != fill && !list_empty(counter); ++counter) {
+            ___i_dlist_merge(_this, counter, &carry, __lt);
+            __i_dlist_sort_swap_head(&carry, counter);
+        }
+        __i_dlist_sort_swap_head(&carry, counter);
+        if (counter == fill)
+            ++fill;
+    } while (!list_empty(&_this->head));
+
+    for (counter = bins + 1; counter != fill; ++counter)
+        ___i_dlist_merge(_this, counter, counter - 1, __lt);
+
+    __i_dlist_sort_swap_head(&_this->head, fill - 1);
 }
 
-/* checked */
+static JDSC_INLINE
+void __i_dlist_swap(i_list_t* _this, i_list_t* other)
+{
+    struct list_head thead;
+    list_size_t tsize;
+
+    JDSC_ASSERT(   _this->ops   == other->ops /* Include sso */
+                && __sequence_container_dtype_swap_compatible(_this->dtype, other->dtype)
+                && _this->step  == other->step
+                && _this->align == other->align
+                && _this->pad   == other->pad);
+
+    list_replace_init(&_this->head, &thead);
+    list_replace_init(&other->head, &_this->head);
+    list_replace_init(&thead, &other->head);
+
+    tsize = _this->size;
+    _this->size = other->size;
+    other->size = tsize;
+}
+
+void i_dlist_swap(i_list_t* _this, i_list_t* other)
+{
+    if (unlikely(is_null(_this) || is_null(other) || _this == other))
+        return ;
+    __i_dlist_swap(_this, other);
+}
+
 static
 list_size_t __i_dlist_clear(i_list_t* _this)
 {
@@ -847,7 +774,6 @@ list_size_t __i_dlist_clear(i_list_t* _this)
     return ret;
 }
 
-/* checked */
 list_size_t i_dlist_clear(i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -956,6 +882,7 @@ const class_list_t* class_list_ins(void)
         .push_front   = clist_push_front,
         .insert       = clist_insert,
         .insert_n     = clist_insert_n,
+        .insert_range = clist_insert_range,
         .erase        = clist_erase,
         .erase_range  = clist_erase_range,
         .pop_back     = clist_pop_back,
@@ -963,13 +890,15 @@ const class_list_t* class_list_ins(void)
         .remove       = clist_remove,
         .remove_if    = clist_remove_if,
         .unique       = clist_unique,
-        .reverse      = clist_reverse,
+        .assign       = clist_assign,
+        .assign_range = clist_assign_range,
+        .resize       = clist_resize,
         .splice       = clist_splice,
         .splice_range = clist_splice_range,
         .merge        = clist_merge,
+        .sort         = clist_sort,
+        .reverse      = clist_reverse,
         .swap         = clist_swap,
-        .resize       = clist_resize,
-        .assign       = clist_assign,
         .clear        = clist_clear,
     };
     return &ins;

@@ -50,7 +50,7 @@ typedef ds_index_t list_index_t;
 typedef ds_data_t  list_data_t;
 typedef ds_size_t  list_size_t;
 typedef ds_count_t list_count_t;
-typedef bool (*list_cmp_t)(list_data_t left, list_data_t right); /* Return true if [ `left` < `right` ]. Both sides are the value stored in the node (an address for step > 8), read the same way as `class_list_ops_t::__eq`'s `right` */
+typedef bool (*__list_lt_t)(list_data_t left, list_data_t right); /* Return true if [ `left` < `right` ] */
 
 /* vector */
 typedef ds_dtype_t vector_dtype_t;

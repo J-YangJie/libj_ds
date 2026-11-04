@@ -263,6 +263,62 @@ __i_vector_sort_define(sort_vt_ides, vector_data_t, VT_MOVE_NUM, VT_GT_NUM)
 __i_vector_sort_define(sort_vt_str,  VT_STR_T,      VT_MOVE_STR, VT_LT_STR)
 __i_vector_sort_define(sort_vt_sdes, VT_STR_T,      VT_MOVE_STR, VT_GT_STR)
 
+#ifdef TEST_LIST
+static bool list_lt_num(list_data_t a, list_data_t b)
+{
+    return a < b;
+}
+
+static bool list_gt_num(list_data_t a, list_data_t b)
+{
+    return a > b;
+}
+
+static bool list_lt_sso(list_data_t a, list_data_t b)
+{
+    return 0 > __ds_ops_cmp_same_sso((const ds_sso_t*)(uintptr_t)a, (const ds_sso_t*)(uintptr_t)b);
+}
+
+static bool list_gt_sso(list_data_t a, list_data_t b)
+{
+    return 0 < __ds_ops_cmp_same_sso((const ds_sso_t*)(uintptr_t)a, (const ds_sso_t*)(uintptr_t)b);
+}
+
+static int list_is_sorted_num(list_t* _this, __list_lt_t __lt)
+{
+    list_iterator_t it  = clist_begin(_this);
+    list_iterator_t end = clist_end(_this);
+
+    while (it.d != end.d) {
+        list_iterator_t next = clist_next(it);
+
+        if (next.d == end.d)
+            return 1;
+        if (__lt(*(list_data_t*)next.d, *(list_data_t*)it.d))
+            return 0;
+        it = next;
+    }
+    return 1;
+}
+
+static int list_is_sorted_sso(list_t* _this, __list_lt_t __lt)
+{
+    list_iterator_t it  = clist_begin(_this);
+    list_iterator_t end = clist_end(_this);
+
+    while (it.d != end.d) {
+        list_iterator_t next = clist_next(it);
+
+        if (next.d == end.d)
+            return 1;
+        if (__lt((list_data_t)(uintptr_t)next.d, (list_data_t)(uintptr_t)it.d))
+            return 0;
+        it = next;
+    }
+    return 1;
+}
+#endif /* TEST_LIST */
+
 static void test_i_for(void)
 {
     struct timeval time_begin, time_end;
@@ -1424,6 +1480,28 @@ static void test_i_rand(void)
             GET_DURATION({ removed = DSL(clist, remove)(ds_list_i, 9); }, time_list);
             printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_i));
         }
+
+
+        /* sort */
+        srand(SORT_SEED);
+        DSL(clist, clear)(ds_list_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
+
+        time_list = 0;
+        GET_DURATION({ DSL(clist, sort)(ds_list_i, list_lt_num); }, time_list);
+        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+               (ssize_t)(time_list / 1000),
+               list_is_sorted_num(ds_list_i, list_lt_num),
+               DSL(clist, size)(ds_list_i));
+
+        srand(SORT_SEED);
+        DSL(clist, clear)(ds_list_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
+
+        time_list = 0;
+        GET_DURATION({ DSL(clist, sort)(ds_list_i, list_gt_num); }, time_list);
+        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+               (ssize_t)(time_list / 1000),
+               list_is_sorted_num(ds_list_i, list_gt_num),
+               DSL(clist, size)(ds_list_i));
     }
 #endif
 
@@ -2422,6 +2500,28 @@ static void test_s_rand(void)
             GET_DURATION({ removed = DSL(clist, remove)(ds_list_s, (list_data_t)fixbuf); }, time_list);
             printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_s));
         }
+
+
+        /* sort */
+        srand(SORT_SEED);
+        DSL(clist, clear)(ds_list_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+
+        time_list = 0;
+        GET_DURATION({ DSL(clist, sort)(ds_list_s, list_lt_sso); }, time_list);
+        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+               (ssize_t)(time_list / 1000),
+               list_is_sorted_sso(ds_list_s, list_lt_sso),
+               DSL(clist, size)(ds_list_s));
+
+        srand(SORT_SEED);
+        DSL(clist, clear)(ds_list_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+
+        time_list = 0;
+        GET_DURATION({ DSL(clist, sort)(ds_list_s, list_gt_sso); }, time_list);
+        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+               (ssize_t)(time_list / 1000),
+               list_is_sorted_sso(ds_list_s, list_gt_sso),
+               DSL(clist, size)(ds_list_s));
 #undef DS_ARG
     }
 #endif

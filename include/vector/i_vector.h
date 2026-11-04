@@ -563,6 +563,9 @@ vector_iterator_t i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vect
 HEADER_STATIC_INLINE
 bool __i_vector_replace(i_vector_t* _this, uint8_t* slot, vector_data_t data)
 {
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return false;
+
     if (_this->sso) {
         if (data == __ds_ops_char_addr_sso((vector_data_t)slot))
             return true;
@@ -593,15 +596,10 @@ bool __i_vector_replace(i_vector_t* _this, uint8_t* slot, vector_data_t data)
 HEADER_STATIC_INLINE
 vector_iterator_t i_vector_replace_it(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
 {
-    if (is_null(_this) || i_vector_is_null_iterator(pos)
-        || pos.cur < _this->begin || pos.cur >= _this->end)
-        return i_vector_null_iterator();
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
-        return i_vector_null_iterator();
-
-    if (__i_vector_replace(_this, pos.cur, data))
-        return pos;
+    if (!is_null(_this) && !i_vector_is_null_iterator(pos) && pos.cur >= _this->begin && pos.cur < _this->end) {
+        if (__i_vector_replace(_this, pos.cur, data))
+            return pos;
+    }
     return i_vector_null_iterator();
 }
 
@@ -611,9 +609,6 @@ vector_iterator_t i_vector_replace_index(i_vector_t* _this, vector_index_t index
     uint8_t* slot;
 
     if (!is_null(_this) && index < (vector_index_t)__i_vector_size(_this)) {
-        if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
-            return i_vector_null_iterator();
-
         slot = __i_vector_ptr_add(_this->begin, index, _this->step);
         if (__i_vector_replace(_this, slot, data))
             return __i_vector_make_iterator(_this->step, slot);
