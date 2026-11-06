@@ -48,6 +48,7 @@ typedef i_list_t list_t;
 
 /* Method 1 */
 HEADER_STATIC_INLINE list_size_t        clist_size(const list_t* _this)                                                                 { return i_dlist_size(_this); }
+HEADER_STATIC_INLINE list_size_t        clist_max_size(const list_t* _this)                                                             { return i_dlist_max_size(_this); }
 HEADER_STATIC_INLINE bool               __clist_empty(const list_t* _this)                                                              { return __i_dlist_empty(_this); }
 HEADER_STATIC_INLINE list_count_t       clist_count(const list_t* _this, list_data_t data)                                              { return i_dlist_count(_this, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_end(const list_t* _this)                                                                  { return i_clist_end(_this); }
@@ -72,6 +73,8 @@ HEADER_STATIC_INLINE bool               clist_push_front(list_t* _this, list_dat
 HEADER_STATIC_INLINE list_iterator_t    clist_insert(list_t* _this, list_iterator_t iterator, list_data_t data)                         { return i_clist_insert(_this, iterator, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_insert_n(list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data)        { return i_clist_insert_n(_this, iterator, n, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_insert_range(list_t* _this, list_iterator_t iterator_pos, list_iterator_t iterator_begin, list_iterator_t iterator_end) { return i_clist_insert_range(_this, iterator_pos, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE bool               clist_replace_it(list_t* _this, list_iterator_t iterator, list_data_t data)                     { return i_clist_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool               clist_replace_index(list_t* _this, list_index_t index, list_data_t data)                        { return i_clist_replace_index(_this, index, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_erase(list_t* _this, list_iterator_t iterator)                                            { return i_clist_erase(_this, iterator); }
 HEADER_STATIC_INLINE list_iterator_t    clist_erase_range(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)  { return i_clist_erase_range(_this, iterator_begin, iterator_end); }
 HEADER_STATIC_INLINE void               clist_pop_back(list_t* _this)                                                                   { i_dlist_pop_back(_this); }
@@ -79,6 +82,7 @@ HEADER_STATIC_INLINE void               clist_pop_front(list_t* _this)          
 HEADER_STATIC_INLINE list_size_t        clist_remove(list_t* _this, list_data_t data)                                                   { return i_dlist_remove(_this, data); }
 HEADER_STATIC_INLINE list_size_t        clist_remove_if(list_t* _this, remove_if_condition cond)                                        { return i_dlist_remove_if(_this, cond); }
 HEADER_STATIC_INLINE list_size_t        clist_unique(list_t* _this)                                                                     { return i_dlist_unique(_this); }
+HEADER_STATIC_INLINE list_size_t        clist_unique_if(list_t* _this, unique_if_condition cond)                                        { return i_dlist_unique_if(_this, cond); }
 HEADER_STATIC_INLINE bool               clist_assign(list_t* _this, list_size_t n, list_data_t data)                                    { return i_dlist_assign(_this, n, data); }
 HEADER_STATIC_INLINE bool               clist_assign_range(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end) { return i_clist_assign_range(_this, iterator_begin, iterator_end); }
 HEADER_STATIC_INLINE bool               clist_resize(list_t* _this, list_size_t n, list_data_t default_data)                            { return i_dlist_resize(_this, n, default_data); }
@@ -93,6 +97,7 @@ HEADER_STATIC_INLINE list_size_t        clist_clear(list_t* _this)              
 /* Method 2 */
 typedef struct class_list {
     list_size_t (*size)(const list_t* _this);
+    list_size_t (*max_size)(const list_t* _this);
     bool (*__empty)(const list_t* _this);
     list_count_t (*count)(const list_t* _this, list_data_t data);
     list_iterator_t (*end)(const list_t* _this);
@@ -117,6 +122,8 @@ typedef struct class_list {
     list_iterator_t (*insert)(list_t* _this, list_iterator_t iterator, list_data_t data);                           /* insert data before `iterator` */
     list_iterator_t (*insert_n)(list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data);
     list_iterator_t (*insert_range)(list_t* _this, list_iterator_t iterator_pos, list_iterator_t iterator_begin, list_iterator_t iterator_end); /* Source range must have the same element layout/ops; ranges from _this are undefined. */
+    bool (*replace_it)(list_t* _this, list_iterator_t iterator, list_data_t data);                                  /* *iterator = data */
+    bool (*replace_index)(list_t* _this, list_index_t index, list_data_t data);                                     /* ds[index] = data */
     list_iterator_t (*erase)(list_t* _this, list_iterator_t iterator);
     list_iterator_t (*erase_range)(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end);   /* [iterator_begin, iterator_end) */
     void (*pop_back)(list_t* _this);
@@ -124,6 +131,7 @@ typedef struct class_list {
     list_size_t (*remove)(list_t* _this, list_data_t data);
     list_size_t (*remove_if)(list_t* _this, remove_if_condition cond);
     list_size_t (*unique)(list_t* _this);                                                                          /* STL: ds->unique()，删除连续重复元素，返回删除个数 */
+    list_size_t (*unique_if)(list_t* _this, unique_if_condition cond);
     bool (*assign)(list_t* _this, list_size_t n, list_data_t data);                                                /* STL: ds->assign(n, data) */
     bool (*assign_range)(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end);             /* STL: ds->assign_range(begin, end) */
     bool (*resize)(list_t* _this, list_size_t n, list_data_t default_data);

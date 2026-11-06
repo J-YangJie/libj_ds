@@ -215,7 +215,7 @@ uint8_t* __i_vector_realloc_buf(i_vector_t* _this, vector_size_t ncap)
 
 #ifndef SSIZE_MAX
 #define SSIZE_MAX ((ssize_t)(SIZE_MAX / 2))
-#endif
+#endif /* SSIZE_MAX */
 
 static JDSC_INLINE_FORCE
 vector_size_t ___i_vector_max_size(vector_step_t step)
@@ -526,6 +526,7 @@ void __vector_deinit(vector_t* vector)
 vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, vector_step_t step, vector_align_t align, vector_size_t capacity_init)
 {
     vector_t* vector;
+    vector_step_t width;
 
     if (step <= 0 || align > step || (0 != align && (0 != (align & (align - 1)) || 0 != (step % align))) || capacity_init < 0 || capacity_init > ___i_vector_max_size(step)) {
         JDSC_ASSERT_NEW(0, "%s: Invalid step %zu, align %zu or capacity_init %zd "
@@ -540,7 +541,7 @@ vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, 
         return NULL;
     }
 
-    size_t width = __sequence_container_dtype_width(data_type);
+    width = __sequence_container_dtype_width(data_type);
     if (0 != width && width != step) {
         JDSC_ASSERT_NEW(0, "%s: Data type width %zu does not match step %zu!",
                         __func__, width, step);
@@ -572,6 +573,9 @@ vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, 
         return NULL;
     }
 
+    vector->ops   = ops;
+    if (g_class_vector_ops_sso() == vector->ops)
+        vector->sso = true;
     vector->dtype = data_type;
     vector->step  = step;
     vector->align = align;
@@ -579,9 +583,6 @@ vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, 
     if (!__vector_init(vector))
         goto err;
 
-    vector->ops = ops;
-    if (g_class_vector_ops_sso() == vector->ops)
-        vector->sso = true;
     return vector;
 
 err:

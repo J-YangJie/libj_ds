@@ -50,6 +50,7 @@ typedef ds_index_t list_index_t;
 typedef ds_data_t  list_data_t;
 typedef ds_size_t  list_size_t;
 typedef ds_count_t list_count_t;
+typedef bool (*unique_if_condition)(list_data_t left, list_data_t right);
 typedef bool (*__list_lt_t)(list_data_t left, list_data_t right); /* Return true if [ `left` < `right` ] */
 
 /* vector */

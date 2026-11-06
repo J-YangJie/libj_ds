@@ -29,6 +29,7 @@
 
 #define JDSC_NO_ITERATOR
 #define JDSC_ONLY_WRAPPER
+#define JDSC_LOGIC_FRAGMENT
 
 
 #if defined(JDSC_MEMPOOL)

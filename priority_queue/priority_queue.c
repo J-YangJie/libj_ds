@@ -757,7 +757,7 @@ void __i_priority_queue_rise_deque_addr(i_priority_queue_t* _this, priority_queu
     bool (*__lt)(priority_queue_data_t, priority_queue_data_t) = _this->ops->__lt;
     void (*__move)(priority_queue_data_t, priority_queue_data_t) = is_null(__d->ops) || is_null(__d->ops->__move) ? NULL : __d->ops->__move;
     uint8_t* __hp;
-    uint8_t* __t = _this->swap;
+    uint8_t* __t = __d->swap;
     priority_queue_size_t __i = index;
 
     if (__i <= 0)
@@ -806,7 +806,7 @@ void __i_priority_queue_heapify_deque_addr(i_priority_queue_t* _this, priority_q
     void (*__move)(priority_queue_data_t, priority_queue_data_t) = is_null(__d->ops) || is_null(__d->ops->__move) ? NULL : __d->ops->__move;
     priority_queue_size_t __size = __i_deque_size(__d);
     uint8_t* __hp;
-    uint8_t* __t = _this->swap;
+    uint8_t* __t = __d->swap;
     priority_queue_size_t __i = index;
 
     if (__i >= __size)
@@ -880,7 +880,7 @@ void __i_priority_queue_pop_deque_addr(i_priority_queue_t* _this)
     if (__size > 1) {
         uint8_t* __ap = __i_pq_deq_at_fast_stun(0);
         uint8_t* __bp = __i_pq_deq_at_fast_stun(__size - 1);
-        uint8_t* __t = _this->swap;
+        uint8_t* __t = __d->swap;
 
         if (is_null(__move)) {
             memmove(__t,  __ap, __step);
@@ -1122,40 +1122,6 @@ priority_queue_t* __priority_queue_new(container_adaptor_base_t id, void* pbase,
         goto free_priority_queue;
     }
 
-    {
-        ds_step_t  step  = 0;
-        ds_align_t align = 0;
-
-        switch (id) {
-        case __CONTAINER_ADAPTOR_BASE_VECTOR:
-            step  = priority_queue->v->step;
-            align = priority_queue->v->align;
-            break;
-        case __CONTAINER_ADAPTOR_BASE_DEQUE:
-            step  = priority_queue->d->step;
-            align = priority_queue->d->align;
-            break;
-        default:
-            JDSC_ASSERT_NEW(0, "%s: Unsupported container base id %u (expected VECTOR or DEQUE)!",
-                            __func__, (unsigned)id);
-            goto free_priority_queue;
-        }
-
-        if (step <= 0) {
-            JDSC_ASSERT_NEW(0, "%s: Invalid element step %zu (must be greater than zero)!",
-                            __func__, step);
-            goto free_priority_queue;
-        }
-
-        (void)align;
-        priority_queue->swap = (uint8_t*)p_aligned_malloc(align, step);
-        if (is_null(priority_queue->swap)) {
-            JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for swap buffer!",
-                            __func__, step);
-            goto free_priority_queue;
-        }
-    }
-
     if (g_class_priority_queue_ops_sso() == priority_queue->ops) {
         priority_queue->sso = true;
         switch (id) {
@@ -1182,19 +1148,6 @@ void __priority_queue_delete(priority_queue_t** _this)
 {
     if (unlikely(is_null(_this) || is_null(*_this)))
         return ;
-
-    if (!is_null((*_this)->swap)) {
-        ds_align_t align = 0;
-
-        switch ((*_this)->id) {
-        case __CONTAINER_ADAPTOR_BASE_VECTOR: align = (*_this)->v->align; break;
-        case __CONTAINER_ADAPTOR_BASE_DEQUE:  align = (*_this)->d->align; break;
-        default: break;
-        }
-
-        (void)align;
-        p_aligned_free((*_this)->swap, align);
-    }
 
     switch ((*_this)->id) {
     case __CONTAINER_ADAPTOR_BASE_VECTOR: VECTOR_DELETE(&(*_this)->v); break;

@@ -32,7 +32,6 @@ typedef struct i_priority_queue {
         deque_t*  d;
         void*     p;
     };
-    uint8_t* swap;
 } i_priority_queue_t;
 
 HEADER_STATIC_INLINE

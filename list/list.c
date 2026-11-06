@@ -87,6 +87,19 @@ void __i_dlist_destroy_list_node(const i_list_t* _this, list_node_t* node)
     p_aligned_free(base, _this->align);
 }
 
+#include <limits.h>
+#include <stdint.h> /* SIZE_MAX */
+
+#ifndef SSIZE_MAX
+#define SSIZE_MAX ((ssize_t)(SIZE_MAX / 2))
+#endif /* SSIZE_MAX */
+
+JDSC_INLINE
+list_size_t __i_dlist_max_size(const i_list_t* _this)
+{
+    return 0 == _this->step ? -1 : (SSIZE_MAX / _this->step) - 1;
+}
+
 static JDSC_INLINE
 list_node_t* __i_dlist_push_back(i_list_t* _this, list_data_t data)
 {
@@ -261,26 +274,6 @@ list_node_t* i_dlist_insert_range(i_list_t* _this, list_node_t* pos, list_node_t
     if (unlikely(is_null(_this) || is_null(pos) || is_null(begin) || is_null(end)))
         return NULL;
     return __i_dlist_insert_range(_this, pos, begin, end);
-}
-
-static JDSC_INLINE
-list_node_t* __i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
-{
-    list_node_t* n;
-
-    n = __i_dlist_insert(_this, pos, data);
-
-    if (!is_null(n))
-        __i_dlist_erase(_this, pos);
-
-    return n;
-}
-
-list_node_t* i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
-{
-    if (unlikely(is_null(_this) || is_null(pos)))
-        return NULL;
-    return __i_dlist_replace(_this, pos, data);
 }
 
 static JDSC_INLINE_FORCE JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR
@@ -587,6 +580,51 @@ list_size_t i_dlist_unique(i_list_t* _this)
     return ret;
 }
 
+list_size_t i_dlist_unique_if(i_list_t* _this, unique_if_condition cond)
+{
+    list_size_t ret = 0;
+    list_node_t* t, *n;
+
+    if (unlikely(is_null(_this) || is_null(cond)))
+        return -1;
+
+    if (__i_dlist_size(_this) < 2)
+        return 0;
+
+    if (_this->sso) {
+        n = __i_dlist_begin(_this);
+        uint8_t* slot = n->data;
+
+        list_for_each_entry_safe_continue(n, t, &_this->head, node) {
+            if (!cond(__ds_ops_char_addr_sso((list_data_t)slot),
+                      __ds_ops_char_addr_sso((list_data_t)n->data))) {
+                slot = n->data;
+                continue;
+            }
+
+            ___i_dlist_erase(_this, n);
+            __i_dlist_destroy_list_node(_this, n);
+            ret++;
+        }
+    } else {
+        n = __i_dlist_begin(_this);
+        list_data_t slot = __i_dlist_slot_read(_this, n->data);
+
+        list_for_each_entry_safe_continue(n, t, &_this->head, node) {
+            if (!cond(slot, __i_dlist_slot_read(_this, n->data))) {
+                slot = __i_dlist_slot_read(_this, n->data);
+                continue;
+            }
+
+            ___i_dlist_erase(_this, n);
+            __i_dlist_destroy_list_node(_this, n);
+            ret++;
+        }
+    }
+
+    return ret;
+}
+
 static list_size_t __i_dlist_clear(i_list_t* _this);
 static JDSC_INLINE
 bool __i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data)
@@ -781,15 +819,36 @@ list_size_t i_dlist_clear(i_list_t* _this)
     return __i_dlist_clear(_this);
 }
 
-/* checked */
+static JDSC_INLINE
+bool __list_init(list_t* list)
+{
+    list->swap = (uint8_t*)p_aligned_malloc(list->align, list->step);
+    if (is_null(list->swap)) {
+        JDSC_ASSERT_NEW(0, "%s: Failed to allocate %zu bytes for swap!",
+                        __func__, list->step);
+        return false;
+    }
+
+    INIT_LIST_HEAD(&list->head);
+    return true;
+}
+
+static JDSC_INLINE
+void __list_deinit(list_t* list)
+{
+    i_dlist_clear(list);
+    p_aligned_free(list->swap, list->align);
+}
+
 list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_step_t step, list_align_t align)
 {
     list_t* list;
-    size_t  width;
+    list_step_t width;
 
-    if (step <= 0) {
-        JDSC_ASSERT_NEW(0, "%s: Invalid element step %zu (must be greater than zero)!",
-                        __func__, step);
+    if (step <= 0 || align > step || (0 != align && (0 != (align & (align - 1)) || 0 != (step % align)))) {
+        JDSC_ASSERT_NEW(0, "%s: Invalid step %zu or align %zu "
+                        "(step must be greater than zero, align must be zero or a power of two that does not exceed and divides step!",
+                        __func__, step, align);
         return NULL;
     }
 
@@ -835,71 +894,78 @@ list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_ste
         list->sso = true;
     list->dtype = data_type;
     list->step  = step;
-    list->align = align ? align : JDSC_ALIGN_DEFAULT;
+    list->align = align;
 #if JDSC_ALIGNMEM
-    list->pad   = list->align > JDSC_ALIGN_DEFAULT
-                    ? list->align - offsetof(list_node_t, data)
-                    : 0;
+    list->pad   = list->align > JDSC_ALIGN_DEFAULT ? list->align - offsetof(list_node_t, data) : 0;
 #endif
-    INIT_LIST_HEAD(&list->head);
+    if (!__list_init(list))
+        goto err;
+
     return list;
+
+err:
+    p_free(list);
+    return NULL;
 }
 
-/* checked */
 void __list_delete(list_t** _this)
 {
     if (is_null(_this) || is_null(*_this))
         return ;
 
-    i_dlist_clear(*_this);
+    __list_deinit(*_this);
     p_free(*_this);
 }
 
 const class_list_t* class_list_ins(void)
 {
     static const class_list_t ins = {
-        .size         = clist_size,
-        .__empty      = __clist_empty,
-        .count        = clist_count,
-        .end          = clist_end,
-        .begin        = clist_begin,
-        .next         = clist_next,
-        .prev         = clist_prev,
-        .rend         = clist_rend,
-        .rbegin       = clist_rbegin,
-        .rnext        = clist_rnext,
-        .rprev        = clist_rprev,
-        .__it         = __clist_it,
-        .it           = clist_it,
-        .__at         = __clist_at,
-        .at           = clist_at,
-        .__back       = __clist_back,
-        .back         = clist_back,
-        .__front      = __clist_front,
-        .front        = clist_front,
-        .find         = clist_find,
-        .push_back    = clist_push_back,
-        .push_front   = clist_push_front,
-        .insert       = clist_insert,
-        .insert_n     = clist_insert_n,
-        .insert_range = clist_insert_range,
-        .erase        = clist_erase,
-        .erase_range  = clist_erase_range,
-        .pop_back     = clist_pop_back,
-        .pop_front    = clist_pop_front,
-        .remove       = clist_remove,
-        .remove_if    = clist_remove_if,
-        .unique       = clist_unique,
-        .assign       = clist_assign,
-        .assign_range = clist_assign_range,
-        .resize       = clist_resize,
-        .splice       = clist_splice,
-        .splice_range = clist_splice_range,
-        .merge        = clist_merge,
-        .sort         = clist_sort,
-        .reverse      = clist_reverse,
-        .swap         = clist_swap,
-        .clear        = clist_clear,
+        .size           = clist_size,
+        .max_size       = clist_max_size,
+        .__empty        = __clist_empty,
+        .count          = clist_count,
+        .end            = clist_end,
+        .begin          = clist_begin,
+        .next           = clist_next,
+        .prev           = clist_prev,
+        .rend           = clist_rend,
+        .rbegin         = clist_rbegin,
+        .rnext          = clist_rnext,
+        .rprev          = clist_rprev,
+        .__it           = __clist_it,
+        .it             = clist_it,
+        .__at           = __clist_at,
+        .at             = clist_at,
+        .__back         = __clist_back,
+        .back           = clist_back,
+        .__front        = __clist_front,
+        .front          = clist_front,
+        .find           = clist_find,
+        .push_back      = clist_push_back,
+        .push_front     = clist_push_front,
+        .insert         = clist_insert,
+        .insert_n       = clist_insert_n,
+        .insert_range   = clist_insert_range,
+        .replace_it     = clist_replace_it,
+        .replace_index  = clist_replace_index,
+        .erase          = clist_erase,
+        .erase_range    = clist_erase_range,
+        .pop_back       = clist_pop_back,
+        .pop_front      = clist_pop_front,
+        .remove         = clist_remove,
+        .remove_if      = clist_remove_if,
+        .unique         = clist_unique,
+        .unique_if      = clist_unique_if,
+        .assign         = clist_assign,
+        .assign_range   = clist_assign_range,
+        .resize         = clist_resize,
+        .splice         = clist_splice,
+        .splice_range   = clist_splice_range,
+        .merge          = clist_merge,
+        .sort           = clist_sort,
+        .reverse        = clist_reverse,
+        .swap           = clist_swap,
+        .clear          = clist_clear,
     };
     return &ins;
 }

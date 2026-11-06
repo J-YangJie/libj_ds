@@ -39,6 +39,7 @@ typedef struct i_list {
     list_align_t     align;
     list_pad_t       pad;
     struct list_head head; /* Err：It cannot be the last one, otherwise the address is invalid! */
+    uint8_t*         swap;
     list_size_t      size;
     bool             sso;
 } i_list_t;
@@ -452,12 +453,41 @@ bool __i_dlist_slot_equal_slot(list_step_t step, const void* slot1, const void* 
     }
 }
 
+HEADER_STATIC_INLINE
+void __i_dlist_slot_move(const i_list_t* _this, void* dest, const void* src)
+{
+    if (dest != src) {
+        if (is_null(_this->ops) || is_null(_this->ops->__move)) {
+            switch (_this->step) {
+            case 1:  memmove(dest, src, 1);  return ;
+            case 2:  memmove(dest, src, 2);  return ;
+            case 4:  memmove(dest, src, 4);  return ;
+            case 8:  memmove(dest, src, 8);  return ;
+            case 16: memmove(dest, src, 16); return ;
+            case 24: memmove(dest, src, 24);
+#ifdef JDSC_32BIT
+                    if (_this->sso) __ds_ops_fix_sso((list_data_t)dest);
+#endif /* JDSC_32BIT */
+                return ;
+            case 32: memmove(dest, src, 32);
+#ifdef JDSC_64BIT
+                    if (_this->sso) __ds_ops_fix_sso((list_data_t)dest);
+#endif /* JDSC_64BIT */
+                return ;
+            default: memmove(dest, src, _this->step); return ;
+            }
+        } else {
+            _this->ops->__move((list_data_t)dest, (list_data_t)src);
+        }
+    }
+}
+
+list_size_t __i_dlist_max_size(const i_list_t* _this);
 bool i_dlist_push_back(i_list_t* _this, list_data_t data);
 bool i_dlist_push_front(i_list_t* _this, list_data_t data);
 list_node_t* i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data);
 list_node_t* i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, list_data_t data);
 list_node_t* i_dlist_insert_range(i_list_t* _this, list_node_t* pos, list_node_t* begin, list_node_t* end);
-list_node_t* i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data);
 void i_dlist_pop_back(i_list_t* _this);
 void i_dlist_pop_front(i_list_t* _this);
 list_node_t* i_dlist_erase(i_list_t* _this, list_node_t* pos);
@@ -467,12 +497,65 @@ list_count_t i_dlist_count(const i_list_t* _this, list_data_t data);
 list_size_t i_dlist_remove(i_list_t* _this, list_data_t data);
 list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond);
 list_size_t i_dlist_unique(i_list_t* _this);
+list_size_t i_dlist_unique_if(i_list_t* _this, unique_if_condition cond);
 bool i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data);
 bool i_dlist_assign_range(i_list_t* _this, list_node_t* begin, list_node_t* end);
 bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data);
 void i_dlist_sort(i_list_t* _this, __list_lt_t __lt);
 void i_dlist_swap(i_list_t* _this, i_list_t* other);
 list_size_t i_dlist_clear(i_list_t* _this);
+
+HEADER_STATIC_INLINE
+list_size_t i_dlist_max_size(const i_list_t* _this)
+{
+    return !is_null(_this) ? __i_dlist_max_size(_this) : -1;
+}
+
+HEADER_STATIC_INLINE
+bool __i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
+{
+    if (__i_dlist_end(_this) == pos)
+        return false;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return false;
+
+    if (_this->sso) {
+        if (data == __ds_ops_char_addr_sso((list_data_t)pos->data))
+            return true;
+    } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && data == (list_data_t)pos->data) {
+        return true;
+    } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data)
+               && !is_null(_this->ops->free_data) && data == __i_dlist_slot_read(_this, pos->data)) {
+        return true;
+    }
+
+    if (is_null(_this->ops) || is_null(_this->ops->copy_data)) {
+        if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+            _this->ops->free_data((list_data_t*)pos->data);
+
+        __i_dlist_slot_write(_this, pos->data, data);
+        return true;
+    }
+
+    if (!__i_dlist_slot_write(_this, _this->swap, data))
+        return false;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+        _this->ops->free_data((list_data_t*)pos->data);
+
+    __i_dlist_slot_move(_this, pos->data, _this->swap);
+
+    return true;
+}
+
+HEADER_STATIC_INLINE
+bool i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
+{
+    if (!is_null(_this) && !is_null(pos))
+        return __i_dlist_replace(_this, pos, data);
+    return false;
+}
 
 HEADER_STATIC_INLINE /* JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR */
 void ___i_dlist_splice_range(struct list_head* pos, struct list_head* first, struct list_head* last)
@@ -637,15 +720,16 @@ void i_dlist_reverse(i_list_t* _this)
 
 
 HEADER_STATIC_INLINE
-list_iterator_t i_dlist_replace_it(i_list_t* _this, list_iterator_t pos, list_data_t data)
+bool i_clist_replace_it(i_list_t* _this, list_iterator_t pos, list_data_t data)
 {
-    return __i_dlist_lnode_to_it(i_dlist_replace(_this, __i_dlist_it_to_lnode(pos), data));
+    return i_dlist_replace(_this, __i_dlist_it_to_lnode(pos), data);
 }
 
 HEADER_STATIC_INLINE
-list_iterator_t i_dlist_replace_index(i_list_t* _this, list_index_t index, list_data_t data)
+bool i_clist_replace_index(i_list_t* _this, list_index_t index, list_data_t data)
 {
-    return __i_dlist_lnode_to_it(i_dlist_replace(_this, __i_dlist_it_to_lnode(i_dlist_iterator(_this, index)), data));
+    list_iterator_t pos = i_dlist_iterator(_this, index);
+    return i_clist_replace_it(_this, pos, data);
 }
 
 HEADER_STATIC_INLINE
