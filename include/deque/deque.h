@@ -77,14 +77,16 @@ HEADER_STATIC_INLINE deque_value_t       __cdeque_back(const deque_t* _this)    
 HEADER_STATIC_INLINE deque_value_t       cdeque_back(const deque_t* _this)                                                                   { return i_deque_back(_this); }
 HEADER_STATIC_INLINE deque_value_t       __cdeque_front(const deque_t* _this)                                                                { return __i_deque_front(_this); }
 HEADER_STATIC_INLINE deque_value_t       cdeque_front(const deque_t* _this)                                                                  { return i_deque_front(_this); }
+HEADER_STATIC_INLINE bool                __cdeque_replace_it(deque_t* _this, deque_iterator_t iterator, deque_data_t data)                   { return __i_deque_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool                cdeque_replace_it(deque_t* _this, deque_iterator_t iterator, deque_data_t data)                     { return i_deque_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool                __cdeque_replace_index(deque_t* _this, deque_index_t index, deque_data_t data)                      { return __i_deque_replace_index(_this, index, data); }
+HEADER_STATIC_INLINE bool                cdeque_replace_index(deque_t* _this, deque_index_t index, deque_data_t data)                        { return i_deque_replace_index(_this, index, data); }
 HEADER_STATIC_INLINE deque_iterator_t    cdeque_find(const deque_t* _this, deque_data_t data)                                                { return i_deque_find(_this, data); }
 HEADER_STATIC_INLINE bool                cdeque_push_back(deque_t* _this, deque_data_t data)                                                 { return i_deque_push_back(_this, data); }
 HEADER_STATIC_INLINE bool                cdeque_push_front(deque_t* _this, deque_data_t data)                                                { return i_deque_push_front(_this, data); }
 HEADER_STATIC_INLINE deque_iterator_t    cdeque_insert(deque_t* _this, deque_iterator_t pos, deque_data_t data)                              { return i_deque_insert(_this, pos, data); }
 HEADER_STATIC_INLINE deque_iterator_t    cdeque_insert_n(deque_t* _this, deque_iterator_t pos, deque_size_t n, deque_data_t data)            { return i_deque_insert_n(_this, pos, n, data); }
 HEADER_STATIC_INLINE deque_iterator_t    cdeque_insert_range(deque_t* _this, deque_iterator_t iterator_pos, deque_iterator_t iterator_begin, deque_iterator_t iterator_end) { return i_deque_insert_range(_this, iterator_pos, iterator_begin, iterator_end); }
-HEADER_STATIC_INLINE bool                cdeque_replace_it(deque_t* _this, deque_iterator_t iterator, deque_data_t data)                     { return i_deque_replace_it(_this, iterator, data); }
-HEADER_STATIC_INLINE bool                cdeque_replace_index(deque_t* _this, deque_index_t index, deque_data_t data)                        { return i_deque_replace_index(_this, index, data); }
 HEADER_STATIC_INLINE deque_iterator_t    cdeque_erase(deque_t* _this, deque_iterator_t pos)                                                  { return i_deque_erase(_this, pos); }
 HEADER_STATIC_INLINE deque_iterator_t    cdeque_erase_range(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end)  { return i_deque_erase_range(_this, iterator_begin, iterator_end); }
 HEADER_STATIC_INLINE void                cdeque_pop_back(deque_t* _this)                                                                     { i_deque_pop_back(_this); }
@@ -112,33 +114,35 @@ typedef struct class_deque {
     deque_r_iterator_t (*rbegin)(const deque_t* _this);
     deque_r_iterator_t (*rnext)(deque_r_iterator_t r_iterator);
     deque_r_iterator_t (*rprev)(deque_r_iterator_t r_iterator);
-    deque_iterator_t (*__it)(const deque_t* _this, deque_index_t index);                                                  /* return iterator by n(index), but without checking parameters */
-    deque_iterator_t (*it)(const deque_t* _this, deque_index_t index);                                                    /* return iterator by n(index) */
-    deque_value_t (*__at)(const deque_t* _this, deque_index_t index);                                                     /* STL: ds[index], but without checking parameters */
-    deque_value_t (*at)(const deque_t* _this, deque_index_t index);                                                       /* STL: ds->at(index) */
+    deque_iterator_t (*__it)(const deque_t* _this, deque_index_t index);                                   /* return iterator by n(index), without checking parameters */
+    deque_iterator_t (*it)(const deque_t* _this, deque_index_t index);                                     /* return iterator by n(index) */
+    deque_value_t (*__at)(const deque_t* _this, deque_index_t index);                                      /* STL: ds[index], without checking parameters */
+    deque_value_t (*at)(const deque_t* _this, deque_index_t index);                                        /* STL: ds->at(index) */
     deque_value_t (*__back)(const deque_t* _this);
     deque_value_t (*back)(const deque_t* _this);
     deque_value_t (*__front)(const deque_t* _this);
     deque_value_t (*front)(const deque_t* _this);
+    bool (*__replace_it)(deque_t* _this, deque_iterator_t iterator, deque_data_t data);                    /* *iterator = data, without checking parameters */
+    bool (*replace_it)(deque_t* _this, deque_iterator_t iterator, deque_data_t data);                      /* *iterator = data */
+    bool (*__replace_index)(deque_t* _this, deque_index_t index, deque_data_t data);                       /* ds[index] = data, without checking parameters */
+    bool (*replace_index)(deque_t* _this, deque_index_t index, deque_data_t data);                         /* ds[index] = data */
     deque_iterator_t (*find)(const deque_t* _this, deque_data_t data);
     bool (*push_back)(deque_t* _this, deque_data_t data);
     bool (*push_front)(deque_t* _this, deque_data_t data);
-    deque_iterator_t (*insert)(deque_t* _this, deque_iterator_t iterator, deque_data_t data);                        /* insert data before `iterator` */
+    deque_iterator_t (*insert)(deque_t* _this, deque_iterator_t iterator, deque_data_t data);              /* Insert data before `iterator` */
     deque_iterator_t (*insert_n)(deque_t* _this, deque_iterator_t iterator, deque_size_t n, deque_data_t data);
-    deque_iterator_t (*insert_range)(deque_t* _this, deque_iterator_t iterator_pos, deque_iterator_t iterator_begin, deque_iterator_t iterator_end); /* Source range must have the same element layout/ops; ranges from _this are undefined. */
-    bool (*replace_it)(deque_t* _this, deque_iterator_t iterator, deque_data_t data);                   /* *iterator = data */
-    bool (*replace_index)(deque_t* _this, deque_index_t index, deque_data_t data);                      /* ds[index] = data */
+    deque_iterator_t (*insert_range)(deque_t* _this, deque_iterator_t iterator_pos, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);  /* Source range must have the same element layout/ops; ranges from _this are undefined. */
     deque_iterator_t (*erase)(deque_t* _this, deque_iterator_t iterator);
-    deque_iterator_t (*erase_range)(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end); /* [iterator_begin, iterator_end) */
+    deque_iterator_t (*erase_range)(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);  /* [iterator_begin, iterator_end) */
     void (*pop_back)(deque_t* _this);
     void (*pop_front)(deque_t* _this);
     deque_size_t (*remove)(deque_t* _this, deque_data_t data);
     deque_size_t (*remove_if)(deque_t* _this, remove_if_condition cond);
     bool (*assign)(deque_t* _this, deque_size_t n, deque_data_t data);
-    bool (*assign_range)(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);             /* Source range must have the same element layout/ops; ranges from _this are undefined. */
+    bool (*assign_range)(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);  /* Source range must have the same element layout/ops; ranges from _this are undefined. */
     bool (*resize)(deque_t* _this, deque_size_t n, deque_data_t default_data);
     void (*shrink_to_fit)(deque_t* _this);
-    void (*swap)(deque_t* _this, deque_t* other);                                                                    /* STL: ds->swap(other)，交换两条 deque 的内容（要求 ops/step/align 一致） */
+    void (*swap)(deque_t* _this, deque_t* other);
     deque_size_t (*clear)(deque_t* _this);
 } class_deque_t;
 

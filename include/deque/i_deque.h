@@ -20,7 +20,7 @@
 #ifndef __J_I_DEQUE_H
 #define __J_I_DEQUE_H
 
-#include <stddef.h>
+#include <stddef.h> /* ptrdiff_t */
 #include <_compiler.h>
 
 #define _I_DEQUE_ITERATOR_REND  ((uint8_t*)(uintptr_t)JDSC_ITERATOR_REND)
@@ -38,7 +38,6 @@ typedef struct i_deque {
     uint8_t**        bkt;
     uint8_t*         swap;
     deque_bcount_t   bkt_count;
-    deque_bcount_t   bkt_count_init;
     deque_iterator_t begin;
     deque_iterator_t end;
     bool             sso;
@@ -135,7 +134,7 @@ deque_iterator_t __i_deque_advance_fast(deque_iterator_t it, deque_size_t n)
 
     {
         const int shift = __builtin_ctz((unsigned)s);
-        const ptrdiff_t noff = off > 0 ? off >> shift : -(((-off - 1) >> shift)) - 1;
+        const ptrdiff_t noff = off > 0 ? off >> shift : -((-off - 1) >> shift) - 1;
 
         __i_deque_set_bkt(&it, it.bkt + noff);
         it.cur = __i_deque_ptr_add(it.begin, (off - noff * s), it.step);
@@ -417,7 +416,7 @@ deque_r_iterator_t i_deque_rprev(deque_r_iterator_t rit)
 
 
 
-HEADER_STATIC_INLINE
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
 deque_iterator_t __i_deque_iterator(const i_deque_t* _this, deque_index_t index)
 {
     return __i_deque_advance(_this->begin, index);
@@ -427,11 +426,11 @@ HEADER_STATIC_INLINE
 deque_iterator_t i_deque_iterator(const i_deque_t* _this, deque_index_t index)
 {
     if (!is_null(_this) && index < __i_deque_size(_this))
-        return __i_deque_advance(_this->begin, index);
+        return __i_deque_iterator(_this, index);
     return i_deque_null_iterator();
 }
 
-HEADER_STATIC_INLINE
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
 deque_value_t __i_deque_at(const i_deque_t* _this, deque_index_t index)
 {
     return (deque_value_t){ .u8 = __i_deque_advance(_this->begin, index).cur, };
@@ -448,75 +447,32 @@ deque_value_t i_deque_at(const i_deque_t* _this, deque_index_t index)
 HEADER_STATIC_INLINE
 deque_value_t __i_deque_back(const i_deque_t* _this)
 {
+    JDSC_ASSERT(!__i_deque_empty(_this));
     return (deque_value_t){ .u8 = __i_deque_prev(__i_deque_end(_this)).cur, };
 }
 
 HEADER_STATIC_INLINE
 deque_value_t i_deque_back(const i_deque_t* _this)
 {
-    if (!is_null(_this) && !__i_deque_empty(_this))
-        return (deque_value_t){ .u8 = __i_deque_prev(__i_deque_end(_this)).cur, };
+    if (!is_null(_this))
+        return __i_deque_back(_this);
     return (deque_value_t){ .u8 = NULL, };
 }
 
 HEADER_STATIC_INLINE
 deque_value_t __i_deque_front(const i_deque_t* _this)
 {
+    JDSC_ASSERT(!__i_deque_empty(_this));
     return (deque_value_t){ .u8 = __i_deque_begin(_this).cur, };
 }
 
 HEADER_STATIC_INLINE
 deque_value_t i_deque_front(const i_deque_t* _this)
 {
-    if (!is_null(_this) && !__i_deque_empty(_this))
-        return (deque_value_t){ .u8 = __i_deque_begin(_this).cur, };
+    if (!is_null(_this))
+        return __i_deque_front(_this);
     return (deque_value_t){ .u8 = NULL, };
 }
-
-
-
-
-
-/* ============================================================================
- * 排序钩子 —— 给 include/sort/sort_intro.h 的 __i_sort_define 用
- *
- * 这一组只描述「本容器怎么随机访问 / 前后走 / 量距离 / 判相等 / 判先后 / 取元素地址」，
- * 与元素类型无关，所以固定放在这里。调用点写 __i_sort_define 时直接引用这几个名字，
- * 不必再自己定义一遍。
- * 剩下的 type / move / less 才是「元素类型 + 排序方向」的事，由使用者给。
- *
- * 用法：
- *   __i_sort_define(sort_dq_asc, deque_data_t, __i_deque_sort_it,
- *                   __i_deque_sort_add, __i_deque_sort_next,
- *                   __i_deque_sort_prev, __i_deque_sort_dist,
- *                   __i_deque_sort_eq, __i_deque_sort_get,
- *                   DQ_MOVE, DQ_LESS, __i_deque_sort_lt)
- * ========================================================================== */
-/* TODO: 保留在这里？ */
-HEADER_STATIC_INLINE
-bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
-{
-    if (a.bkt != b.bkt)
-        return a.bkt < b.bkt;
-    return a.cur < b.cur;
-}
-
-#define __i_deque_sort_it            deque_iterator_t
-#define __i_deque_sort_add(it, n)    __i_deque_advance((it), (deque_size_t)(n))
-#define __i_deque_sort_next(it)      __i_deque_next(it)
-#define __i_deque_sort_prev(it)      __i_deque_prev(it)
-#define __i_deque_sort_dist(a, b)    __i_deque_iterator_distance((a), (b))
-#define __i_deque_sort_eq(a, b)      ((a).cur == (b).cur)
-#define __i_deque_sort_lt(a, b)      i_deque_iter_lt((a), (b))   /* 跨 bkt 不能比 .cur */
-#define __i_deque_sort_get(type, it) (*(type*)((it).cur))        /* 取元素 type 左值 */
-
-/* 便捷展开：deque 的迭代器天生就是类型擦除的（要跨 bkt，没法是裸指针），
-   所以上面那套钩子可以固定名字，这里直接用。 */
-#define __i_deque_sort_define(name, type, move, less)                  \
-    __i_sort_define(name, type, __i_deque_sort_it, __i_deque_sort_add, \
-                    __i_deque_sort_next, __i_deque_sort_prev,          \
-                    __i_deque_sort_dist, __i_deque_sort_eq,            \
-                    __i_deque_sort_get, move, less, __i_deque_sort_lt)
 
 
 
@@ -576,7 +532,7 @@ deque_data_t __i_deque_slot_read(const i_deque_t* _this, const void* slot)
 }
 
 HEADER_STATIC_INLINE
-bool __i_deque_slot_equal(deque_step_t step, deque_data_t data, const uint8_t* slot)
+bool __i_deque_slot_equal(deque_step_t step, deque_data_t data, const void* slot)
 {
     switch (step) {
     case 1: return (uint8_t)data  == *(const uint8_t*)slot;
@@ -623,157 +579,8 @@ void __i_deque_slot_move(const i_deque_t* _this, uint8_t* dest, const uint8_t* s
         _this->ops->__move((deque_data_t)dest, (deque_data_t)src);
 }
 
-deque_size_t __i_deque_max_size(const i_deque_t* _this);
-uint8_t* __i_deque_push_back_bkt_alloc(i_deque_t* _this);
-uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this);
-void __i_deque_pop_back_bkt_free(i_deque_t* _this);
-void __i_deque_pop_front_bkt_free(i_deque_t* _this);
-deque_iterator_t __i_deque_insert(i_deque_t* _this, deque_iterator_t pos, deque_data_t data);
-deque_iterator_t i_deque_insert_n(i_deque_t* _this, deque_iterator_t pos, deque_size_t n, deque_data_t data);
-deque_iterator_t i_deque_insert_range(i_deque_t* _this, deque_iterator_t pos, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);
-deque_iterator_t __i_deque_erase(i_deque_t* _this, deque_iterator_t pos);
-deque_iterator_t __i_deque_erase_range(i_deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);
-deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data);
-deque_count_t    i_deque_count(const i_deque_t* _this, deque_data_t data);
-deque_size_t     i_deque_remove(i_deque_t* _this, deque_data_t data);
-deque_size_t     i_deque_remove_if(i_deque_t* _this, remove_if_condition cond);
-bool             i_deque_assign(i_deque_t* _this, deque_size_t n, deque_data_t data);
-bool             i_deque_assign_range(i_deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);
-bool             i_deque_resize(i_deque_t* _this, deque_size_t n, deque_data_t default_data);
-void             i_deque_shrink_to_fit(i_deque_t* _this);
-deque_size_t     i_deque_clear(i_deque_t* _this);
-
-HEADER_STATIC_INLINE
-deque_size_t i_deque_max_size(const i_deque_t* _this)
-{
-    return !is_null(_this) ? __i_deque_max_size(_this) : -1;
-}
-
-HEADER_STATIC_INLINE
-bool i_deque_push_back(i_deque_t* _this, deque_data_t data)
-{
-    uint8_t* slot;
-
-    if (is_null(_this))
-        return false;
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
-        return false;
-
-    if (_this->end.cur != __i_deque_ptr_sub(_this->end.end, 1, _this->step)) {
-        if (!__i_deque_slot_write(_this, _this->end.cur, data))
-            return false;
-        _this->end.cur = __i_deque_ptr_add(_this->end.cur, 1, _this->step);
-        return true;
-    }
-
-    slot = __i_deque_push_back_bkt_alloc(_this);
-    if (is_null(slot))
-        return false;
-
-    if (!__i_deque_slot_write(_this, slot, data)) {
-        __i_deque_pop_back_bkt_free(_this);
-        return false;
-    }
-    return true;
-}
-
-HEADER_STATIC_INLINE
-bool i_deque_push_front(i_deque_t* _this, deque_data_t data)
-{
-    uint8_t* slot;
-
-    if (is_null(_this))
-        return false;
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
-        return false;
-
-    if (_this->begin.cur != _this->begin.begin) {
-        _this->begin.cur = __i_deque_ptr_sub(_this->begin.cur, 1, _this->step);
-        if (!__i_deque_slot_write(_this, _this->begin.cur, data)) {
-            _this->begin.cur = __i_deque_ptr_add(_this->begin.cur, 1, _this->step);
-            return false;
-        }
-        return true;
-    }
-
-    slot = __i_deque_push_front_bkt_alloc(_this);
-    if (is_null(slot))
-        return false;
-
-    if (!__i_deque_slot_write(_this, slot, data)) {
-        __i_deque_pop_front_bkt_free(_this);
-        return false;
-    }
-    return true;
-}
-
-HEADER_STATIC_INLINE
-void i_deque_pop_back(i_deque_t* _this)
-{
-    if (is_null(_this) || __i_deque_empty(_this))
-        return ;
-
-    if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
-        if (_this->end.cur != _this->end.begin)
-            _this->end.cur = __i_deque_ptr_sub(_this->end.cur, 1, _this->step);
-        else
-            __i_deque_pop_back_bkt_free(_this);
-    } else {
-        if (_this->end.cur != _this->end.begin)
-            _this->end.cur = __i_deque_ptr_sub(_this->end.cur, 1, _this->step);
-        else
-            __i_deque_pop_back_bkt_free(_this);
-
-        _this->ops->free_data((deque_data_t*)_this->end.cur);
-    }
-}
-
-HEADER_STATIC_INLINE
-void i_deque_pop_front(i_deque_t* _this)
-{
-    if (is_null(_this) || __i_deque_empty(_this))
-        return ;
-
-    if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
-        if (_this->begin.cur != __i_deque_ptr_sub(_this->begin.end, 1, _this->step))
-            _this->begin.cur = __i_deque_ptr_add(_this->begin.cur, 1, _this->step);
-        else
-            __i_deque_pop_front_bkt_free(_this);
-    } else {
-        _this->ops->free_data((deque_data_t*)_this->begin.cur);
-
-        if (_this->begin.cur != __i_deque_ptr_sub(_this->begin.end, 1, _this->step))
-            _this->begin.cur = __i_deque_ptr_add(_this->begin.cur, 1, _this->step);
-        else
-            __i_deque_pop_front_bkt_free(_this);
-    }
-}
-
-HEADER_STATIC_INLINE
-deque_iterator_t i_deque_insert(i_deque_t* _this, deque_iterator_t pos, deque_data_t data)
-{
-    if (is_null(_this) || i_deque_is_null_iterator(pos))
-        return i_deque_null_iterator();
-
-    if (_this->begin.cur == pos.cur) {
-        if (i_deque_push_front(_this, data))
-            return _this->begin;
-        return i_deque_null_iterator();
-    }
-
-    if (_this->end.cur == pos.cur) {
-        if (i_deque_push_back(_this, data))
-            return i_deque_prev(_this->end);
-        return i_deque_null_iterator();
-    }
-
-    return __i_deque_insert(_this, pos, data);
-}
-
-HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */
-bool ___i_deque_replace(i_deque_t* _this, uint8_t* slot, deque_data_t data)
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of `slot` */
+bool __i_deque_replace(i_deque_t* _this, uint8_t* slot, deque_data_t data)
 {
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return false;
@@ -836,20 +643,251 @@ bool __i_deque_iterator_in_range(const i_deque_t* _this, deque_iterator_t it)
     return true;
 }
 
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
+bool __i_deque_replace_it(i_deque_t* _this, deque_iterator_t pos, deque_data_t data)
+{
+    return __i_deque_replace(_this, pos.cur, data);
+}
+
 HEADER_STATIC_INLINE
 bool i_deque_replace_it(i_deque_t* _this, deque_iterator_t pos, deque_data_t data)
 {
     if (!is_null(_this) && !i_deque_is_null_iterator(pos) && !__i_deque_empty(_this) && __i_deque_iterator_in_range(_this, pos)) /* _this->end.cur != pos.cur */
-        return ___i_deque_replace(_this, pos.cur, data);
+        return __i_deque_replace_it(_this, pos, data);
     return false;
+}
+
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
+bool __i_deque_replace_index(i_deque_t* _this, deque_index_t index, deque_data_t data)
+{
+    return __i_deque_replace(_this, __i_deque_advance(_this->begin, index).cur, data);
 }
 
 HEADER_STATIC_INLINE
 bool i_deque_replace_index(i_deque_t* _this, deque_index_t index, deque_data_t data)
 {
     if (!is_null(_this) && index < (deque_index_t)__i_deque_size(_this))
-        return ___i_deque_replace(_this, __i_deque_advance(_this->begin, index).cur, data);
+        return __i_deque_replace_index(_this, index, data);
     return false;
+}
+
+
+
+
+
+/* ============================================================================
+ * 排序钩子 —— 给 include/sort/sort_intro.h 的 __i_sort_define 用
+ *
+ * 这一组只描述「本容器怎么随机访问 / 前后走 / 量距离 / 判相等 / 判先后 / 取元素地址」，
+ * 与元素类型无关，所以固定放在这里。调用点写 __i_sort_define 时直接引用这几个名字，
+ * 不必再自己定义一遍。
+ * 剩下的 type / move / less 才是「元素类型 + 排序方向」的事，由使用者给。
+ *
+ * 用法：
+ *   __i_sort_define(sort_dq_asc, deque_data_t, __i_deque_sort_it,
+ *                   __i_deque_sort_add, __i_deque_sort_next,
+ *                   __i_deque_sort_prev, __i_deque_sort_dist,
+ *                   __i_deque_sort_eq, __i_deque_sort_get,
+ *                   DQ_MOVE, DQ_LESS, __i_deque_sort_lt)
+ * ========================================================================== */
+HEADER_STATIC_INLINE
+bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
+{
+    if (a.bkt != b.bkt)
+        return a.bkt < b.bkt;
+    return a.cur < b.cur;
+}
+
+#define __i_deque_sort_it            deque_iterator_t
+#define __i_deque_sort_add(it, n)    __i_deque_advance((it), (deque_size_t)(n))
+#define __i_deque_sort_next(it)      __i_deque_next(it)
+#define __i_deque_sort_prev(it)      __i_deque_prev(it)
+#define __i_deque_sort_dist(a, b)    __i_deque_iterator_distance((a), (b))
+#define __i_deque_sort_eq(a, b)      ((a).cur == (b).cur)
+#define __i_deque_sort_lt(a, b)      i_deque_iter_lt((a), (b))   /* 跨 bkt 不能比 .cur */
+#define __i_deque_sort_get(type, it) (*(type*)((it).cur))        /* 取元素 type 左值 */
+
+/* 便捷展开：deque 的迭代器天生就是类型擦除的（要跨 bkt，没法是裸指针），
+   所以上面那套钩子可以固定名字，这里直接用。 */
+#define __i_deque_sort_define(name, type, move, less)                  \
+    __i_sort_define(name, type, __i_deque_sort_it, __i_deque_sort_add, \
+                    __i_deque_sort_next, __i_deque_sort_prev,          \
+                    __i_deque_sort_dist, __i_deque_sort_eq,            \
+                    __i_deque_sort_get, move, less, __i_deque_sort_lt)
+
+
+
+
+
+deque_size_t __i_deque_max_size(const i_deque_t* _this);
+uint8_t* __i_deque_push_back_bkt_alloc(i_deque_t* _this);
+uint8_t* __i_deque_push_front_bkt_alloc(i_deque_t* _this);
+void __i_deque_pop_back_bkt_free(i_deque_t* _this);
+void __i_deque_pop_front_bkt_free(i_deque_t* _this);
+deque_iterator_t __i_deque_insert(i_deque_t* _this, deque_iterator_t pos, deque_data_t data);
+deque_iterator_t i_deque_insert_n(i_deque_t* _this, deque_iterator_t pos, deque_size_t n, deque_data_t data);
+deque_iterator_t i_deque_insert_range(i_deque_t* _this, deque_iterator_t pos, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);
+deque_iterator_t __i_deque_erase(i_deque_t* _this, deque_iterator_t pos);
+deque_iterator_t __i_deque_erase_range(i_deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);
+deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data);
+deque_count_t    i_deque_count(const i_deque_t* _this, deque_data_t data);
+deque_size_t     i_deque_remove(i_deque_t* _this, deque_data_t data);
+deque_size_t     i_deque_remove_if(i_deque_t* _this, remove_if_condition cond);
+bool             i_deque_assign(i_deque_t* _this, deque_size_t n, deque_data_t data);
+bool             i_deque_assign_range(i_deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);
+bool             i_deque_resize(i_deque_t* _this, deque_size_t n, deque_data_t default_data);
+void             i_deque_shrink_to_fit(i_deque_t* _this);
+deque_size_t     i_deque_clear(i_deque_t* _this);
+
+HEADER_STATIC_INLINE
+deque_size_t i_deque_max_size(const i_deque_t* _this)
+{
+    return !is_null(_this) ? __i_deque_max_size(_this) : -1;
+}
+
+HEADER_STATIC_INLINE
+bool __i_deque_push_back(i_deque_t* _this, deque_data_t data)
+{
+    uint8_t* slot;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return false;
+
+    if (_this->end.cur != __i_deque_ptr_sub(_this->end.end, 1, _this->step)) {
+        if (!__i_deque_slot_write(_this, _this->end.cur, data))
+            return false;
+        _this->end.cur = __i_deque_ptr_add(_this->end.cur, 1, _this->step);
+        return true;
+    }
+
+    slot = __i_deque_push_back_bkt_alloc(_this);
+    if (is_null(slot))
+        return false;
+
+    if (!__i_deque_slot_write(_this, slot, data)) {
+        __i_deque_pop_back_bkt_free(_this);
+        return false;
+    }
+    return true;
+}
+
+HEADER_STATIC_INLINE
+bool i_deque_push_back(i_deque_t* _this, deque_data_t data)
+{
+    if (!is_null(_this))
+        return __i_deque_push_back(_this, data);
+    return false;
+}
+
+HEADER_STATIC_INLINE
+bool __i_deque_push_front(i_deque_t* _this, deque_data_t data)
+{
+    uint8_t* slot;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return false;
+
+    if (_this->begin.cur != _this->begin.begin) {
+        _this->begin.cur = __i_deque_ptr_sub(_this->begin.cur, 1, _this->step);
+        if (!__i_deque_slot_write(_this, _this->begin.cur, data)) {
+            _this->begin.cur = __i_deque_ptr_add(_this->begin.cur, 1, _this->step);
+            return false;
+        }
+        return true;
+    }
+
+    slot = __i_deque_push_front_bkt_alloc(_this);
+    if (is_null(slot))
+        return false;
+
+    if (!__i_deque_slot_write(_this, slot, data)) {
+        __i_deque_pop_front_bkt_free(_this);
+        return false;
+    }
+    return true;
+}
+
+HEADER_STATIC_INLINE
+bool i_deque_push_front(i_deque_t* _this, deque_data_t data)
+{
+    if (!is_null(_this))
+        return __i_deque_push_front(_this, data);
+    return false;
+}
+
+HEADER_STATIC_INLINE
+void __i_deque_pop_back(i_deque_t* _this)
+{
+    JDSC_ASSERT(!__i_deque_empty(_this));
+
+    if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
+        if (_this->end.cur != _this->end.begin)
+            _this->end.cur = __i_deque_ptr_sub(_this->end.cur, 1, _this->step);
+        else
+            __i_deque_pop_back_bkt_free(_this);
+    } else {
+        if (_this->end.cur != _this->end.begin)
+            _this->end.cur = __i_deque_ptr_sub(_this->end.cur, 1, _this->step);
+        else
+            __i_deque_pop_back_bkt_free(_this);
+
+        _this->ops->free_data((deque_data_t*)_this->end.cur);
+    }
+}
+
+HEADER_STATIC_INLINE
+void i_deque_pop_back(i_deque_t* _this)
+{
+    if (!is_null(_this))
+        __i_deque_pop_back(_this);
+}
+
+HEADER_STATIC_INLINE
+void __i_deque_pop_front(i_deque_t* _this)
+{
+    JDSC_ASSERT(!__i_deque_empty(_this));
+
+    if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
+        if (_this->begin.cur != __i_deque_ptr_sub(_this->begin.end, 1, _this->step))
+            _this->begin.cur = __i_deque_ptr_add(_this->begin.cur, 1, _this->step);
+        else
+            __i_deque_pop_front_bkt_free(_this);
+    } else {
+        _this->ops->free_data((deque_data_t*)_this->begin.cur);
+
+        if (_this->begin.cur != __i_deque_ptr_sub(_this->begin.end, 1, _this->step))
+            _this->begin.cur = __i_deque_ptr_add(_this->begin.cur, 1, _this->step);
+        else
+            __i_deque_pop_front_bkt_free(_this);
+    }
+}
+
+HEADER_STATIC_INLINE
+void i_deque_pop_front(i_deque_t* _this)
+{
+    if (!is_null(_this))
+        __i_deque_pop_front(_this);
+}
+
+HEADER_STATIC_INLINE
+deque_iterator_t i_deque_insert(i_deque_t* _this, deque_iterator_t pos, deque_data_t data)
+{
+    if (is_null(_this) || i_deque_is_null_iterator(pos))
+        return i_deque_null_iterator();
+
+    if (_this->begin.cur == pos.cur) {
+        if (__i_deque_push_front(_this, data))
+            return _this->begin;
+        return i_deque_null_iterator();
+    }
+
+    if (_this->end.cur == pos.cur) {
+        if (__i_deque_push_back(_this, data))
+            return __i_deque_prev(_this->end);
+        return i_deque_null_iterator();
+    }
+
+    return __i_deque_insert(_this, pos, data);
 }
 
 HEADER_STATIC_INLINE
@@ -860,12 +898,12 @@ deque_iterator_t i_deque_erase(i_deque_t* _this, deque_iterator_t pos)
         return i_deque_null_iterator();
 
     if (_this->begin.cur == pos.cur) {
-        i_deque_pop_front(_this);
+        __i_deque_pop_front(_this);
         return _this->begin;
     }
 
     if (__i_deque_prev(_this->end).cur == pos.cur) {
-        i_deque_pop_back(_this);
+        __i_deque_pop_back(_this);
         return _this->end;
     }
 
@@ -882,13 +920,13 @@ deque_iterator_t i_deque_erase_range(i_deque_t* _this, deque_iterator_t iterator
 
     if (_this->begin.cur == iterator_begin.cur) {
         while (iterator_end.cur != _this->begin.cur)
-            i_deque_pop_front(_this);
+            __i_deque_pop_front(_this);
         return _this->begin;
     }
 
     if (_this->end.cur == iterator_end.cur) {
         while (iterator_begin.cur != _this->end.cur)
-            i_deque_pop_back(_this);
+            __i_deque_pop_back(_this);
         return _this->end;
     }
 
@@ -898,9 +936,9 @@ deque_iterator_t i_deque_erase_range(i_deque_t* _this, deque_iterator_t iterator
 HEADER_STATIC_INLINE
 void i_deque_swap(i_deque_t* _this, i_deque_t* other)
 {
-    uint8_t**       bkt;
-    deque_bcount_t  bkt_count, bkt_count_init;
+    deque_bcount_t bkt_count;
     deque_iterator_t it;
+    uint8_t** bkt;
 
     if (is_null(_this) || is_null(other) || _this == other)
         return ;
@@ -918,10 +956,6 @@ void i_deque_swap(i_deque_t* _this, i_deque_t* other)
     bkt_count = _this->bkt_count;
     _this->bkt_count = other->bkt_count;
     other->bkt_count = bkt_count;
-
-    bkt_count_init = _this->bkt_count_init;
-    _this->bkt_count_init = other->bkt_count_init;
-    other->bkt_count_init = bkt_count_init;
 
     it = _this->begin;
     _this->begin = other->begin;
