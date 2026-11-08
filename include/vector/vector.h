@@ -72,13 +72,15 @@ HEADER_STATIC_INLINE vector_value_t       __cvector_back(const vector_t* _this) 
 HEADER_STATIC_INLINE vector_value_t       cvector_back(const vector_t* _this)                                                                     { return i_vector_back(_this); }
 HEADER_STATIC_INLINE vector_value_t       __cvector_front(const vector_t* _this)                                                                  { return __i_vector_front(_this); }
 HEADER_STATIC_INLINE vector_value_t       cvector_front(const vector_t* _this)                                                                    { return i_vector_front(_this); }
+HEADER_STATIC_INLINE bool                 __cvector_replace_it(vector_t* _this, vector_iterator_t iterator, vector_data_t data)                   { return __i_vector_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool                 cvector_replace_it(vector_t* _this, vector_iterator_t iterator, vector_data_t data)                     { return i_vector_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool                 __cvector_replace_index(vector_t* _this, vector_index_t index, vector_data_t data)                      { return __i_vector_replace_index(_this, index, data); }
+HEADER_STATIC_INLINE bool                 cvector_replace_index(vector_t* _this, vector_index_t index, vector_data_t data)                        { return i_vector_replace_index(_this, index, data); }
 HEADER_STATIC_INLINE vector_iterator_t    cvector_find(const vector_t* _this, vector_data_t data)                                                 { return i_vector_find(_this, data); }
 HEADER_STATIC_INLINE bool                 cvector_push_back(vector_t* _this, vector_data_t data)                                                  { return i_vector_push_back(_this, data); }
 HEADER_STATIC_INLINE vector_iterator_t    cvector_insert(vector_t* _this, vector_iterator_t iterator, vector_data_t data)                         { return i_vector_insert(_this, iterator, data); }
 HEADER_STATIC_INLINE vector_iterator_t    cvector_insert_n(vector_t* _this, vector_iterator_t iterator, vector_size_t n, vector_data_t data)      { return i_vector_insert_n(_this, iterator, n, data); }
 HEADER_STATIC_INLINE vector_iterator_t    cvector_insert_range(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_insert_range(_this, iterator_pos, iterator_begin, iterator_end); }
-HEADER_STATIC_INLINE bool                 cvector_replace_it(vector_t* _this, vector_iterator_t iterator, vector_data_t data)                     { return i_vector_replace_it(_this, iterator, data); }
-HEADER_STATIC_INLINE bool                 cvector_replace_index(vector_t* _this, vector_index_t index, vector_data_t data)                        { return i_vector_replace_index(_this, index, data); }
 HEADER_STATIC_INLINE vector_iterator_t    cvector_erase(vector_t* _this, vector_iterator_t iterator)                                              { return i_vector_erase(_this, iterator); }
 HEADER_STATIC_INLINE vector_iterator_t    cvector_erase_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)  { return i_vector_erase_range(_this, iterator_begin, iterator_end); }
 HEADER_STATIC_INLINE void                 cvector_pop_back(vector_t* _this)                                                                       { i_vector_pop_back(_this); }
@@ -107,28 +109,30 @@ typedef struct class_vector {
     vector_r_iterator_t (*rbegin)(const vector_t* _this);
     vector_r_iterator_t (*rnext)(vector_r_iterator_t r_iterator);
     vector_r_iterator_t (*rprev)(vector_r_iterator_t r_iterator);
-    vector_iterator_t (*__it)(const vector_t* _this, vector_index_t index);
-    vector_iterator_t (*it)(const vector_t* _this, vector_index_t index);
-    vector_value_t (*__at)(const vector_t* _this, vector_index_t index);
-    vector_value_t (*at)(const vector_t* _this, vector_index_t index);
+    vector_iterator_t (*__it)(const vector_t* _this, vector_index_t index);                                   /* return iterator by n(index), without checking parameters */
+    vector_iterator_t (*it)(const vector_t* _this, vector_index_t index);                                     /* return iterator by n(index) */
+    vector_value_t (*__at)(const vector_t* _this, vector_index_t index);                                      /* STL: ds[index], without checking parameters */
+    vector_value_t (*at)(const vector_t* _this, vector_index_t index);                                        /* STL: ds->at(index) */
     vector_value_t (*__back)(const vector_t* _this);
     vector_value_t (*back)(const vector_t* _this);
     vector_value_t (*__front)(const vector_t* _this);
     vector_value_t (*front)(const vector_t* _this);
+    bool (*__replace_it)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);                    /* *iterator = data, without checking parameters */
+    bool (*replace_it)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);                      /* *iterator = data */
+    bool (*__replace_index)(vector_t* _this, vector_index_t index, vector_data_t data);                       /* ds[index] = data, without checking parameters */
+    bool (*replace_index)(vector_t* _this, vector_index_t index, vector_data_t data);                         /* ds[index] = data */
     vector_iterator_t (*find)(const vector_t* _this, vector_data_t data);
     bool (*push_back)(vector_t* _this, vector_data_t data);
-    vector_iterator_t (*insert)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);                        /* insert data before `iterator` */
+    vector_iterator_t (*insert)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);             /* Insert data before `iterator` */
     vector_iterator_t (*insert_n)(vector_t* _this, vector_iterator_t iterator, vector_size_t n, vector_data_t data);
-    vector_iterator_t (*insert_range)(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end); /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
-    bool (*replace_it)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);
-    bool (*replace_index)(vector_t* _this, vector_index_t index, vector_data_t data);                                    /* v[index] = data */
+    vector_iterator_t (*insert_range)(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);  /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
     vector_iterator_t (*erase)(vector_t* _this, vector_iterator_t iterator);
-    vector_iterator_t (*erase_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end); /* [iterator_begin, iterator_end) */
+    vector_iterator_t (*erase_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);  /* [iterator_begin, iterator_end) */
     void (*pop_back)(vector_t* _this);
     vector_size_t (*remove)(vector_t* _this, vector_data_t data);
     vector_size_t (*remove_if)(vector_t* _this, remove_if_condition cond);
     bool (*assign)(vector_t* _this, vector_size_t n, vector_data_t data);
-    bool (*assign_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);             /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
+    bool (*assign_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);  /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
     bool (*resize)(vector_t* _this, vector_size_t n, vector_data_t default_data);
     bool (*reserve)(vector_t* _this, vector_size_t n);
     void (*shrink_to_fit)(vector_t* _this);

@@ -293,8 +293,7 @@ vector_size_t __i_vector_check_len(const i_vector_t* _this, vector_size_t n)
     return size + (max_grow > size ? size > n ? size : n : max_grow);
 }
 
-/* Non independent logical function */
-JDSC_INLINE_POLICY
+JDSC_INLINE JDSC_LOGIC_FRAGMENT /* Because of `n` and `data` */
 vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data)
 {
     const vector_step_t step = _this->step;
@@ -317,15 +316,16 @@ vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_
     __i_vector_slot_move_n(_this, __i_vector_ptr_add(pos, n, step), pos, move);
     _this->end = __i_vector_ptr_add(_this->end, n, step);
     if (!__i_vector_slot_write_n(_this, pos, n, data))
-        goto err_slot;
+        goto err;
     return __i_vector_make_iterator(step, pos);
 
-err_slot:
+err:
     __i_vector_slot_move_n(_this, pos, __i_vector_ptr_add(pos, n, step), move);
     _this->end = __i_vector_ptr_sub(_this->end, n, step);
     return i_vector_null_iterator();
 }
 
+JDSC_INLINE
 vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
 {
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
@@ -333,9 +333,10 @@ vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, ve
     return __i_vector_insert_run(_this, pos.cur, 1, data);
 }
 
-vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data)
+JDSC_INLINE
+vector_iterator_t __i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data)
 {
-    if (unlikely(is_null(_this) || i_vector_is_null_iterator(pos) || n < 0))
+    if (unlikely(n < 0))
         return i_vector_null_iterator();
 
     if (unlikely(0 == n))
@@ -346,19 +347,24 @@ vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, ve
     return __i_vector_insert_run(_this, pos.cur, n, data);
 }
 
-vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
+JDSC_INLINE /* The fast path involves a fallback and is not implemented yet */
+vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data)
 {
+    if (unlikely(is_null(_this) || i_vector_is_null_iterator(pos)))
+        return i_vector_null_iterator();
+    return __i_vector_insert_n(_this, pos, n, data);
+}
+
+vector_iterator_t __i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
+{
+    const vector_step_t step = _this->step;
     const uint8_t* src = iterator_begin.cur;
     ptrdiff_t off;
     vector_size_t n, move, avail;
 
-    if (unlikely(is_null(_this) || i_vector_is_null_iterator(pos) || i_vector_is_null_iterator(iterator_begin) || i_vector_is_null_iterator(iterator_end)))
-        return i_vector_null_iterator();
-
     if (unlikely(pos.cur < _this->begin || pos.cur > _this->end))
         return i_vector_null_iterator();
 
-    const vector_step_t step = _this->step;
     n = (vector_size_t)__i_vector_ptr_diff(iterator_end.cur, iterator_begin.cur, step);
     if (unlikely(n < 0))
         return i_vector_null_iterator();
@@ -378,10 +384,8 @@ vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos
 
     __i_vector_slot_move_n(_this, __i_vector_ptr_add(pos.cur, n, step), pos.cur, move);
     _this->end = __i_vector_ptr_add(_this->end, n, step);
-
     if (!__i_vector_slot_write_n_range(_this, pos.cur, src, n))
         goto err;
-
     return __i_vector_make_iterator(step, pos.cur);
 
 err:
@@ -390,11 +394,22 @@ err:
     return i_vector_null_iterator();
 }
 
-/* Non independent logical function */
+JDSC_INLINE
+vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
+{
+    if (unlikely(is_null(_this) || i_vector_is_null_iterator(pos) || i_vector_is_null_iterator(iterator_begin) || i_vector_is_null_iterator(iterator_end)))
+        return i_vector_null_iterator();
+    return __i_vector_insert_range(_this, pos, iterator_begin, iterator_end);
+}
+
+JDSC_INLINE
 vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos)
 {
     const vector_step_t step = _this->step;
     const vector_size_t n = (vector_size_t)__i_vector_ptr_diff(_this->end, pos, step);
+
+    if (unlikely(pos < _this->begin || pos >= _this->end))
+        return i_vector_null_iterator();
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
         _this->ops->free_data((vector_data_t*)pos);
@@ -425,6 +440,7 @@ vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint
     return __i_vector_make_iterator(step, begin);
 }
 
+JDSC_LOGIC_FRAGMENT
 bool __i_vector_assign_grow_fill(i_vector_t* _this, vector_size_t n, vector_data_t data)
 {
     const vector_step_t step = _this->step;
@@ -463,6 +479,7 @@ err:
     return false;
 }
 
+JDSC_LOGIC_FRAGMENT
 bool __i_vector_assign_grow_range(i_vector_t* _this, vector_size_t n, const uint8_t* src)
 {
     const vector_step_t step = _this->step;
@@ -602,46 +619,48 @@ void __vector_delete(vector_t** _this)
 const class_vector_t* class_vector_ins(void)
 {
     static const class_vector_t ins = {
-        .size           = cvector_size,
-        .max_size       = cvector_max_size,
-        .capacity       = cvector_capacity,
-        .__empty        = __cvector_empty,
-        .count          = cvector_count,
-        .end            = cvector_end,
-        .begin          = cvector_begin,
-        .next           = cvector_next,
-        .prev           = cvector_prev,
-        .rend           = cvector_rend,
-        .rbegin         = cvector_rbegin,
-        .rnext          = cvector_rnext,
-        .rprev          = cvector_rprev,
-        .__it           = __cvector_it,
-        .it             = cvector_it,
-        .__at           = __cvector_at,
-        .at             = cvector_at,
-        .__back         = __cvector_back,
-        .back           = cvector_back,
-        .__front        = __cvector_front,
-        .front          = cvector_front,
-        .find           = cvector_find,
-        .push_back      = cvector_push_back,
-        .insert         = cvector_insert,
-        .insert_n       = cvector_insert_n,
-        .insert_range   = cvector_insert_range,
-        .replace_it     = cvector_replace_it,
-        .replace_index  = cvector_replace_index,
-        .erase          = cvector_erase,
-        .erase_range    = cvector_erase_range,
-        .pop_back       = cvector_pop_back,
-        .remove         = cvector_remove,
-        .remove_if      = cvector_remove_if,
-        .assign         = cvector_assign,
-        .assign_range   = cvector_assign_range,
-        .resize         = cvector_resize,
-        .reserve        = cvector_reserve,
-        .shrink_to_fit  = cvector_shrink_to_fit,
-        .swap           = cvector_swap,
-        .clear          = cvector_clear,
+        .size             = cvector_size,
+        .max_size         = cvector_max_size,
+        .capacity         = cvector_capacity,
+        .__empty          = __cvector_empty,
+        .count            = cvector_count,
+        .end              = cvector_end,
+        .begin            = cvector_begin,
+        .next             = cvector_next,
+        .prev             = cvector_prev,
+        .rend             = cvector_rend,
+        .rbegin           = cvector_rbegin,
+        .rnext            = cvector_rnext,
+        .rprev            = cvector_rprev,
+        .__it             = __cvector_it,
+        .it               = cvector_it,
+        .__at             = __cvector_at,
+        .at               = cvector_at,
+        .__back           = __cvector_back,
+        .back             = cvector_back,
+        .__front          = __cvector_front,
+        .front            = cvector_front,
+        .__replace_it     = __cvector_replace_it,
+        .replace_it       = cvector_replace_it,
+        .__replace_index  = __cvector_replace_index,
+        .replace_index    = cvector_replace_index,
+        .find             = cvector_find,
+        .push_back        = cvector_push_back,
+        .insert           = cvector_insert,
+        .insert_n         = cvector_insert_n,
+        .insert_range     = cvector_insert_range,
+        .erase            = cvector_erase,
+        .erase_range      = cvector_erase_range,
+        .pop_back         = cvector_pop_back,
+        .remove           = cvector_remove,
+        .remove_if        = cvector_remove_if,
+        .assign           = cvector_assign,
+        .assign_range     = cvector_assign_range,
+        .resize           = cvector_resize,
+        .reserve          = cvector_reserve,
+        .shrink_to_fit    = cvector_shrink_to_fit,
+        .swap             = cvector_swap,
+        .clear            = cvector_clear,
     };
     return &ins;
 }

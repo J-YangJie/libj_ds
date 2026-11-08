@@ -348,41 +348,6 @@ vector_value_t i_vector_front(const i_vector_t* _this)
 
 
 
-/* ============================================================================
- * 排序钩子 + 便捷展开
- *
- * 容器侧这一组只描述「本容器怎么走路 + 怎么从迭代器落到元素上」：
- *   add/next/prev/dist/eq/lt  —— 纯迭代器操作，与元素类型无关
- *   get(type, it)             —— 取元素的 type 左值；容器知道元素在哪，type 由调用点给
- * 剩下 type / move / less 才是元素类型与排序方向的事。
- *
- * 排序迭代器取裸 type* —— 和 STL 的 vector<T>::iterator 就是 T* 一样，所以 iter 要按
- * 类型展开（typedef），这也是唯一没法固定名字的一项。带上 step 的 vector_iterator_t
- * 也能通用，但每个元素多一次乘法和一次结构体读写，实测「已升序」输入上慢 70%+。
- *
- * 用法：
- *   __i_vector_sort_define(sort_vt_int, vector_data_t, VT_MOVE, VT_LESS)
- *   sort_vt_int((vector_data_t*)cvector_begin(v).cur, (vector_data_t*)cvector_end(v).cur);
- * ========================================================================== */
-#define __i_vector_sort_get(type, it)  (*(type*)(it))
-#define __i_vector_sort_add(it, n)     ((it) + (n))
-#define __i_vector_sort_next(it)       ((it) + 1)
-#define __i_vector_sort_prev(it)       ((it) - 1)
-#define __i_vector_sort_dist(a, b)     ((b) - (a))
-#define __i_vector_sort_eq(a, b)       ((a) == (b))
-#define __i_vector_sort_lt(a, b)       ((a) < (b))
-
-#define __i_vector_sort_define(name, type, move, less)           \
-    typedef type* name##_vit;                                    \
-    __i_sort_define(name, type, name##_vit, __i_vector_sort_add, \
-                    __i_vector_sort_next, __i_vector_sort_prev,  \
-                    __i_vector_sort_dist, __i_vector_sort_eq,    \
-                    __i_vector_sort_get, move, less, __i_vector_sort_lt)
-
-
-
-
-
 HEADER_STATIC_INLINE
 bool __i_vector_slot_write(const i_vector_t* _this, void* slot, vector_data_t data)
 {
@@ -479,17 +444,121 @@ void __i_vector_slot_move(const i_vector_t* _this, void* dest, const void* src)
     }
 }
 
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of `slot` */
+bool __i_vector_replace(i_vector_t* _this, uint8_t* slot, vector_data_t data)
+{
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return false;
+
+    if (_this->sso) {
+        if (data == __ds_ops_char_addr_sso((vector_data_t)slot))
+            return true;
+    } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && data == (vector_data_t)slot) {
+        return true;
+    } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data)
+               && !is_null(_this->ops->free_data) && data == __i_vector_slot_read(_this, slot)) {
+        return true;
+    }
+
+    if (is_null(_this->ops) || is_null(_this->ops->copy_data)) {
+        if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+            _this->ops->free_data((vector_data_t*)slot);
+
+        __i_vector_slot_write(_this, slot, data);
+        return true;
+    }
+
+    if (!__i_vector_slot_write(_this, _this->rend, data))
+        return false;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+        _this->ops->free_data((vector_data_t*)slot);
+
+    __i_vector_slot_move(_this, slot, _this->rend);
+
+    return true;
+}
+
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
+bool __i_vector_replace_it(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
+{
+    return __i_vector_replace(_this, pos.cur, data);
+}
+
+HEADER_STATIC_INLINE
+bool i_vector_replace_it(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
+{
+    if (!is_null(_this) && !i_vector_is_null_iterator(pos) && pos.cur >= _this->begin && pos.cur < _this->end)
+        return __i_vector_replace_it(_this, pos, data);
+    return false;
+}
+
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
+bool __i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data_t data)
+{
+    return __i_vector_replace(_this, __i_vector_ptr_add(_this->begin, index, _this->step), data);
+}
+
+HEADER_STATIC_INLINE
+bool i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data_t data)
+{
+    if (!is_null(_this) && index < (vector_index_t)__i_vector_size(_this))
+        return __i_vector_replace_index(_this, index, data);
+    return false;
+}
+
+
+
+
+
+/* ============================================================================
+ * 排序钩子 + 便捷展开
+ *
+ * 容器侧这一组只描述「本容器怎么走路 + 怎么从迭代器落到元素上」：
+ *   add/next/prev/dist/eq/lt  —— 纯迭代器操作，与元素类型无关
+ *   get(type, it)             —— 取元素的 type 左值；容器知道元素在哪，type 由调用点给
+ * 剩下 type / move / less 才是元素类型与排序方向的事。
+ *
+ * 排序迭代器取裸 type* —— 和 STL 的 vector<T>::iterator 就是 T* 一样，所以 iter 要按
+ * 类型展开（typedef），这也是唯一没法固定名字的一项。带上 step 的 vector_iterator_t
+ * 也能通用，但每个元素多一次乘法和一次结构体读写，实测「已升序」输入上慢 70%+。
+ *
+ * 用法：
+ *   __i_vector_sort_define(sort_vt_int, vector_data_t, VT_MOVE, VT_LESS)
+ *   sort_vt_int((vector_data_t*)cvector_begin(v).cur, (vector_data_t*)cvector_end(v).cur);
+ * ========================================================================== */
+#define __i_vector_sort_get(type, it)  (*(type*)(it))
+#define __i_vector_sort_add(it, n)     ((it) + (n))
+#define __i_vector_sort_next(it)       ((it) + 1)
+#define __i_vector_sort_prev(it)       ((it) - 1)
+#define __i_vector_sort_dist(a, b)     ((b) - (a))
+#define __i_vector_sort_eq(a, b)       ((a) == (b))
+#define __i_vector_sort_lt(a, b)       ((a) < (b))
+
+#define __i_vector_sort_define(name, type, move, less)           \
+    typedef type* name##_vit;                                    \
+    __i_sort_define(name, type, name##_vit, __i_vector_sort_add, \
+                    __i_vector_sort_next, __i_vector_sort_prev,  \
+                    __i_vector_sort_dist, __i_vector_sort_eq,    \
+                    __i_vector_sort_get, move, less, __i_vector_sort_lt)
+
+
+
+
+
 vector_size_t __i_vector_max_size(const i_vector_t* _this);
 vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data);
 vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data);
+vector_iterator_t __i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data);
 vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data);
+vector_iterator_t __i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);
 vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);
 vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos);
 vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint8_t* end);
-bool __i_vector_reserve(i_vector_t* _this, vector_size_t n);
-void __i_vector_shrink_to_fit(i_vector_t* _this);
 bool __i_vector_assign_grow_fill(i_vector_t* _this, vector_size_t n, vector_data_t data);
 bool __i_vector_assign_grow_range(i_vector_t* _this, vector_size_t n, const uint8_t* src);
+bool __i_vector_reserve(i_vector_t* _this, vector_size_t n);
+void __i_vector_shrink_to_fit(i_vector_t* _this);
 
 HEADER_STATIC_INLINE
 vector_size_t i_vector_max_size(const i_vector_t* _this)
@@ -556,57 +625,6 @@ vector_iterator_t i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vect
         return i_vector_null_iterator();
     }
     return __i_vector_insert(_this, pos, data);
-}
-
-HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */
-bool ___i_vector_replace(i_vector_t* _this, uint8_t* slot, vector_data_t data)
-{
-    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
-        return false;
-
-    if (_this->sso) {
-        if (data == __ds_ops_char_addr_sso((vector_data_t)slot))
-            return true;
-    } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && data == (vector_data_t)slot) {
-        return true;
-    } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data)
-               && !is_null(_this->ops->free_data) && data == __i_vector_slot_read(_this, slot)) {
-        return true;
-    }
-
-    if (is_null(_this->ops) || is_null(_this->ops->copy_data)) {
-        if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-            _this->ops->free_data((vector_data_t*)slot);
-
-        __i_vector_slot_write(_this, slot, data);
-        return true;
-    }
-
-    if (!__i_vector_slot_write(_this, _this->rend, data))
-        return false;
-
-    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
-        _this->ops->free_data((vector_data_t*)slot);
-
-    __i_vector_slot_move(_this, slot, _this->rend);
-
-    return true;
-}
-
-HEADER_STATIC_INLINE
-bool i_vector_replace_it(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
-{
-    if (!is_null(_this) && !i_vector_is_null_iterator(pos) && pos.cur >= _this->begin && pos.cur < _this->end)
-        return ___i_vector_replace(_this, pos.cur, data);
-    return false;
-}
-
-HEADER_STATIC_INLINE
-bool i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data_t data)
-{
-    if (!is_null(_this) && index < (vector_index_t)__i_vector_size(_this))
-        return ___i_vector_replace(_this, __i_vector_ptr_add(_this->begin, index, _this->step), data);
-    return false;
 }
 
 HEADER_STATIC_INLINE
@@ -851,11 +869,11 @@ bool i_vector_assign(i_vector_t* _this, vector_size_t n, vector_data_t data)
     if (n > avail)
         return __i_vector_assign_grow_fill(_this, n, data);
 
-    it = i_vector_insert_n(_this, __i_vector_end(_this), n, data);
+    it = __i_vector_insert_n(_this, __i_vector_end(_this), n, data);
     if (i_vector_is_null_iterator(it))
         return false;
 
-    i_vector_erase_range(_this, __i_vector_begin(_this), it);
+    __i_vector_erase_range(_this, __i_vector_begin(_this).cur, it.cur);
     return true;
 }
 
@@ -882,11 +900,11 @@ bool i_vector_assign_range(i_vector_t* _this, vector_iterator_t iterator_begin, 
     if (n > avail)
         return __i_vector_assign_grow_range(_this, n, iterator_begin.cur);
 
-    it = i_vector_insert_range(_this, __i_vector_end(_this), iterator_begin, iterator_end);
+    it = __i_vector_insert_range(_this, __i_vector_end(_this), iterator_begin, iterator_end);
     if (i_vector_is_null_iterator(it))
         return false;
 
-    i_vector_erase_range(_this, __i_vector_begin(_this), it);
+    __i_vector_erase_range(_this, __i_vector_begin(_this).cur, it.cur);
     return true;
 }
 
@@ -902,9 +920,10 @@ bool i_vector_resize(i_vector_t* _this, vector_size_t n, vector_data_t default_d
     if (n == size)
         return true;
 
+    /* Take the fast path instead of the `__i_vector_erase_range` interface */
     if (n < size)
         return !i_vector_is_null_iterator(i_vector_erase_range(_this, __i_vector_iterator(_this, n), __i_vector_end(_this)));
-    return !i_vector_is_null_iterator(i_vector_insert_n(_this, __i_vector_end(_this), n - size, default_data));
+    return !i_vector_is_null_iterator(__i_vector_insert_n(_this, __i_vector_end(_this), n - size, default_data));
 }
 
 HEADER_STATIC_INLINE
