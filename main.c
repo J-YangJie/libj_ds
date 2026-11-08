@@ -284,6 +284,26 @@ static bool list_gt_sso(list_data_t a, list_data_t b)
     return 0 < __ds_ops_cmp_same_sso((const ds_sso_t*)(uintptr_t)a, (const ds_sso_t*)(uintptr_t)b);
 }
 
+static bool list_remove_if_odd(list_data_t data)
+{
+    return 0 != (data & 1);
+}
+
+static bool list_unique_eq(list_data_t a, list_data_t b)
+{
+    return a == b;
+}
+
+static bool list_remove_if_char_odd(list_data_t data)
+{
+    return 0 != (((const char*)(uintptr_t)data)[0] & 1);
+}
+
+static bool list_unique_eq_sso(list_data_t a, list_data_t b)
+{
+    return 0 == strcmp((const char*)(uintptr_t)a, (const char*)(uintptr_t)b);
+}
+
 static int list_is_sorted_num(list_t* _this, __list_lt_t __lt)
 {
     list_iterator_t it  = clist_begin(_this);
@@ -318,6 +338,30 @@ static int list_is_sorted_sso(list_t* _this, __list_lt_t __lt)
     return 1;
 }
 #endif /* TEST_LIST */
+
+#ifdef TEST_VECTOR
+static bool vector_remove_if_odd(vector_data_t data)
+{
+    return 0 != (data & 1);
+}
+
+static bool vector_remove_if_char_odd(vector_data_t data)
+{
+    return 0 != (((const char*)(uintptr_t)data)[0] & 1);
+}
+#endif /* TEST_VECTOR */
+
+#ifdef TEST_DEQUE
+static bool deque_remove_if_odd(deque_data_t data)
+{
+    return 0 != (data & 1);
+}
+
+static bool deque_remove_if_char_odd(deque_data_t data)
+{
+    return 0 != (((const char*)(uintptr_t)data)[0] & 1);
+}
+#endif /* TEST_DEQUE */
 
 static void test_i_for(void)
 {
@@ -752,7 +796,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
+        printf("RESULT %s insert           %s %8zd %6zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
     }
 
     if (1) // if (0)
@@ -854,7 +898,7 @@ static void test_i_rand(void)
         times_succ = TIMES_FIND;
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (ssize_t)(TIME_DS / 1000), times_succ, ds_size);
+        printf("RESULT %s %-16s %s %8zd %6zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (ssize_t)(TIME_DS / 1000), times_succ, ds_size);
     }
 
     if (1) // if (0)
@@ -930,7 +974,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (ssize_t)(TIME_DS / 1000), removed);
+        printf("RESULT %s %-16s %s %8zd %6zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (ssize_t)(TIME_DS / 1000), removed);
     }
 
 #ifdef TEST_DEQUE
@@ -942,51 +986,51 @@ static void test_i_rand(void)
 
             time_deque = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += DSL(cdeque, count)(ds_deque_i, rand() % TIMES_FIND); }, time_deque);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), cnt, DSL(cdeque, size)(ds_deque_i));
+            printf("RESULT %s count            %s %8zd %6zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), cnt, DSL(cdeque, size)(ds_deque_i));
         }
 
 
         /* erase_range */
         time_deque = 0;
         GET_DURATION({ DSL(cdeque, erase_range)(ds_deque_i, DSL(cdeque, next)(DSL(cdeque, begin)(ds_deque_i)), DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_i))); }, time_deque);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(cdeque, size)(ds_deque_i), (ssize_t)(time_deque / 1000));
+        printf("RESULT %s erase_range      %s %8zd %6zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(cdeque, size)(ds_deque_i), (ssize_t)(time_deque / 1000));
         GET_DURATION({ DSL(cdeque, erase_range)(ds_deque_i, DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)); }, time_deque);
 
 
         /* insert/push front + erase/pop front */
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, insert)(ds_deque_i, DSL(cdeque, begin)(ds_deque_i), rand() % TIMES_FIND); }, time_deque);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s insert front     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, erase)(ds_deque_i, DSL(cdeque, begin)(ds_deque_i));                       }, time_deque);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s erase front      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, push_front)(ds_deque_i, rand() % TIMES_FIND);                             }, time_deque);
-        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s push_front       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, pop_front)(ds_deque_i);                                                   }, time_deque);
-        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s pop_front        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
 
         /* insert/push back + erase/pop back */
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, insert)(ds_deque_i, DSL(cdeque, end)(ds_deque_i), rand() % TIMES_FIND);   }, time_deque);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s insert back      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, erase)(ds_deque_i, DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_i)));      }, time_deque);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s erase back       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, push_back)(ds_deque_i, rand() % TIMES_FIND);                              }, time_deque);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s push_back        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, pop_back)(ds_deque_i);                                                    }, time_deque);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s pop_back         %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
 
         /* insert front+10 + erase front+10 */
@@ -998,14 +1042,14 @@ static void test_i_rand(void)
             deque_iterator_t it = __cdeque_it(ds_deque_i, 10);
             GET_DURATION({ DSL(cdeque, insert)(ds_deque_i, it, rand() % TIMES_FIND); }, time_deque);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s insert@+10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             deque_iterator_t it = __cdeque_it(ds_deque_i, 10);
             GET_DURATION({ DSL(cdeque, erase)(ds_deque_i, it); }, time_deque);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s erase@+10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
 
         /* insert back-10 + erase back-10 */
@@ -1017,14 +1061,14 @@ static void test_i_rand(void)
             deque_iterator_t it = __cdeque_it(ds_deque_i, DSL(cdeque, size)(ds_deque_i) - 10);
             GET_DURATION({ DSL(cdeque, insert)(ds_deque_i, it, rand() % TIMES_FIND); }, time_deque);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s insert@-10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             deque_iterator_t it = __cdeque_it(ds_deque_i, DSL(cdeque, size)(ds_deque_i) - 10);
             GET_DURATION({ DSL(cdeque, erase)(ds_deque_i, it); }, time_deque);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s erase@-10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
 
         /* insert mid + erase mid */ /* only TIMES_FIND_V_L times */
@@ -1036,14 +1080,14 @@ static void test_i_rand(void)
             deque_iterator_t it = __cdeque_it(ds_deque_i, DSL(cdeque, size)(ds_deque_i) / 2);
             GET_DURATION({ DSL(cdeque, insert)(ds_deque_i, it, rand() % TIMES_FIND); }, time_deque);
         }
-        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s insert@mid       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
         time_deque = 0;
         for (int i = 0; i < TIMES_FIND_V_L; ++i) {
             deque_iterator_t it = __cdeque_it(ds_deque_i, DSL(cdeque, size)(ds_deque_i) / 2);
             GET_DURATION({ DSL(cdeque, erase)(ds_deque_i, it); }, time_deque);
         }
-        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        printf("RESULT %s erase@mid        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
 
         /* insert_n + insert_n mid + erase_range mid + remove all */
@@ -1054,11 +1098,11 @@ static void test_i_rand(void)
 
             time_deque = 0;
             GET_DURATION({ DSL(cdeque, insert_n)(ds_deque_i, DSL(cdeque, end)(ds_deque_i), (deque_size_t)TIMES_INSERT, 9); }, time_deque);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+            printf("RESULT %s insert_n all     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
             time_deque = 0;
             GET_DURATION({ DSL(cdeque, insert_n)(ds_deque_i, __cdeque_it(ds_deque_i, DSL(cdeque, size)(ds_deque_i) / 2), (deque_size_t)MID_N, 9); }, time_deque);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+            printf("RESULT %s insert_n mid     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
             time_deque = 0;
             {
@@ -1067,11 +1111,189 @@ static void test_i_rand(void)
                 deque_iterator_t e  = __cdeque_it(ds_deque_i, (s + MID_N) / 2);
                 GET_DURATION({ DSL(cdeque, erase_range)(ds_deque_i, b, e); }, time_deque);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+            printf("RESULT %s erase_range mid  %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
 
             time_deque = 0;
             GET_DURATION({ removed = DSL(cdeque, remove)(ds_deque_i, 9); }, time_deque);
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), removed, DSL(cdeque, size)(ds_deque_i));
+            printf("RESULT %s remove all       %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), removed, DSL(cdeque, size)(ds_deque_i));
+        }
+
+
+        /* insert_n + insert_range */
+        DSL(cdeque, clear)(ds_deque_i);
+        {
+            deque_t* src = DEQUE_NEW();
+
+            DSL(cdeque, insert_n)(ds_deque_i, DSL(cdeque, end)(ds_deque_i), (deque_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+            DSL(cdeque, insert_n)(src,        DSL(cdeque, end)(src),        (deque_size_t)TIMES_INSERT / 1, rand() % TIMES_FIND);
+
+            {
+                deque_iterator_t pos   = __cdeque_it(ds_deque_i, DSL(cdeque, size)(ds_deque_i) / 2);
+                deque_iterator_t begin = __cdeque_it(src, (deque_size_t)(DSL(cdeque, size)(src) * 0.25));
+                deque_iterator_t end   = __cdeque_it(src, (deque_size_t)(DSL(cdeque, size)(src) * 0.75));
+
+                time_deque = 0;
+                GET_DURATION({ DSL(cdeque, insert_range)(ds_deque_i, pos, begin, end); }, time_deque);
+            }
+            printf("RESULT %s insert_range@mid %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+
+            DEQUE_DELETE(&src);
+        }
+
+
+        /* insert_n + assign_range */
+        DSL(cdeque, clear)(ds_deque_i);
+        {
+            deque_t* src = DEQUE_NEW();
+
+            DSL(cdeque, insert_n)(ds_deque_i, DSL(cdeque, end)(ds_deque_i), (deque_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+            DSL(cdeque, insert_n)(src,        DSL(cdeque, end)(src),        (deque_size_t)(TIMES_INSERT * 1.2), rand() % TIMES_FIND);
+
+            {
+                deque_iterator_t begin = __cdeque_it(src, 1);
+                deque_iterator_t end   = __cdeque_it(src, (deque_size_t)TIMES_INSERT / 2 - 1);
+
+                time_deque = 0;
+                GET_DURATION({ DSL(cdeque, assign_range)(ds_deque_i, begin, end); }, time_deque);
+            }
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+
+            {
+                deque_iterator_t begin = __cdeque_it(src, 1);
+                deque_iterator_t end   = __cdeque_it(src, DSL(cdeque, size)(src) - 1);
+
+                time_deque = 0;
+                GET_DURATION({ DSL(cdeque, assign_range)(ds_deque_i, begin, end); }, time_deque);
+            }
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, DSL(cdeque, size)(src) - 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+
+            DEQUE_DELETE(&src);
+        }
+
+
+        /* insert_n + assign */
+        DSL(cdeque, clear)(ds_deque_i);
+        {
+            DSL(cdeque, insert_n)(ds_deque_i, DSL(cdeque, end)(ds_deque_i), (deque_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, assign)(ds_deque_i, (deque_size_t)TIMES_INSERT / 2 - 2, rand() % TIMES_FIND); }, time_deque);
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, assign)(ds_deque_i, (deque_size_t)(TIMES_INSERT * 1.2) - 2, rand() % TIMES_FIND); }, time_deque);
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        }
+
+
+        /* replace_it + replace_index */
+        DSL(cdeque, clear)(ds_deque_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_i, rand() % TIMES_FIND);
+
+            time_deque = 0;
+            {
+                deque_iterator_t it = __cdeque_it(ds_deque_i, DSL(cdeque, size)(ds_deque_i) / 2);
+
+                GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __cdeque_replace_it(ds_deque_i, it, rand() % TIMES_FIND); }, time_deque);
+            }
+            printf("RESULT %s replace_it       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+
+            time_deque = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __cdeque_replace_index(ds_deque_i, rand() % DSL(cdeque, size)(ds_deque_i), rand() % TIMES_FIND); }, time_deque);
+            printf("RESULT %s replace_index    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        }
+
+
+        /* resize grow + shrink */
+        DSL(cdeque, clear)(ds_deque_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_i, rand() % TIMES_FIND);
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, resize)(ds_deque_i, (deque_size_t)(TIMES_INSERT * 1.2), 7); }, time_deque);
+            printf("RESULT %s resize grow      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2), (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, resize)(ds_deque_i, (deque_size_t)TIMES_INSERT / 2, 7); }, time_deque);
+            printf("RESULT %s resize shrink    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        }
+
+
+        /* remove_if */
+        DSL(cdeque, clear)(ds_deque_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_i, rand() % TIMES_FIND);
+
+            time_deque = 0;
+            {
+                deque_size_t removed;
+
+                GET_DURATION({ removed = DSL(cdeque, remove_if)(ds_deque_i, deque_remove_if_odd); }, time_deque);
+                printf("RESULT %s remove_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), removed, DSL(cdeque, size)(ds_deque_i));
+            }
+        }
+
+
+        /* shrink_to_fit */
+        DSL(cdeque, clear)(ds_deque_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_i, rand() % TIMES_FIND);
+            DSL(cdeque, erase_range)(ds_deque_i, __cdeque_it(ds_deque_i, (deque_size_t)TIMES_INSERT * 3 / 4), DSL(cdeque, end)(ds_deque_i));
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, shrink_to_fit)(ds_deque_i); }, time_deque);
+            printf("RESULT %s shrink_to_fit    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 3) / 4, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_i));
+        }
+
+
+        /* iteration */
+        srand(SORT_SEED);
+        DSL(cdeque, clear)(ds_deque_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_i, (deque_data_t)(rand()));
+
+        {
+            volatile deque_data_t sink = 0;
+            deque_iterator_t      it   = DSL(cdeque, begin)(ds_deque_i);
+            deque_iterator_t      end  = DSL(cdeque, end)(ds_deque_i);
+
+            time_deque = 0;
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cdeque, next)(it)) { sink += *(deque_data_t*)it.cur; }, time_deque);
+            printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
+        }
+
+        {
+            volatile deque_data_t sink = 0;
+            deque_r_iterator_t    it   = DSL(cdeque, rbegin)(ds_deque_i);
+            deque_r_iterator_t    end  = DSL(cdeque, rend)(ds_deque_i);
+
+            time_deque = 0;
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cdeque, rnext)(it)) { sink += *(deque_data_t*)it.cur; }, time_deque);
+            printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
+        }
+
+
+        /* max_size + empty + front/back + __at + __it */
+        {
+            volatile deque_data_t sink     = 0;
+            deque_size_t          max_size = 0;
+            bool                  is_empty = false;
+            deque_iterator_t      mid      = DSL(cdeque, end)(ds_deque_i);
+
+            time_deque = 0;
+            GET_DURATION({ max_size = DSL(cdeque, max_size)(ds_deque_i); is_empty = __cdeque_empty(ds_deque_i); }, time_deque);
+            printf("RESULT %s max_size         %s %8zd %6zd ms max_size=%zd empty=%d\n", __func__, DS_NAME, (ssize_t)1, (ssize_t)(time_deque / 1000), max_size, is_empty);
+
+            time_deque = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = *DSL(cdeque, front)(ds_deque_i).d; sink = *DSL(cdeque, back)(ds_deque_i).d; }, time_deque);
+            printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
+
+            time_deque = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = *__cdeque_at(ds_deque_i, rand() % DSL(cdeque, size)(ds_deque_i)).d; }, time_deque);
+            printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
+
+            time_deque = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { mid = __cdeque_it(ds_deque_i, rand() % DSL(cdeque, size)(ds_deque_i)); sink += *(deque_data_t*)mid.cur; }, time_deque);
+            printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
         }
 
 
@@ -1081,7 +1303,7 @@ static void test_i_rand(void)
 
         time_deque = 0;
         GET_DURATION({ sort_dq_int(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)); }, time_deque);
-        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_deque / 1000),
                sort_dq_int_sorted(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)),
                DSL(cdeque, size)(ds_deque_i));
@@ -1091,7 +1313,7 @@ static void test_i_rand(void)
 
         time_deque = 0;
         GET_DURATION({ sort_dq_ides(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)); }, time_deque);
-        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_deque / 1000),
                sort_dq_ides_sorted(DSL(cdeque, begin)(ds_deque_i), DSL(cdeque, end)(ds_deque_i)),
                DSL(cdeque, size)(ds_deque_i));
@@ -1102,7 +1324,7 @@ static void test_i_rand(void)
     if (1)
     {
 
-#if 1
+#if 0
 #define DS_CAP(_ds)   do { printf("%zd - %zd = %zd\n", cvector_capacity(_ds), cvector_size(_ds), cvector_capacity(_ds) - cvector_size(_ds)); } while (0)
 #else
 #define DS_CAP(_ds)   do { } while (0)
@@ -1114,14 +1336,14 @@ static void test_i_rand(void)
 
             time_vector = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += DSL(cvector, count)(ds_vector_i, rand() % TIMES_FIND); }, time_vector);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), cnt, DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s count            %s %8zd %6zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), cnt, DSL(cvector, size)(ds_vector_i));
         }
 
 
         /* erase_range */
         time_vector = 0;
         GET_DURATION({ DSL(cvector, erase_range)(ds_vector_i, DSL(cvector, next)(DSL(cvector, begin)(ds_vector_i)), DSL(cvector, prev)(DSL(cvector, end)(ds_vector_i))); }, time_vector);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(cvector, size)(ds_vector_i), (ssize_t)(time_vector / 1000));
+        printf("RESULT %s erase_range      %s %8zd %6zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(cvector, size)(ds_vector_i), (ssize_t)(time_vector / 1000));
         GET_DURATION({ DSL(cvector, erase_range)(ds_vector_i, DSL(cvector, begin)(ds_vector_i), DSL(cvector, end)(ds_vector_i)); }, time_vector);
 
 
@@ -1129,31 +1351,31 @@ static void test_i_rand(void)
         time_vector = 0;
         DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT / 500; ++i) { DSL(cvector, insert)(ds_vector_i, DSL(cvector, begin)(ds_vector_i), rand() % TIMES_FIND); }, time_vector);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s insert front     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT / 500; ++i) { DSL(cvector, erase)(ds_vector_i, DSL(cvector, begin)(ds_vector_i));                       }, time_vector);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s erase front      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
 
         /* insert/push back + erase/pop back */
         time_vector = 0;
         DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, insert)(ds_vector_i, DSL(cvector, end)(ds_vector_i), rand() % TIMES_FIND);   }, time_vector);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s insert back      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, erase)(ds_vector_i, DSL(cvector, prev)(DSL(cvector, end)(ds_vector_i)));      }, time_vector);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s erase back       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
         time_vector = 0;
         DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, push_back)(ds_vector_i, rand() % TIMES_FIND);                              }, time_vector);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s push_back        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, pop_back)(ds_vector_i);                                                    }, time_vector);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s pop_back         %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
 
         /* insert front+10 + erase front+10 */ /* only TIMES_INSERT / 500 times */
@@ -1165,14 +1387,14 @@ static void test_i_rand(void)
             vector_iterator_t it = __cvector_it(ds_vector_i, 10);
             GET_DURATION({ DSL(cvector, insert)(ds_vector_i, it, rand() % TIMES_FIND); }, time_vector);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s insert@+10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
         time_vector = 0;
         for (int i = 0; i < TIMES_INSERT / 500; ++i) {
             vector_iterator_t it = __cvector_it(ds_vector_i, 10);
             GET_DURATION({ DSL(cvector, erase)(ds_vector_i, it); }, time_vector);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s erase@+10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
 
         /* insert back-10 + erase back-10 */
@@ -1184,14 +1406,14 @@ static void test_i_rand(void)
             vector_iterator_t it = __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) - 10);
             GET_DURATION({ DSL(cvector, insert)(ds_vector_i, it, rand() % TIMES_FIND); }, time_vector);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s insert@-10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
         time_vector = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             vector_iterator_t it = __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) - 10);
             GET_DURATION({ DSL(cvector, erase)(ds_vector_i, it); }, time_vector);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s erase@-10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
 
         /* insert mid + erase mid */ /* only TIMES_FIND_V_L times */
@@ -1203,14 +1425,14 @@ static void test_i_rand(void)
             vector_iterator_t it = __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) / 2);
             GET_DURATION({ DSL(cvector, insert)(ds_vector_i, it, rand() % TIMES_FIND); }, time_vector);
         }
-        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s insert@mid       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
         time_vector = 0;
         for (int i = 0; i < TIMES_FIND_V_L; ++i) {
             vector_iterator_t it = __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) / 2);
             GET_DURATION({ DSL(cvector, erase)(ds_vector_i, it); }, time_vector);
         }
-        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        printf("RESULT %s erase@mid        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
 
         /* insert_n + insert_n mid + erase_range mid + remove all */
@@ -1221,11 +1443,11 @@ static void test_i_rand(void)
 
             time_vector = 0;
             GET_DURATION({ DSL(cvector, insert_n)(ds_vector_i, DSL(cvector, end)(ds_vector_i), (vector_size_t)TIMES_INSERT, 9); }, time_vector);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s insert_n all     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             time_vector = 0;
             GET_DURATION({ DSL(cvector, insert_n)(ds_vector_i, __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) / 2), (vector_size_t)MID_N, 9); }, time_vector);
-            printf("RESULT %s insert_n@mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s insert_n mid     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             time_vector = 0;
             {
@@ -1234,11 +1456,11 @@ static void test_i_rand(void)
                 vector_iterator_t e  = __cvector_it(ds_vector_i, (s + MID_N) / 2);
                 GET_DURATION({ DSL(cvector, erase_range)(ds_vector_i, b, e); }, time_vector);
             }
-            printf("RESULT %s erase_range@mid  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s erase_range mid  %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             time_vector = 0;
             GET_DURATION({ removed = DSL(cvector, remove)(ds_vector_i, 9); }, time_vector);
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s remove all       %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, DSL(cvector, size)(ds_vector_i));
         }
 
 
@@ -1255,7 +1477,7 @@ static void test_i_rand(void)
                                                       __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) / 2), 
                                                       __cvector_it(src, DSL(cvector, size)(src) * 0.25), 
                                                       __cvector_it(src, DSL(cvector, size)(src) * 0.75)); }, time_vector);
-            printf("RESULT %s insert_range@mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s insert_range@mid %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             VECTOR_DELETE(&src);
         }
@@ -1276,7 +1498,7 @@ static void test_i_rand(void)
                                                       __cvector_it(src, 1), 
                                                       __cvector_it(src, (vector_size_t)TIMES_INSERT / 2 - 1)); }, time_vector);
             DS_CAP(ds_vector_i);
-            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             time_vector = 0;
             DS_CAP(ds_vector_i);
@@ -1284,7 +1506,7 @@ static void test_i_rand(void)
                                                       __cvector_it(src, 1), 
                                                       __cvector_it(src, DSL(cvector, size)(src) - 1)); }, time_vector);
             DS_CAP(ds_vector_i);
-            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, DSL(cvector, size)(src) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, DSL(cvector, size)(src) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             VECTOR_DELETE(&src);
         }
@@ -1302,15 +1524,143 @@ static void test_i_rand(void)
             DS_CAP(ds_vector_i);
             GET_DURATION({ DSL(cvector, assign)(ds_vector_i, (vector_size_t)TIMES_INSERT / 2 - 2, rand() % TIMES_FIND); }, time_vector);
             DS_CAP(ds_vector_i);
-            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             time_vector = 0;
             DS_CAP(ds_vector_i);
             GET_DURATION({ DSL(cvector, assign)(ds_vector_i, (vector_size_t)(TIMES_INSERT * 1.2) - 2, rand() % TIMES_FIND); }, time_vector);
             DS_CAP(ds_vector_i);
-            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
 
             VECTOR_DELETE(&src);
+        }
+
+
+        /* replace_it + replace_index */
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_i, rand() % TIMES_FIND);
+
+            time_vector = 0;
+            {
+                vector_iterator_t it = __cvector_it(ds_vector_i, DSL(cvector, size)(ds_vector_i) / 2);
+
+                GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __cvector_replace_it(ds_vector_i, it, rand() % TIMES_FIND); }, time_vector);
+            }
+            printf("RESULT %s replace_it       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+
+            time_vector = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __cvector_replace_index(ds_vector_i, rand() % DSL(cvector, size)(ds_vector_i), rand() % TIMES_FIND); }, time_vector);
+            printf("RESULT %s replace_index    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        }
+
+
+        /* resize grow + shrink */
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_i, rand() % TIMES_FIND);
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ DSL(cvector, resize)(ds_vector_i, (vector_size_t)(TIMES_INSERT * 1.2), 7); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s resize grow      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2), (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ DSL(cvector, resize)(ds_vector_i, (vector_size_t)TIMES_INSERT / 2, 7); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s resize shrink    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        }
+
+
+        /* remove_if */
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_i, rand() % TIMES_FIND);
+
+            time_vector = 0;
+            {
+                vector_size_t removed;
+
+                GET_DURATION({ removed = DSL(cvector, remove_if)(ds_vector_i, vector_remove_if_odd); }, time_vector);
+                printf("RESULT %s remove_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, DSL(cvector, size)(ds_vector_i));
+            }
+        }
+
+
+        /* shrink_to_fit */
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
+        {
+            DSL(cvector, reserve)(ds_vector_i, (vector_size_t)(TIMES_INSERT * 1.2));
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_i, rand() % TIMES_FIND);
+
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ DSL(cvector, shrink_to_fit)(ds_vector_i); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s shrink_to_fit    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        }
+
+
+        /* reserve */ /* vector only */
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i);
+        {
+            time_vector = 0;
+            DS_CAP(ds_vector_i);
+            GET_DURATION({ DSL(cvector, reserve)(ds_vector_i, (vector_size_t)TIMES_INSERT); }, time_vector);
+            DS_CAP(ds_vector_i);
+            printf("RESULT %s reserve          %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_i));
+        }
+
+
+        /* iteration */
+        srand(SORT_SEED);
+        DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_i, (vector_data_t)(rand()));
+
+        {
+            volatile vector_data_t sink = 0;
+            vector_iterator_t      it   = DSL(cvector, begin)(ds_vector_i);
+            vector_iterator_t      end  = DSL(cvector, end)(ds_vector_i);
+
+            time_vector = 0;
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cvector, next)(it)) { sink += *(vector_data_t*)it.cur; }, time_vector);
+            printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
+        }
+
+        {
+            volatile vector_data_t sink = 0;
+            vector_r_iterator_t    it   = DSL(cvector, rbegin)(ds_vector_i);
+            vector_r_iterator_t    end  = DSL(cvector, rend)(ds_vector_i);
+
+            time_vector = 0;
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cvector, rnext)(it)) { sink += *(vector_data_t*)it.cur; }, time_vector);
+            printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
+        }
+
+
+        /* max_size + empty + front/back + __at + __it */
+        {
+            volatile vector_data_t sink     = 0;
+            vector_size_t          max_size = 0;
+            bool                   is_empty = false;
+            vector_iterator_t      mid      = DSL(cvector, end)(ds_vector_i);
+
+            time_vector = 0;
+            GET_DURATION({ max_size = DSL(cvector, max_size)(ds_vector_i); is_empty = __cvector_empty(ds_vector_i); }, time_vector);
+            printf("RESULT %s max_size         %s %8zd %6zd ms max_size=%zd empty=%d\n", __func__, DS_NAME, (ssize_t)1, (ssize_t)(time_vector / 1000), max_size, is_empty);
+
+            time_vector = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = *DSL(cvector, front)(ds_vector_i).d; sink = *DSL(cvector, back)(ds_vector_i).d; }, time_vector);
+            printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
+
+            time_vector = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = *__cvector_at(ds_vector_i, rand() % DSL(cvector, size)(ds_vector_i)).d; }, time_vector);
+            printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
+
+            time_vector = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { mid = __cvector_it(ds_vector_i, rand() % DSL(cvector, size)(ds_vector_i)); sink += *(vector_data_t*)mid.cur; }, time_vector);
+            printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
         }
 
 
@@ -1320,7 +1670,7 @@ static void test_i_rand(void)
 
         time_vector = 0;
         GET_DURATION({ sort_vt_int((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur); }, time_vector);
-        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000),
                sort_vt_int_sorted((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur),
                DSL(cvector, size)(ds_vector_i));
@@ -1330,7 +1680,7 @@ static void test_i_rand(void)
 
         time_vector = 0;
         GET_DURATION({ sort_vt_ides((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur); }, time_vector);
-        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000),
                sort_vt_ides_sorted((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur),
                DSL(cvector, size)(ds_vector_i));
@@ -1348,51 +1698,51 @@ static void test_i_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += DSL(clist, count)(ds_list_i, rand() % TIMES_FIND); }, time_list);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_list / 1000), cnt, DSL(clist, size)(ds_list_i));
+            printf("RESULT %s count            %s %8zd %6zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_list / 1000), cnt, DSL(clist, size)(ds_list_i));
         }
 
 
         /* erase_range */
         time_list = 0;
         GET_DURATION({ DSL(clist, erase_range)(ds_list_i, DSL(clist, next)(DSL(clist, begin)(ds_list_i)), DSL(clist, prev)(DSL(clist, end)(ds_list_i))); }, time_list);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(clist, size)(ds_list_i), (ssize_t)(time_list / 1000));
+        printf("RESULT %s erase_range      %s %8zd %6zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(clist, size)(ds_list_i), (ssize_t)(time_list / 1000));
         GET_DURATION({ DSL(clist, erase_range)(ds_list_i, DSL(clist, begin)(ds_list_i), DSL(clist, end)(ds_list_i)); }, time_list);
 
 
         /* insert/push front + erase/pop front */
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, insert)(ds_list_i, DSL(clist, begin)(ds_list_i), rand() % TIMES_FIND); }, time_list);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s insert front     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, erase)(ds_list_i, DSL(clist, begin)(ds_list_i));                       }, time_list);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s erase front      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, push_front)(ds_list_i, rand() % TIMES_FIND);                             }, time_list);
-        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s push_front       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, pop_front)(ds_list_i);                                                   }, time_list);
-        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s pop_front        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
 
         /* insert/push back + erase/pop back */
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, insert)(ds_list_i, DSL(clist, end)(ds_list_i), rand() % TIMES_FIND);   }, time_list);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s insert back      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, erase)(ds_list_i, DSL(clist, prev)(DSL(clist, end)(ds_list_i)));      }, time_list);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s erase back       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, push_back)(ds_list_i, rand() % TIMES_FIND);                              }, time_list);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s push_back        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, pop_back)(ds_list_i);                                                    }, time_list);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s pop_back         %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
 
         /* insert front+10 + erase front+10 */
@@ -1404,14 +1754,14 @@ static void test_i_rand(void)
             list_iterator_t it = __clist_it(ds_list_i, 10);
             GET_DURATION({ DSL(clist, insert)(ds_list_i, it, rand() % TIMES_FIND); }, time_list);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s insert@+10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             list_iterator_t it = __clist_it(ds_list_i, 10);
             GET_DURATION({ DSL(clist, erase)(ds_list_i, it); }, time_list);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s erase@+10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
 
         /* insert back-10 + erase back-10 */
@@ -1423,14 +1773,14 @@ static void test_i_rand(void)
             list_iterator_t it = __clist_it(ds_list_i, DSL(clist, size)(ds_list_i) - 10);
             GET_DURATION({ DSL(clist, insert)(ds_list_i, it, rand() % TIMES_FIND); }, time_list);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s insert@-10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             list_iterator_t it = __clist_it(ds_list_i, DSL(clist, size)(ds_list_i) - 10);
             GET_DURATION({ DSL(clist, erase)(ds_list_i, it); }, time_list);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        printf("RESULT %s erase@-10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
 
         /* insert mid + erase mid */ /* only TIMES_INSERT / 5 times */
@@ -1441,7 +1791,7 @@ static void test_i_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT / 5; ++i) { DSL(clist, insert)(ds_list_i, mid, rand() % TIMES_FIND); }, time_list);
-            printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+            printf("RESULT %s insert@mid       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
         }
 
         {
@@ -1449,7 +1799,7 @@ static void test_i_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT / 5; ++i) { mid = DSL(clist, erase)(ds_list_i, mid); }, time_list);
-            printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+            printf("RESULT %s erase@mid        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
         }
 
 
@@ -1461,11 +1811,11 @@ static void test_i_rand(void)
 
             time_list = 0;
             GET_DURATION({ DSL(clist, insert_n)(ds_list_i, DSL(clist, end)(ds_list_i), (list_size_t)TIMES_INSERT, 9); }, time_list);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+            printf("RESULT %s insert_n all     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
             time_list = 0;
             GET_DURATION({ DSL(clist, insert_n)(ds_list_i, __clist_it(ds_list_i, DSL(clist, size)(ds_list_i) / 2), (list_size_t)MID_N, 9); }, time_list);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+            printf("RESULT %s insert_n mid     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
             time_list = 0;
             {
@@ -1474,11 +1824,281 @@ static void test_i_rand(void)
                 list_iterator_t e  = __clist_it(ds_list_i, (s + MID_N) / 2);
                 GET_DURATION({ DSL(clist, erase_range)(ds_list_i, b, e); }, time_list);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+            printf("RESULT %s erase_range mid  %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
 
             time_list = 0;
             GET_DURATION({ removed = DSL(clist, remove)(ds_list_i, 9); }, time_list);
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_i));
+            printf("RESULT %s remove all       %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_i));
+        }
+
+
+        /* insert_n + insert_range */
+        DSL(clist, clear)(ds_list_i);
+        {
+            list_t* src = LIST_NEW();
+
+            DSL(clist, insert_n)(ds_list_i, DSL(clist, end)(ds_list_i), (list_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+            DSL(clist, insert_n)(src,       DSL(clist, end)(src),       (list_size_t)TIMES_INSERT / 1, rand() % TIMES_FIND);
+
+            {
+                list_iterator_t pos   = __clist_it(ds_list_i, DSL(clist, size)(ds_list_i) / 2);
+                list_iterator_t begin = __clist_it(src, DSL(clist, size)(src) * 0.25);
+                list_iterator_t end   = __clist_it(src, DSL(clist, size)(src) * 0.75);
+
+                time_list = 0;
+                GET_DURATION({ DSL(clist, insert_range)(ds_list_i, pos, begin, end); }, time_list);
+            }
+            printf("RESULT %s insert_range@mid %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* insert_n + assign_range */
+        DSL(clist, clear)(ds_list_i);
+        {
+            list_t* src = LIST_NEW();
+
+            DSL(clist, insert_n)(ds_list_i, DSL(clist, end)(ds_list_i), (list_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+            DSL(clist, insert_n)(src,       DSL(clist, end)(src),       (list_size_t)(TIMES_INSERT * 1.2), rand() % TIMES_FIND);
+
+            {
+                list_iterator_t begin = __clist_it(src, 1);
+                list_iterator_t end   = __clist_it(src, (list_size_t)TIMES_INSERT / 2 - 1);
+
+                time_list = 0;
+                GET_DURATION({ DSL(clist, assign_range)(ds_list_i, begin, end); }, time_list);
+            }
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+
+            {
+                list_iterator_t begin = __clist_it(src, 1);
+                list_iterator_t end   = __clist_it(src, DSL(clist, size)(src) - 1);
+
+                time_list = 0;
+                GET_DURATION({ DSL(clist, assign_range)(ds_list_i, begin, end); }, time_list);
+            }
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, DSL(clist, size)(src) - 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* insert_n + assign */
+        DSL(clist, clear)(ds_list_i);
+        {
+            DSL(clist, insert_n)(ds_list_i, DSL(clist, end)(ds_list_i), (list_size_t)TIMES_INSERT / 2, rand() % TIMES_FIND);
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, assign)(ds_list_i, (list_size_t)TIMES_INSERT / 2 - 2, rand() % TIMES_FIND); }, time_list);
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, assign)(ds_list_i, (list_size_t)(TIMES_INSERT * 1.2) - 2, rand() % TIMES_FIND); }, time_list);
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        }
+
+
+        /* replace_it + replace_index */
+        DSL(clist, clear)(ds_list_i);
+        {
+            const int TIMES_INDEX = TIMES_FIND_V_L / 20; /* O(n) 下标定位，10M 规模下 100 次要 30s+ */
+
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, rand() % TIMES_FIND);
+
+            time_list = 0;
+            {
+                list_iterator_t it = __clist_it(ds_list_i, DSL(clist, size)(ds_list_i) / 2);
+
+                GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __clist_replace_it(ds_list_i, it, rand() % TIMES_FIND); }, time_list);
+            }
+            printf("RESULT %s replace_it       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { __clist_replace_index(ds_list_i, rand() % DSL(clist, size)(ds_list_i), rand() % TIMES_FIND); }, time_list);
+            printf("RESULT %s replace_index    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INDEX, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        }
+
+
+        /* resize grow + shrink */
+        DSL(clist, clear)(ds_list_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, rand() % TIMES_FIND);
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, resize)(ds_list_i, (list_size_t)(TIMES_INSERT * 1.2), 7); }, time_list);
+            printf("RESULT %s resize grow      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2), (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, resize)(ds_list_i, (list_size_t)TIMES_INSERT / 2, 7); }, time_list);
+            printf("RESULT %s resize shrink    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        }
+
+
+        /* remove_if */
+        DSL(clist, clear)(ds_list_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, rand() % TIMES_FIND);
+
+            time_list = 0;
+            {
+                list_size_t removed;
+
+                GET_DURATION({ removed = DSL(clist, remove_if)(ds_list_i, list_remove_if_odd); }, time_list);
+                printf("RESULT %s remove_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_i));
+            }
+        }
+
+
+        /* unique + unique_if */
+        DSL(clist, clear)(ds_list_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, rand() % 2);
+
+            time_list = 0;
+            {
+                list_size_t removed;
+
+                GET_DURATION({ removed = DSL(clist, unique)(ds_list_i); }, time_list);
+                printf("RESULT %s unique           %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_i));
+            }
+        }
+
+        DSL(clist, clear)(ds_list_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, rand() % 2);
+
+            time_list = 0;
+            {
+                list_size_t removed;
+
+                GET_DURATION({ removed = DSL(clist, unique_if)(ds_list_i, list_unique_eq); }, time_list);
+                printf("RESULT %s unique_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_i));
+            }
+        }
+
+
+        /* reverse */
+        DSL(clist, clear)(ds_list_i);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, rand() % TIMES_FIND);
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, reverse)(ds_list_i); }, time_list);
+            printf("RESULT %s reverse          %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+        }
+
+
+        /* splice */ /* O(1)，单次 0ms；整条链来回搬 TIMES_INSERT 次，位置不影响 O(1) 代价，统一用 end */
+        DSL(clist, clear)(ds_list_i);
+        {
+            list_t* src = LIST_NEW();
+
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_i, rand() % TIMES_FIND);
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(src, rand() % TIMES_FIND);
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+                if (i & 1)
+                    DSL(clist, splice)(src, DSL(clist, end)(src), ds_list_i);
+                else
+                    DSL(clist, splice)(ds_list_i, DSL(clist, end)(ds_list_i), src);
+            }, time_list);
+            printf("RESULT %s splice           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i) + DSL(clist, size)(src));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* splice_range */
+        DSL(clist, clear)(ds_list_i);
+        {
+            list_t*     src = LIST_NEW();
+            list_size_t n   = (list_size_t)TIMES_INSERT / 2;
+
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_i, rand() % TIMES_FIND);
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(src, rand() % TIMES_FIND);
+
+            {
+                list_iterator_t pos   = __clist_it(ds_list_i, DSL(clist, size)(ds_list_i) / 2);
+                list_iterator_t begin = __clist_it(src, 1);
+                list_iterator_t end   = __clist_it(src, n);
+
+                time_list = 0;
+                GET_DURATION({ DSL(clist, splice_range)(ds_list_i, pos, src, begin, end); }, time_list);
+            }
+            printf("RESULT %s splice_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(n - 1), (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_i));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* merge */
+        DSL(clist, clear)(ds_list_i);
+        {
+            list_t* src = LIST_NEW();
+
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(src, (list_data_t)(rand()));
+            DSL(clist, sort)(ds_list_i, list_lt_num);
+            DSL(clist, sort)(src, list_lt_num);
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, merge)(ds_list_i, src, list_lt_num); }, time_list);
+            printf("RESULT %s merge            %s %8zd %6zd ms sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), list_is_sorted_num(ds_list_i, list_lt_num), DSL(clist, size)(ds_list_i));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* iteration */
+        srand(SORT_SEED);
+        DSL(clist, clear)(ds_list_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
+
+        {
+            volatile list_data_t sink = 0;
+            list_iterator_t      it   = DSL(clist, begin)(ds_list_i);
+            list_iterator_t      end  = DSL(clist, end)(ds_list_i);
+
+            time_list = 0;
+            GET_DURATION(for (; it.d != end.d; it = DSL(clist, next)(it)) { sink += *(it.d); }, time_list);
+            printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
+        }
+
+        {
+            volatile list_data_t sink = 0;
+            list_r_iterator_t    it   = DSL(clist, rbegin)(ds_list_i);
+            list_r_iterator_t    end  = DSL(clist, rend)(ds_list_i);
+
+            time_list = 0;
+            GET_DURATION(for (; it.d != end.d; it = DSL(clist, rnext)(it)) { sink += *(it.d); }, time_list);
+            printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
+        }
+
+
+        /* max_size + empty + front/back + at + it */
+        {
+            const int            TIMES_INDEX = TIMES_FIND_V_L / 20; /* at/it 是 O(n) 定位，10M 规模下 100 次要 30s+ */
+            volatile list_data_t sink     = 0;
+            list_size_t          max_size = 0;
+            bool                 is_empty = false;
+            list_iterator_t      mid      = DSL(clist, end)(ds_list_i);
+
+            time_list = 0;
+            GET_DURATION({ max_size = DSL(clist, max_size)(ds_list_i); is_empty = __clist_empty(ds_list_i); }, time_list);
+            printf("RESULT %s max_size         %s %8zd %6zd ms max_size=%zd empty=%d\n", __func__, DS_NAME, (ssize_t)1, (ssize_t)(time_list / 1000), max_size, is_empty);
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = *DSL(clist, front)(ds_list_i).d; sink = *DSL(clist, back)(ds_list_i).d; }, time_list);
+            printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { sink = *__clist_at(ds_list_i, rand() % DSL(clist, size)(ds_list_i)).d; }, time_list);
+            printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INDEX, (ssize_t)(time_list / 1000), (ssize_t)sink);
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { mid = __clist_it(ds_list_i, rand() % DSL(clist, size)(ds_list_i)); sink += *mid.d; }, time_list);
+            printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INDEX, (ssize_t)(time_list / 1000), (ssize_t)sink);
         }
 
 
@@ -1488,7 +2108,7 @@ static void test_i_rand(void)
 
         time_list = 0;
         GET_DURATION({ DSL(clist, sort)(ds_list_i, list_lt_num); }, time_list);
-        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000),
                list_is_sorted_num(ds_list_i, list_lt_num),
                DSL(clist, size)(ds_list_i));
@@ -1498,7 +2118,7 @@ static void test_i_rand(void)
 
         time_list = 0;
         GET_DURATION({ DSL(clist, sort)(ds_list_i, list_gt_num); }, time_list);
-        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000),
                list_is_sorted_num(ds_list_i, list_gt_num),
                DSL(clist, size)(ds_list_i));
@@ -1567,7 +2187,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000), removed);
+        printf("RESULT %s deinit           %s %8zd %6zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000), removed);
     }
 }
 
@@ -1742,7 +2362,7 @@ static void test_s_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s insert %s %zd %zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
+        printf("RESULT %s insert           %s %8zd %6zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
     }
 
     if (1) // if (0)
@@ -1849,7 +2469,7 @@ static void test_s_rand(void)
         (void)dst;
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (ssize_t)(TIME_DS / 1000), times_succ, ds_size);
+        printf("RESULT %s %-16s %s %8zd %6zd ms succ=%zu ds_size=%zd\n", __func__, DS_ACCESS_NAME, DS_NAME, (ssize_t)FIND_OPS, (ssize_t)(TIME_DS / 1000), times_succ, ds_size);
     }
 
     if (1) // if (0)
@@ -1930,7 +2550,7 @@ static void test_s_rand(void)
         (void)dst;
 #endif
 
-        printf("RESULT %s %s %s %zd %zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (ssize_t)(TIME_DS / 1000), removed);
+        printf("RESULT %s %-16s %s %8zd %6zd ms removed=%zd\n", __func__, DS_REMOVE_NAME, DS_NAME, (ssize_t)REMOVE_OPS_PRINT, (ssize_t)(TIME_DS / 1000), removed);
     }
 
 #ifdef TEST_DEQUE
@@ -1947,51 +2567,51 @@ static void test_s_rand(void)
 
             time_deque = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += DSL(cdeque, count)(ds_deque_s, DS_ARG()); }, time_deque);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), cnt, DSL(cdeque, size)(ds_deque_s));
+            printf("RESULT %s count            %s %8zd %6zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), cnt, DSL(cdeque, size)(ds_deque_s));
         }
 
 
         /* erase_range */
         time_deque = 0;
         GET_DURATION({ DSL(cdeque, erase_range)(ds_deque_s, DSL(cdeque, next)(DSL(cdeque, begin)(ds_deque_s)), DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_s))); }, time_deque);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(cdeque, size)(ds_deque_s), (ssize_t)(time_deque / 1000));
+        printf("RESULT %s erase_range      %s %8zd %6zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(cdeque, size)(ds_deque_s), (ssize_t)(time_deque / 1000));
         GET_DURATION({ DSL(cdeque, erase_range)(ds_deque_s, DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)); }, time_deque);
 
 
         /* insert/push front + erase/pop front */
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, insert)(ds_deque_s, DSL(cdeque, begin)(ds_deque_s), DS_ARG());       }, time_deque);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s insert front     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, erase)(ds_deque_s, DSL(cdeque, begin)(ds_deque_s));                  }, time_deque);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s erase front      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, push_front)(ds_deque_s, DS_ARG());                                   }, time_deque);
-        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s push_front       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, pop_front)(ds_deque_s);                                              }, time_deque);
-        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s pop_front        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
 
         /* insert/push back + erase/pop back */
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, insert)(ds_deque_s, DSL(cdeque, end)(ds_deque_s), DS_ARG());         }, time_deque);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s insert back      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, erase)(ds_deque_s, DSL(cdeque, prev)(DSL(cdeque, end)(ds_deque_s))); }, time_deque);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s erase back       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, push_back)(ds_deque_s, DS_ARG());                                    }, time_deque);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s push_back        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cdeque, pop_back)(ds_deque_s);                                               }, time_deque);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s pop_back         %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
 
         /* insert front+10 + erase front+10 */
@@ -2003,14 +2623,14 @@ static void test_s_rand(void)
             deque_iterator_t it = __cdeque_it(ds_deque_s, 10);
             GET_DURATION({ DSL(cdeque, insert)(ds_deque_s, it, DS_ARG()); }, time_deque);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s insert@+10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             deque_iterator_t it = __cdeque_it(ds_deque_s, 10);
             GET_DURATION({ DSL(cdeque, erase)(ds_deque_s, it); }, time_deque);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s erase@+10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
 
         /* insert back-10 + erase back-10 */
@@ -2022,14 +2642,14 @@ static void test_s_rand(void)
             deque_iterator_t it = __cdeque_it(ds_deque_s, DSL(cdeque, size)(ds_deque_s) - 10);
             GET_DURATION({ DSL(cdeque, insert)(ds_deque_s, it, DS_ARG()); }, time_deque);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s insert@-10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             deque_iterator_t it = __cdeque_it(ds_deque_s, DSL(cdeque, size)(ds_deque_s) - 10);
             GET_DURATION({ DSL(cdeque, erase)(ds_deque_s, it); }, time_deque);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s erase@-10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
 
         /* insert mid + erase mid */ /* only TIMES_FIND_V_L times */
@@ -2041,14 +2661,14 @@ static void test_s_rand(void)
             deque_iterator_t it = __cdeque_it(ds_deque_s, DSL(cdeque, size)(ds_deque_s) / 2);
             GET_DURATION({ DSL(cdeque, insert)(ds_deque_s, it, DS_ARG()); }, time_deque);
         }
-        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s insert@mid       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
         time_deque = 0;
         for (int i = 0; i < TIMES_FIND_V_L; ++i) {
             deque_iterator_t it = __cdeque_it(ds_deque_s, DSL(cdeque, size)(ds_deque_s) / 2);
             GET_DURATION({ DSL(cdeque, erase)(ds_deque_s, it); }, time_deque);
         }
-        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        printf("RESULT %s erase@mid        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
 
         /* insert_n + insert_n mid + erase_range mid + remove all */
@@ -2060,11 +2680,11 @@ static void test_s_rand(void)
 
             time_deque = 0;
             GET_DURATION({ DSL(cdeque, insert_n)(ds_deque_s, DSL(cdeque, end)(ds_deque_s), (deque_size_t)TIMES_INSERT, (deque_data_t)fixbuf); }, time_deque);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+            printf("RESULT %s insert_n all     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
             time_deque = 0;
             GET_DURATION({ DSL(cdeque, insert_n)(ds_deque_s, __cdeque_it(ds_deque_s, DSL(cdeque, size)(ds_deque_s) / 2), (deque_size_t)MID_N, (deque_data_t)fixbuf); }, time_deque);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+            printf("RESULT %s insert_n mid     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
             time_deque = 0;
             {
@@ -2073,11 +2693,191 @@ static void test_s_rand(void)
                 deque_iterator_t e  = __cdeque_it(ds_deque_s, (s + MID_N) / 2);
                 GET_DURATION({ DSL(cdeque, erase_range)(ds_deque_s, b, e); }, time_deque);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+            printf("RESULT %s erase_range mid  %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
 
             time_deque = 0;
             GET_DURATION({ removed = DSL(cdeque, remove)(ds_deque_s, (deque_data_t)fixbuf); }, time_deque);
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), removed, DSL(cdeque, size)(ds_deque_s));
+            printf("RESULT %s remove all       %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), removed, DSL(cdeque, size)(ds_deque_s));
+        }
+
+
+        /* insert_n + insert_range */
+        DSL(cdeque, clear)(ds_deque_s);
+        {
+            deque_t* src = DEQUE_NEW_STRING();
+
+            DSL(cdeque, insert_n)(ds_deque_s, DSL(cdeque, end)(ds_deque_s), (deque_size_t)TIMES_INSERT / 2, DS_ARG());
+            DSL(cdeque, insert_n)(src,        DSL(cdeque, end)(src),        (deque_size_t)TIMES_INSERT / 1, DS_ARG());
+
+            {
+                deque_iterator_t pos   = __cdeque_it(ds_deque_s, DSL(cdeque, size)(ds_deque_s) / 2);
+                deque_iterator_t begin = __cdeque_it(src, (deque_size_t)(DSL(cdeque, size)(src) * 0.25));
+                deque_iterator_t end   = __cdeque_it(src, (deque_size_t)(DSL(cdeque, size)(src) * 0.75));
+
+                time_deque = 0;
+                GET_DURATION({ DSL(cdeque, insert_range)(ds_deque_s, pos, begin, end); }, time_deque);
+            }
+            printf("RESULT %s insert_range@mid %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+
+            DEQUE_DELETE(&src);
+        }
+
+
+        /* insert_n + assign_range */
+        DSL(cdeque, clear)(ds_deque_s);
+        {
+            deque_t* src = DEQUE_NEW_STRING();
+
+            DSL(cdeque, insert_n)(ds_deque_s, DSL(cdeque, end)(ds_deque_s), (deque_size_t)TIMES_INSERT / 2, DS_ARG());
+            DSL(cdeque, insert_n)(src,        DSL(cdeque, end)(src),        (deque_size_t)(TIMES_INSERT * 1.2), DS_ARG());
+
+            {
+                deque_iterator_t begin = __cdeque_it(src, 1);
+                deque_iterator_t end   = __cdeque_it(src, (deque_size_t)TIMES_INSERT / 2 - 1);
+
+                time_deque = 0;
+                GET_DURATION({ DSL(cdeque, assign_range)(ds_deque_s, begin, end); }, time_deque);
+            }
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+
+            {
+                deque_iterator_t begin = __cdeque_it(src, 1);
+                deque_iterator_t end   = __cdeque_it(src, DSL(cdeque, size)(src) - 1);
+
+                time_deque = 0;
+                GET_DURATION({ DSL(cdeque, assign_range)(ds_deque_s, begin, end); }, time_deque);
+            }
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, DSL(cdeque, size)(src) - 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+
+            DEQUE_DELETE(&src);
+        }
+
+
+        /* insert_n + assign */
+        DSL(cdeque, clear)(ds_deque_s);
+        s_pool_str(fixbuf);
+        {
+            DSL(cdeque, insert_n)(ds_deque_s, DSL(cdeque, end)(ds_deque_s), (deque_size_t)TIMES_INSERT / 2, (deque_data_t)fixbuf);
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, assign)(ds_deque_s, (deque_size_t)TIMES_INSERT / 2 - 2, (deque_data_t)fixbuf); }, time_deque);
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, assign)(ds_deque_s, (deque_size_t)(TIMES_INSERT * 1.2) - 2, (deque_data_t)fixbuf); }, time_deque);
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        }
+
+
+        /* replace_it + replace_index */
+        DSL(cdeque, clear)(ds_deque_s);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_s, DS_ARG());
+
+            time_deque = 0;
+            {
+                deque_iterator_t it = __cdeque_it(ds_deque_s, DSL(cdeque, size)(ds_deque_s) / 2);
+
+                GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __cdeque_replace_it(ds_deque_s, it, DS_ARG()); }, time_deque);
+            }
+            printf("RESULT %s replace_it       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+
+            time_deque = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __cdeque_replace_index(ds_deque_s, rand() % DSL(cdeque, size)(ds_deque_s), DS_ARG()); }, time_deque);
+            printf("RESULT %s replace_index    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        }
+
+
+        /* resize grow + shrink */
+        DSL(cdeque, clear)(ds_deque_s);
+        s_pool_str(fixbuf);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_s, DS_ARG());
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, resize)(ds_deque_s, (deque_size_t)(TIMES_INSERT * 1.2), (deque_data_t)fixbuf); }, time_deque);
+            printf("RESULT %s resize grow      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2), (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, resize)(ds_deque_s, (deque_size_t)TIMES_INSERT / 2, (deque_data_t)fixbuf); }, time_deque);
+            printf("RESULT %s resize shrink    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        }
+
+
+        /* remove_if */
+        DSL(cdeque, clear)(ds_deque_s);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_s, DS_ARG());
+
+            time_deque = 0;
+            {
+                deque_size_t removed;
+
+                GET_DURATION({ removed = DSL(cdeque, remove_if)(ds_deque_s, deque_remove_if_char_odd); }, time_deque);
+                printf("RESULT %s remove_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), removed, DSL(cdeque, size)(ds_deque_s));
+            }
+        }
+
+
+        /* shrink_to_fit */
+        DSL(cdeque, clear)(ds_deque_s);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_s, DS_ARG());
+            DSL(cdeque, erase_range)(ds_deque_s, __cdeque_it(ds_deque_s, (deque_size_t)TIMES_INSERT * 3 / 4), DSL(cdeque, end)(ds_deque_s));
+
+            time_deque = 0;
+            GET_DURATION({ DSL(cdeque, shrink_to_fit)(ds_deque_s); }, time_deque);
+            printf("RESULT %s shrink_to_fit    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 3) / 4, (ssize_t)(time_deque / 1000), DSL(cdeque, size)(ds_deque_s));
+        }
+
+
+        /* iteration */
+        srand(SORT_SEED);
+        DSL(cdeque, clear)(ds_deque_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cdeque, push_back)(ds_deque_s, DS_ARG());
+
+        {
+            volatile deque_data_t sink = 0;
+            deque_iterator_t      it   = DSL(cdeque, begin)(ds_deque_s);
+            deque_iterator_t      end  = DSL(cdeque, end)(ds_deque_s);
+
+            time_deque = 0;
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cdeque, next)(it)) { sink += (deque_data_t)((const ds_sso_t*)it.cur)->len; }, time_deque);
+            printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
+        }
+
+        {
+            volatile deque_data_t sink = 0;
+            deque_r_iterator_t    it   = DSL(cdeque, rbegin)(ds_deque_s);
+            deque_r_iterator_t    end  = DSL(cdeque, rend)(ds_deque_s);
+
+            time_deque = 0;
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cdeque, rnext)(it)) { sink += (deque_data_t)((const ds_sso_t*)it.cur)->len; }, time_deque);
+            printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
+        }
+
+
+        /* max_size + empty + front/back + __at + __it */
+        {
+            volatile deque_data_t sink     = 0;
+            deque_size_t          max_size = 0;
+            bool                  is_empty = false;
+            deque_iterator_t      mid      = DSL(cdeque, end)(ds_deque_s);
+
+            time_deque = 0;
+            GET_DURATION({ max_size = DSL(cdeque, max_size)(ds_deque_s); is_empty = __cdeque_empty(ds_deque_s); }, time_deque);
+            printf("RESULT %s max_size         %s %8zd %6zd ms max_size=%zd empty=%d\n", __func__, DS_NAME, (ssize_t)1, (ssize_t)(time_deque / 1000), max_size, is_empty);
+
+            time_deque = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (deque_data_t)((const ds_sso_t*)DSL(cdeque, front)(ds_deque_s).d)->len; sink = (deque_data_t)((const ds_sso_t*)DSL(cdeque, back)(ds_deque_s).d)->len; }, time_deque);
+            printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
+
+            time_deque = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (deque_data_t)((const ds_sso_t*)__cdeque_at(ds_deque_s, rand() % DSL(cdeque, size)(ds_deque_s)).d)->len; }, time_deque);
+            printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
+
+            time_deque = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { mid = __cdeque_it(ds_deque_s, rand() % DSL(cdeque, size)(ds_deque_s)); sink += (deque_data_t)((const ds_sso_t*)mid.cur)->len; }, time_deque);
+            printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
         }
 
 
@@ -2087,7 +2887,7 @@ static void test_s_rand(void)
 
         time_deque = 0;
         GET_DURATION({ sort_dq_str(DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)); }, time_deque);
-        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_deque / 1000),
                sort_dq_str_sorted(DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)),
                DSL(cdeque, size)(ds_deque_s));
@@ -2097,7 +2897,7 @@ static void test_s_rand(void)
 
         time_deque = 0;
         GET_DURATION({ sort_dq_sdes(DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)); }, time_deque);
-        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_deque / 1000),
                sort_dq_sdes_sorted(DSL(cdeque, begin)(ds_deque_s), DSL(cdeque, end)(ds_deque_s)),
                DSL(cdeque, size)(ds_deque_s));
@@ -2114,7 +2914,7 @@ static void test_s_rand(void)
 
 #define DS_ARG()   ((vector_data_t)s_pool_str(dst))
 
-#if 1
+#if 0
 #define DS_CAP(_ds)   do { printf("%zd - %zd = %zd\n", cvector_capacity(_ds), cvector_size(_ds), cvector_capacity(_ds) - cvector_size(_ds)); } while (0)
 #else
 #define DS_CAP(_ds)   do { } while (0)
@@ -2126,14 +2926,14 @@ static void test_s_rand(void)
 
             time_vector = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += DSL(cvector, count)(ds_vector_s, DS_ARG()); }, time_vector);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), cnt, DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s count            %s %8zd %6zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), cnt, DSL(cvector, size)(ds_vector_s));
         }
 
 
         /* erase_range */
         time_vector = 0;
         GET_DURATION({ DSL(cvector, erase_range)(ds_vector_s, DSL(cvector, next)(DSL(cvector, begin)(ds_vector_s)), DSL(cvector, prev)(DSL(cvector, end)(ds_vector_s))); }, time_vector);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(cvector, size)(ds_vector_s), (ssize_t)(time_vector / 1000));
+        printf("RESULT %s erase_range      %s %8zd %6zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(cvector, size)(ds_vector_s), (ssize_t)(time_vector / 1000));
         GET_DURATION({ DSL(cvector, erase_range)(ds_vector_s, DSL(cvector, begin)(ds_vector_s), DSL(cvector, end)(ds_vector_s)); }, time_vector);
 
 
@@ -2141,31 +2941,31 @@ static void test_s_rand(void)
         time_vector = 0;
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT / 500; ++i) { DSL(cvector, insert)(ds_vector_s, DSL(cvector, begin)(ds_vector_s), DS_ARG());       }, time_vector);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s insert front     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT / 500; ++i) { DSL(cvector, erase)(ds_vector_s, DSL(cvector, begin)(ds_vector_s));                  }, time_vector);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s erase front      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
 
         /* insert/push back + erase/pop back */
         time_vector = 0;
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, insert)(ds_vector_s, DSL(cvector, end)(ds_vector_s), DS_ARG());         }, time_vector);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s insert back      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, erase)(ds_vector_s, DSL(cvector, prev)(DSL(cvector, end)(ds_vector_s))); }, time_vector);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s erase back       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
         time_vector = 0;
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, push_back)(ds_vector_s, DS_ARG());                                    }, time_vector);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s push_back        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
         time_vector = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cvector, pop_back)(ds_vector_s);                                               }, time_vector);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s pop_back         %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
 
         /* insert front+10 + erase front+10 */ /* only TIMES_INSERT / 500 times */
@@ -2177,14 +2977,14 @@ static void test_s_rand(void)
             vector_iterator_t it = __cvector_it(ds_vector_s, 10);
             GET_DURATION({ DSL(cvector, insert)(ds_vector_s, it, DS_ARG()); }, time_vector);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s insert@+10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
         time_vector = 0;
         for (int i = 0; i < TIMES_INSERT / 500; ++i) {
             vector_iterator_t it = __cvector_it(ds_vector_s, 10);
             GET_DURATION({ DSL(cvector, erase)(ds_vector_s, it); }, time_vector);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s erase@+10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 500, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
 
         /* insert back-10 + erase back-10 */
@@ -2196,14 +2996,14 @@ static void test_s_rand(void)
             vector_iterator_t it = __cvector_it(ds_vector_s, DSL(cvector, size)(ds_vector_s) - 10);
             GET_DURATION({ DSL(cvector, insert)(ds_vector_s, it, DS_ARG()); }, time_vector);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s insert@-10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
         time_vector = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             vector_iterator_t it = __cvector_it(ds_vector_s, DSL(cvector, size)(ds_vector_s) - 10);
             GET_DURATION({ DSL(cvector, erase)(ds_vector_s, it); }, time_vector);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s erase@-10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
 
         /* insert mid + erase mid */ /* only TIMES_FIND_V_L times */
@@ -2215,14 +3015,14 @@ static void test_s_rand(void)
             vector_iterator_t it = __cvector_it(ds_vector_s, DSL(cvector, size)(ds_vector_s) / 2);
             GET_DURATION({ DSL(cvector, insert)(ds_vector_s, it, DS_ARG()); }, time_vector);
         }
-        printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s insert@mid       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
         time_vector = 0;
         for (int i = 0; i < TIMES_FIND_V_L; ++i) {
             vector_iterator_t it = __cvector_it(ds_vector_s, DSL(cvector, size)(ds_vector_s) / 2);
             GET_DURATION({ DSL(cvector, erase)(ds_vector_s, it); }, time_vector);
         }
-        printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        printf("RESULT %s erase@mid        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
 
         /* insert_n + insert_n mid + erase_range mid + remove all */
@@ -2234,11 +3034,11 @@ static void test_s_rand(void)
 
             time_vector = 0;
             GET_DURATION({ DSL(cvector, insert_n)(ds_vector_s, DSL(cvector, end)(ds_vector_s), (vector_size_t)TIMES_INSERT, (vector_data_t)fixbuf); }, time_vector);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s insert_n all     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
             time_vector = 0;
             GET_DURATION({ DSL(cvector, insert_n)(ds_vector_s, __cvector_it(ds_vector_s, DSL(cvector, size)(ds_vector_s) / 2), (vector_size_t)MID_N, (vector_data_t)fixbuf); }, time_vector);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s insert_n mid     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
             time_vector = 0;
             {
@@ -2247,11 +3047,11 @@ static void test_s_rand(void)
                 vector_iterator_t e  = __cvector_it(ds_vector_s, (s + MID_N) / 2);
                 GET_DURATION({ DSL(cvector, erase_range)(ds_vector_s, b, e); }, time_vector);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s erase_range mid  %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
             time_vector = 0;
             GET_DURATION({ removed = DSL(cvector, remove)(ds_vector_s, (vector_data_t)fixbuf); }, time_vector);
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s remove all       %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, DSL(cvector, size)(ds_vector_s));
         }
 
 
@@ -2268,7 +3068,7 @@ static void test_s_rand(void)
                                                       __cvector_it(ds_vector_s, DSL(cvector, size)(ds_vector_s) / 2), 
                                                       __cvector_it(src, DSL(cvector, size)(src) * 0.25), 
                                                       __cvector_it(src, DSL(cvector, size)(src) * 0.75)); }, time_vector);
-            printf("RESULT %s insert_range@mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s insert_range@mid %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
             VECTOR_DELETE(&src);
         }
@@ -2289,7 +3089,7 @@ static void test_s_rand(void)
                                                       __cvector_it(src, 1), 
                                                       __cvector_it(src, (vector_size_t)TIMES_INSERT / 2 - 1)); }, time_vector);
             DS_CAP(ds_vector_s);
-            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
             time_vector = 0;
             DS_CAP(ds_vector_s);
@@ -2297,7 +3097,7 @@ static void test_s_rand(void)
                                                       __cvector_it(src, 1), 
                                                       __cvector_it(src, DSL(cvector, size)(src) - 1)); }, time_vector);
             DS_CAP(ds_vector_s);
-            printf("RESULT %s assign_range %s %zd %zd ms size=%zd\n", __func__, DS_NAME, DSL(cvector, size)(src) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, DSL(cvector, size)(src) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
             VECTOR_DELETE(&src);
         }
@@ -2315,15 +3115,144 @@ static void test_s_rand(void)
             DS_CAP(ds_vector_s);
             GET_DURATION({ DSL(cvector, assign)(ds_vector_s, (vector_size_t)TIMES_INSERT / 2 - 2, DS_ARG()); }, time_vector);
             DS_CAP(ds_vector_s);
-            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
             time_vector = 0;
             DS_CAP(ds_vector_s);
             GET_DURATION({ DSL(cvector, assign)(ds_vector_s, (vector_size_t)(TIMES_INSERT * 1.2) - 2, DS_ARG()); }, time_vector);
             DS_CAP(ds_vector_s);
-            printf("RESULT %s assign       %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
 
             VECTOR_DELETE(&src);
+        }
+
+
+        /* replace_it + replace_index */
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_s, DS_ARG());
+
+            time_vector = 0;
+            {
+                vector_iterator_t it = __cvector_it(ds_vector_s, DSL(cvector, size)(ds_vector_s) / 2);
+
+                GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __cvector_replace_it(ds_vector_s, it, DS_ARG()); }, time_vector);
+            }
+            printf("RESULT %s replace_it       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+
+            time_vector = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __cvector_replace_index(ds_vector_s, rand() % DSL(cvector, size)(ds_vector_s), DS_ARG()); }, time_vector);
+            printf("RESULT %s replace_index    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        }
+
+
+        /* resize grow + shrink */
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
+        s_pool_str(fixbuf);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_s, DS_ARG());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ DSL(cvector, resize)(ds_vector_s, (vector_size_t)(TIMES_INSERT * 1.2), (vector_data_t)fixbuf); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s resize grow      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2), (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ DSL(cvector, resize)(ds_vector_s, (vector_size_t)TIMES_INSERT / 2, (vector_data_t)fixbuf); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s resize shrink    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        }
+
+
+        /* remove_if */
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_s, DS_ARG());
+
+            time_vector = 0;
+            {
+                vector_size_t removed;
+
+                GET_DURATION({ removed = DSL(cvector, remove_if)(ds_vector_s, vector_remove_if_char_odd); }, time_vector);
+                printf("RESULT %s remove_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), removed, DSL(cvector, size)(ds_vector_s));
+            }
+        }
+
+
+        /* shrink_to_fit */
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
+        {
+            DSL(cvector, reserve)(ds_vector_s, (vector_size_t)(TIMES_INSERT * 1.2));
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_s, DS_ARG());
+
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ DSL(cvector, shrink_to_fit)(ds_vector_s); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s shrink_to_fit    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        }
+
+
+        /* reserve */ /* vector only */
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
+        {
+            time_vector = 0;
+            DS_CAP(ds_vector_s);
+            GET_DURATION({ DSL(cvector, reserve)(ds_vector_s, (vector_size_t)TIMES_INSERT); }, time_vector);
+            DS_CAP(ds_vector_s);
+            printf("RESULT %s reserve          %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), DSL(cvector, size)(ds_vector_s));
+        }
+
+
+        /* iteration */
+        srand(SORT_SEED);
+        DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_s, DS_ARG());
+
+        {
+            volatile vector_data_t sink = 0;
+            vector_iterator_t      it   = DSL(cvector, begin)(ds_vector_s);
+            vector_iterator_t      end  = DSL(cvector, end)(ds_vector_s);
+
+            time_vector = 0;
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cvector, next)(it)) { sink += (vector_data_t)((const ds_sso_t*)it.cur)->len; }, time_vector);
+            printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
+        }
+
+        {
+            volatile vector_data_t sink = 0;
+            vector_r_iterator_t    it   = DSL(cvector, rbegin)(ds_vector_s);
+            vector_r_iterator_t    end  = DSL(cvector, rend)(ds_vector_s);
+
+            time_vector = 0;
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cvector, rnext)(it)) { sink += (vector_data_t)((const ds_sso_t*)it.cur)->len; }, time_vector);
+            printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
+        }
+
+
+        /* max_size + empty + front/back + __at + __it */
+        {
+            volatile vector_data_t sink     = 0;
+            vector_size_t          max_size = 0;
+            bool                   is_empty = false;
+            vector_iterator_t      mid      = DSL(cvector, end)(ds_vector_s);
+
+            time_vector = 0;
+            GET_DURATION({ max_size = DSL(cvector, max_size)(ds_vector_s); is_empty = __cvector_empty(ds_vector_s); }, time_vector);
+            printf("RESULT %s max_size         %s %8zd %6zd ms max_size=%zd empty=%d\n", __func__, DS_NAME, (ssize_t)1, (ssize_t)(time_vector / 1000), max_size, is_empty);
+
+            time_vector = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (vector_data_t)((const ds_sso_t*)DSL(cvector, front)(ds_vector_s).d)->len; sink = (vector_data_t)((const ds_sso_t*)DSL(cvector, back)(ds_vector_s).d)->len; }, time_vector);
+            printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
+
+            time_vector = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (vector_data_t)((const ds_sso_t*)__cvector_at(ds_vector_s, rand() % DSL(cvector, size)(ds_vector_s)).d)->len; }, time_vector);
+            printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
+
+            time_vector = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { mid = __cvector_it(ds_vector_s, rand() % DSL(cvector, size)(ds_vector_s)); sink += (vector_data_t)((const ds_sso_t*)mid.cur)->len; }, time_vector);
+            printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
         }
 
 
@@ -2333,7 +3262,7 @@ static void test_s_rand(void)
 
         time_vector = 0;
         GET_DURATION({ sort_vt_str((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur); }, time_vector);
-        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000),
                sort_vt_str_sorted((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur),
                DSL(cvector, size)(ds_vector_s));
@@ -2343,7 +3272,7 @@ static void test_s_rand(void)
 
         time_vector = 0;
         GET_DURATION({ sort_vt_sdes((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur); }, time_vector);
-        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000),
                sort_vt_sdes_sorted((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur),
                DSL(cvector, size)(ds_vector_s));
@@ -2367,51 +3296,51 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND_V_L; ++i) { cnt += DSL(clist, count)(ds_list_s, DS_ARG()); }, time_list);
-            printf("RESULT %s count        %s %zd %zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_list / 1000), cnt, DSL(clist, size)(ds_list_s));
+            printf("RESULT %s count            %s %8zd %6zd ms cnt=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_FIND_V_L, (ssize_t)(time_list / 1000), cnt, DSL(clist, size)(ds_list_s));
         }
 
 
         /* erase_range */
         time_list = 0;
         GET_DURATION({ DSL(clist, erase_range)(ds_list_s, DSL(clist, next)(DSL(clist, begin)(ds_list_s)), DSL(clist, prev)(DSL(clist, end)(ds_list_s))); }, time_list);
-        printf("RESULT %s erase_range  %s %zd %zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(clist, size)(ds_list_s), (ssize_t)(time_list / 1000));
+        printf("RESULT %s erase_range      %s %8zd %6zd ms\n", __func__, DS_NAME, TIMES_INSERT - DSL(clist, size)(ds_list_s), (ssize_t)(time_list / 1000));
         GET_DURATION({ DSL(clist, erase_range)(ds_list_s, DSL(clist, begin)(ds_list_s), DSL(clist, end)(ds_list_s)); }, time_list);
 
 
         /* insert/push front + erase/pop front */
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, insert)(ds_list_s, DSL(clist, begin)(ds_list_s), DS_ARG());       }, time_list);
-        printf("RESULT %s insert front %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s insert front     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, erase)(ds_list_s, DSL(clist, begin)(ds_list_s));                  }, time_list);
-        printf("RESULT %s erase front  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s erase front      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, push_front)(ds_list_s, DS_ARG());                                   }, time_list);
-        printf("RESULT %s push_front   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s push_front       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, pop_front)(ds_list_s);                                              }, time_list);
-        printf("RESULT %s pop_front    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s pop_front        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
 
         /* insert/push back + erase/pop back */
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, insert)(ds_list_s, DSL(clist, end)(ds_list_s), DS_ARG());         }, time_list);
-        printf("RESULT %s insert back  %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s insert back      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, erase)(ds_list_s, DSL(clist, prev)(DSL(clist, end)(ds_list_s))); }, time_list);
-        printf("RESULT %s erase back   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s erase back       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, push_back)(ds_list_s, DS_ARG());                                    }, time_list);
-        printf("RESULT %s push_back    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s push_back        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(clist, pop_back)(ds_list_s);                                               }, time_list);
-        printf("RESULT %s pop_back     %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s pop_back         %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
 
         /* insert front+10 + erase front+10 */
@@ -2423,14 +3352,14 @@ static void test_s_rand(void)
             list_iterator_t it = __clist_it(ds_list_s, 10);
             GET_DURATION({ DSL(clist, insert)(ds_list_s, it, DS_ARG()); }, time_list);
         }
-        printf("RESULT %s insert@+10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s insert@+10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             list_iterator_t it = __clist_it(ds_list_s, 10);
             GET_DURATION({ DSL(clist, erase)(ds_list_s, it); }, time_list);
         }
-        printf("RESULT %s erase@+10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s erase@+10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
 
         /* insert back-10 + erase back-10 */
@@ -2442,14 +3371,14 @@ static void test_s_rand(void)
             list_iterator_t it = __clist_it(ds_list_s, DSL(clist, size)(ds_list_s) - 10);
             GET_DURATION({ DSL(clist, insert)(ds_list_s, it, DS_ARG()); }, time_list);
         }
-        printf("RESULT %s insert@-10   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s insert@-10       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
         time_list = 0;
         for (int i = 0; i < TIMES_INSERT; ++i) {
             list_iterator_t it = __clist_it(ds_list_s, DSL(clist, size)(ds_list_s) - 10);
             GET_DURATION({ DSL(clist, erase)(ds_list_s, it); }, time_list);
         }
-        printf("RESULT %s erase@-10    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        printf("RESULT %s erase@-10        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
 
         /* insert mid + erase mid */ /* only TIMES_INSERT / 5 times */
@@ -2460,7 +3389,7 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT / 5; ++i) { DSL(clist, insert)(ds_list_s, mid, DS_ARG()); }, time_list);
-            printf("RESULT %s insert@mid   %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+            printf("RESULT %s insert@mid       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
         }
 
         {
@@ -2468,7 +3397,7 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT / 5; ++i) { mid = DSL(clist, erase)(ds_list_s, mid); }, time_list);
-            printf("RESULT %s erase@mid    %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+            printf("RESULT %s erase@mid        %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 5, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
         }
 
 
@@ -2481,11 +3410,11 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION({ DSL(clist, insert_n)(ds_list_s, DSL(clist, end)(ds_list_s), (list_size_t)TIMES_INSERT, (list_data_t)fixbuf); }, time_list);
-            printf("RESULT %s insert_n all %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+            printf("RESULT %s insert_n all     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
             time_list = 0;
             GET_DURATION({ DSL(clist, insert_n)(ds_list_s, __clist_it(ds_list_s, DSL(clist, size)(ds_list_s) / 2), (list_size_t)MID_N, (list_data_t)fixbuf); }, time_list);
-            printf("RESULT %s insert_n mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+            printf("RESULT %s insert_n mid     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
             time_list = 0;
             {
@@ -2494,11 +3423,288 @@ static void test_s_rand(void)
                 list_iterator_t e  = __clist_it(ds_list_s, (s + MID_N) / 2);
                 GET_DURATION({ DSL(clist, erase_range)(ds_list_s, b, e); }, time_list);
             }
-            printf("RESULT %s erase_range mid %s %zd %zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+            printf("RESULT %s erase_range mid  %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)MID_N, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
 
             time_list = 0;
             GET_DURATION({ removed = DSL(clist, remove)(ds_list_s, (list_data_t)fixbuf); }, time_list);
-            printf("RESULT %s remove all   %s %zd %zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_s));
+            printf("RESULT %s remove all       %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_s));
+        }
+
+
+        /* insert_n + insert_range */
+        DSL(clist, clear)(ds_list_s);
+        {
+            list_t* src = LIST_NEW_STRING();
+
+            DSL(clist, insert_n)(ds_list_s, DSL(clist, end)(ds_list_s), (list_size_t)TIMES_INSERT / 2, DS_ARG());
+            DSL(clist, insert_n)(src,       DSL(clist, end)(src),       (list_size_t)TIMES_INSERT / 1, DS_ARG());
+
+            {
+                list_iterator_t pos   = __clist_it(ds_list_s, DSL(clist, size)(ds_list_s) / 2);
+                list_iterator_t begin = __clist_it(src, DSL(clist, size)(src) * 0.25);
+                list_iterator_t end   = __clist_it(src, DSL(clist, size)(src) * 0.75);
+
+                time_list = 0;
+                GET_DURATION({ DSL(clist, insert_range)(ds_list_s, pos, begin, end); }, time_list);
+            }
+            printf("RESULT %s insert_range@mid %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* insert_n + assign_range */
+        DSL(clist, clear)(ds_list_s);
+        {
+            list_t* src = LIST_NEW_STRING();
+
+            DSL(clist, insert_n)(ds_list_s, DSL(clist, end)(ds_list_s), (list_size_t)TIMES_INSERT / 2, DS_ARG());
+            DSL(clist, insert_n)(src,       DSL(clist, end)(src),       (list_size_t)(TIMES_INSERT * 1.2), DS_ARG());
+
+            {
+                list_iterator_t begin = __clist_it(src, 1);
+                list_iterator_t end   = __clist_it(src, (list_size_t)TIMES_INSERT / 2 - 1);
+
+                time_list = 0;
+                GET_DURATION({ DSL(clist, assign_range)(ds_list_s, begin, end); }, time_list);
+            }
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+
+            {
+                list_iterator_t begin = __clist_it(src, 1);
+                list_iterator_t end   = __clist_it(src, DSL(clist, size)(src) - 1);
+
+                time_list = 0;
+                GET_DURATION({ DSL(clist, assign_range)(ds_list_s, begin, end); }, time_list);
+            }
+            printf("RESULT %s assign_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, DSL(clist, size)(src) - 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* insert_n + assign */
+        DSL(clist, clear)(ds_list_s);
+        s_pool_str(fixbuf);
+        {
+            DSL(clist, insert_n)(ds_list_s, DSL(clist, end)(ds_list_s), (list_size_t)TIMES_INSERT / 2, (list_data_t)fixbuf);
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, assign)(ds_list_s, (list_size_t)TIMES_INSERT / 2 - 2, (list_data_t)fixbuf); }, time_list);
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2 - 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, assign)(ds_list_s, (list_size_t)(TIMES_INSERT * 1.2) - 2, (list_data_t)fixbuf); }, time_list);
+            printf("RESULT %s assign           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2) - 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        }
+
+
+        /* replace_it + replace_index */
+        DSL(clist, clear)(ds_list_s);
+        {
+            const int TIMES_INDEX = TIMES_FIND_V_L / 20; /* O(n) 下标定位，10M 规模下 100 次要 30s+ */
+
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+
+            time_list = 0;
+            {
+                list_iterator_t it = __clist_it(ds_list_s, DSL(clist, size)(ds_list_s) / 2);
+
+                GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { __clist_replace_it(ds_list_s, it, DS_ARG()); }, time_list);
+            }
+            printf("RESULT %s replace_it       %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { __clist_replace_index(ds_list_s, rand() % DSL(clist, size)(ds_list_s), DS_ARG()); }, time_list);
+            printf("RESULT %s replace_index    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INDEX, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        }
+
+
+        /* resize grow + shrink */
+        DSL(clist, clear)(ds_list_s);
+        s_pool_str(fixbuf);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, resize)(ds_list_s, (list_size_t)(TIMES_INSERT * 1.2), (list_data_t)fixbuf); }, time_list);
+            printf("RESULT %s resize grow      %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(TIMES_INSERT * 1.2), (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, resize)(ds_list_s, (list_size_t)TIMES_INSERT / 2, (list_data_t)fixbuf); }, time_list);
+            printf("RESULT %s resize shrink    %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        }
+
+
+        /* remove_if */
+        DSL(clist, clear)(ds_list_s);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+
+            time_list = 0;
+            {
+                list_size_t removed;
+
+                GET_DURATION({ removed = DSL(clist, remove_if)(ds_list_s, list_remove_if_char_odd); }, time_list);
+                printf("RESULT %s remove_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_s));
+            }
+        }
+
+
+        /* unique + unique_if */
+        DSL(clist, clear)(ds_list_s);
+        s_pool_str(fixbuf);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, (list_data_t)fixbuf);
+
+            time_list = 0;
+            {
+                list_size_t removed;
+
+                GET_DURATION({ removed = DSL(clist, unique)(ds_list_s); }, time_list);
+                printf("RESULT %s unique           %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_s));
+            }
+        }
+
+        DSL(clist, clear)(ds_list_s);
+        s_pool_str(fixbuf);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, (list_data_t)fixbuf);
+
+            time_list = 0;
+            {
+                list_size_t removed;
+
+                GET_DURATION({ removed = DSL(clist, unique_if)(ds_list_s, list_unique_eq_sso); }, time_list);
+                printf("RESULT %s unique_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_s));
+            }
+        }
+
+
+        /* reverse */
+        DSL(clist, clear)(ds_list_s);
+        {
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, reverse)(ds_list_s); }, time_list);
+            printf("RESULT %s reverse          %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+        }
+
+
+        /* splice */ /* O(1)，单次 0ms；整条链来回搬 TIMES_INSERT 次，位置不影响 O(1) 代价，统一用 end */
+        DSL(clist, clear)(ds_list_s);
+        {
+            list_t* src = LIST_NEW_STRING();
+
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(src, DS_ARG());
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+                if (i & 1)
+                    DSL(clist, splice)(src, DSL(clist, end)(src), ds_list_s);
+                else
+                    DSL(clist, splice)(ds_list_s, DSL(clist, end)(ds_list_s), src);
+            }, time_list);
+            printf("RESULT %s splice           %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s) + DSL(clist, size)(src));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* splice_range */
+        DSL(clist, clear)(ds_list_s);
+        {
+            list_t*     src = LIST_NEW_STRING();
+            list_size_t n   = (list_size_t)TIMES_INSERT / 2;
+
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+            for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(src, DS_ARG());
+
+            {
+                list_iterator_t pos   = __clist_it(ds_list_s, DSL(clist, size)(ds_list_s) / 2);
+                list_iterator_t begin = __clist_it(src, 1);
+                list_iterator_t end   = __clist_it(src, n);
+
+                time_list = 0;
+                GET_DURATION({ DSL(clist, splice_range)(ds_list_s, pos, src, begin, end); }, time_list);
+            }
+            printf("RESULT %s splice_range     %s %8zd %6zd ms size=%zd\n", __func__, DS_NAME, (ssize_t)(n - 1), (ssize_t)(time_list / 1000), DSL(clist, size)(ds_list_s));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* merge */
+        DSL(clist, clear)(ds_list_s);
+        {
+            list_t* src = LIST_NEW_STRING();
+
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+            for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(src, DS_ARG());
+            DSL(clist, sort)(ds_list_s, list_lt_sso);
+            DSL(clist, sort)(src, list_lt_sso);
+
+            time_list = 0;
+            GET_DURATION({ DSL(clist, merge)(ds_list_s, src, list_lt_sso); }, time_list);
+            printf("RESULT %s merge            %s %8zd %6zd ms sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), list_is_sorted_sso(ds_list_s, list_lt_sso), DSL(clist, size)(ds_list_s));
+
+            LIST_DELETE(&src);
+        }
+
+
+        /* iteration */
+        srand(SORT_SEED);
+        DSL(clist, clear)(ds_list_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
+
+        {
+            volatile list_data_t sink = 0;
+            list_iterator_t      it   = DSL(clist, begin)(ds_list_s);
+            list_iterator_t      end  = DSL(clist, end)(ds_list_s);
+
+            time_list = 0;
+            GET_DURATION(for (; it.d != end.d; it = DSL(clist, next)(it)) { sink += (list_data_t)((const ds_sso_t*)it.d)->len; }, time_list);
+            printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
+        }
+
+        {
+            volatile list_data_t sink = 0;
+            list_r_iterator_t    it   = DSL(clist, rbegin)(ds_list_s);
+            list_r_iterator_t    end  = DSL(clist, rend)(ds_list_s);
+
+            time_list = 0;
+            GET_DURATION(for (; it.d != end.d; it = DSL(clist, rnext)(it)) { sink += (list_data_t)((const ds_sso_t*)it.d)->len; }, time_list);
+            printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
+        }
+
+
+        /* max_size + empty + front/back + at + it */
+        {
+            const int            TIMES_INDEX = TIMES_FIND_V_L / 20; /* at/it 是 O(n) 定位，10M 规模下 100 次要 30s+ */
+            volatile list_data_t sink     = 0;
+            list_size_t          max_size = 0;
+            bool                 is_empty = false;
+            list_iterator_t      mid      = DSL(clist, end)(ds_list_s);
+
+            time_list = 0;
+            GET_DURATION({ max_size = DSL(clist, max_size)(ds_list_s); is_empty = __clist_empty(ds_list_s); }, time_list);
+            printf("RESULT %s max_size         %s %8zd %6zd ms max_size=%zd empty=%d\n", __func__, DS_NAME, (ssize_t)1, (ssize_t)(time_list / 1000), max_size, is_empty);
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
+                sink = (list_data_t)((const ds_sso_t*)DSL(clist, front)(ds_list_s).d)->len;
+                sink = (list_data_t)((const ds_sso_t*)DSL(clist, back)(ds_list_s).d)->len;
+            }, time_list);
+            printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { sink = (list_data_t)((const ds_sso_t*)__clist_at(ds_list_s, rand() % DSL(clist, size)(ds_list_s)).d)->len; }, time_list);
+            printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INDEX, (ssize_t)(time_list / 1000), (ssize_t)sink);
+
+            time_list = 0;
+            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { mid = __clist_it(ds_list_s, rand() % DSL(clist, size)(ds_list_s)); sink += (list_data_t)((const ds_sso_t*)mid.d)->len; }, time_list);
+            printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INDEX, (ssize_t)(time_list / 1000), (ssize_t)sink);
         }
 
 
@@ -2508,7 +3714,7 @@ static void test_s_rand(void)
 
         time_list = 0;
         GET_DURATION({ DSL(clist, sort)(ds_list_s, list_lt_sso); }, time_list);
-        printf("RESULT %s sort         %s %zd %zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000),
                list_is_sorted_sso(ds_list_s, list_lt_sso),
                DSL(clist, size)(ds_list_s));
@@ -2518,7 +3724,7 @@ static void test_s_rand(void)
 
         time_list = 0;
         GET_DURATION({ DSL(clist, sort)(ds_list_s, list_gt_sso); }, time_list);
-        printf("RESULT %s sort         %s %zd %zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
+        printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000),
                list_is_sorted_sso(ds_list_s, list_gt_sso),
                DSL(clist, size)(ds_list_s));
@@ -2598,7 +3804,7 @@ static void test_s_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %s deinit %s %zd %zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000), removed);
+        printf("RESULT %s deinit           %s %8zd %6zd ms removed=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000), removed);
     }
 }
 
