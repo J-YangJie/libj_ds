@@ -117,6 +117,7 @@ list_node_t* __i_dlist_push_back(i_list_t* _this, list_data_t data)
     return n;
 }
 
+JDSC_INLINE
 bool i_dlist_push_back(i_list_t* _this, list_data_t data)
 {
     if (unlikely(is_null(_this)))
@@ -141,6 +142,7 @@ list_node_t* __i_dlist_push_front(i_list_t* _this, list_data_t data)
     return n;
 }
 
+JDSC_INLINE
 bool i_dlist_push_front(i_list_t* _this, list_data_t data)
 {
     if (unlikely(is_null(_this)))
@@ -156,7 +158,7 @@ list_node_t* ___i_dlist_insert(i_list_t* _this, list_node_t* pos, list_node_t* n
     return node;
 }
 
-static JDSC_INLINE
+static JDSC_INLINE JDSC_LOGIC_FRAGMENT /* Because of `pos` and `data` */
 list_node_t* __i_dlist_insert_valid(i_list_t* _this, list_node_t* pos, list_data_t data)
 {
     list_node_t* n;
@@ -181,6 +183,7 @@ list_node_t* __i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t dat
     return __i_dlist_insert_valid(_this, pos, data);
 }
 
+JDSC_INLINE
 list_node_t* i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data)
 {
     if (unlikely(is_null(_this) || is_null(pos)))
@@ -226,6 +229,7 @@ err:
     return NULL;
 }
 
+JDSC_INLINE
 list_node_t* i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, list_data_t data)
 {
     if (unlikely(is_null(_this) || is_null(pos)))
@@ -269,6 +273,7 @@ err:
     return NULL;
 }
 
+JDSC_INLINE
 list_node_t* i_dlist_insert_range(i_list_t* _this, list_node_t* pos, list_node_t* begin, list_node_t* end)
 {
     if (unlikely(is_null(_this) || is_null(pos) || is_null(begin) || is_null(end)))
@@ -295,6 +300,7 @@ void __i_dlist_pop_back(i_list_t* _this)
     __i_dlist_destroy_list_node(_this, n);
 }
 
+JDSC_INLINE
 void i_dlist_pop_back(i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -314,6 +320,7 @@ void __i_dlist_pop_front(i_list_t* _this)
     __i_dlist_destroy_list_node(_this, n);
 }
 
+JDSC_INLINE
 void i_dlist_pop_front(i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -337,6 +344,7 @@ list_node_t* __i_dlist_erase(i_list_t* _this, list_node_t* pos)
     return n;
 }
 
+JDSC_INLINE
 list_node_t* i_dlist_erase(i_list_t* _this, list_node_t* pos)
 {
     if (unlikely(is_null(_this) || is_null(pos)))
@@ -359,6 +367,7 @@ list_node_t* __i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_nod
     return pos;
 }
 
+JDSC_INLINE
 list_node_t* i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_t* end)
 {
     if (unlikely(is_null(_this) || is_null(begin) || is_null(end)))
@@ -390,6 +399,7 @@ list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
     return NULL;
 }
 
+JDSC_INLINE
 list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data)
 {
     list_node_t* n;
@@ -431,6 +441,7 @@ list_count_t ___i_dlist_count(const i_list_t* _this, list_data_t data)
     return ret;
 }
 
+JDSC_INLINE
 list_count_t i_dlist_count(const i_list_t* _this, list_data_t data)
 {
     if (unlikely(is_null(_this)))
@@ -647,6 +658,7 @@ bool __i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data)
     return true;
 }
 
+JDSC_INLINE
 bool i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data)
 {
     if (unlikely(is_null(_this)))
@@ -672,6 +684,7 @@ bool __i_dlist_assign_range(i_list_t* _this, list_node_t* begin, list_node_t* en
     return true;
 }
 
+JDSC_INLINE
 bool i_dlist_assign_range(i_list_t* _this, list_node_t* begin, list_node_t* end)
 {
     if (unlikely(is_null(_this) || is_null(begin) || is_null(end)))
@@ -695,6 +708,7 @@ bool __i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data)
     return !is_null(__i_dlist_insert_n(_this, __i_dlist_end(_this), n - size, default_data));
 }
 
+JDSC_INLINE
 bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data)
 {
     if (unlikely(is_null(_this)))
@@ -790,6 +804,7 @@ void __i_dlist_swap(i_list_t* _this, i_list_t* other)
     other->size = tsize;
 }
 
+JDSC_INLINE
 void i_dlist_swap(i_list_t* _this, i_list_t* other)
 {
     if (unlikely(is_null(_this) || is_null(other) || _this == other))
@@ -812,6 +827,7 @@ list_size_t __i_dlist_clear(i_list_t* _this)
     return ret;
 }
 
+JDSC_INLINE
 list_size_t i_dlist_clear(i_list_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -920,52 +936,54 @@ void __list_delete(list_t** _this)
 const class_list_t* class_list_ins(void)
 {
     static const class_list_t ins = {
-        .size           = clist_size,
-        .max_size       = clist_max_size,
-        .__empty        = __clist_empty,
-        .count          = clist_count,
-        .end            = clist_end,
-        .begin          = clist_begin,
-        .next           = clist_next,
-        .prev           = clist_prev,
-        .rend           = clist_rend,
-        .rbegin         = clist_rbegin,
-        .rnext          = clist_rnext,
-        .rprev          = clist_rprev,
-        .__it           = __clist_it,
-        .it             = clist_it,
-        .__at           = __clist_at,
-        .at             = clist_at,
-        .__back         = __clist_back,
-        .back           = clist_back,
-        .__front        = __clist_front,
-        .front          = clist_front,
-        .find           = clist_find,
-        .push_back      = clist_push_back,
-        .push_front     = clist_push_front,
-        .insert         = clist_insert,
-        .insert_n       = clist_insert_n,
-        .insert_range   = clist_insert_range,
-        .replace_it     = clist_replace_it,
-        .replace_index  = clist_replace_index,
-        .erase          = clist_erase,
-        .erase_range    = clist_erase_range,
-        .pop_back       = clist_pop_back,
-        .pop_front      = clist_pop_front,
-        .remove         = clist_remove,
-        .remove_if      = clist_remove_if,
-        .unique         = clist_unique,
-        .unique_if      = clist_unique_if,
-        .assign         = clist_assign,
-        .assign_range   = clist_assign_range,
-        .resize         = clist_resize,
-        .splice         = clist_splice,
-        .splice_range   = clist_splice_range,
-        .merge          = clist_merge,
-        .sort           = clist_sort,
-        .reverse        = clist_reverse,
-        .swap           = clist_swap,
-        .clear          = clist_clear,
+        .size             = clist_size,
+        .max_size         = clist_max_size,
+        .__empty          = __clist_empty,
+        .count            = clist_count,
+        .end              = clist_end,
+        .begin            = clist_begin,
+        .next             = clist_next,
+        .prev             = clist_prev,
+        .rend             = clist_rend,
+        .rbegin           = clist_rbegin,
+        .rnext            = clist_rnext,
+        .rprev            = clist_rprev,
+        .__it             = __clist_it,
+        .it               = clist_it,
+        .__at             = __clist_at,
+        .at               = clist_at,
+        .__back           = __clist_back,
+        .back             = clist_back,
+        .__front          = __clist_front,
+        .front            = clist_front,
+        .__replace_it     = __clist_replace_it,
+        .replace_it       = clist_replace_it,
+        .__replace_index  = __clist_replace_index,
+        .replace_index    = clist_replace_index,
+        .find             = clist_find,
+        .push_back        = clist_push_back,
+        .push_front       = clist_push_front,
+        .insert           = clist_insert,
+        .insert_n         = clist_insert_n,
+        .insert_range     = clist_insert_range,
+        .erase            = clist_erase,
+        .erase_range      = clist_erase_range,
+        .pop_back         = clist_pop_back,
+        .pop_front        = clist_pop_front,
+        .remove           = clist_remove,
+        .remove_if        = clist_remove_if,
+        .unique           = clist_unique,
+        .unique_if        = clist_unique_if,
+        .assign           = clist_assign,
+        .assign_range     = clist_assign_range,
+        .resize           = clist_resize,
+        .splice           = clist_splice,
+        .splice_range     = clist_splice_range,
+        .merge            = clist_merge,
+        .sort             = clist_sort,
+        .reverse          = clist_reverse,
+        .swap             = clist_swap,
+        .clear            = clist_clear,
     };
     return &ins;
 }

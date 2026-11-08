@@ -67,14 +67,16 @@ HEADER_STATIC_INLINE list_value_t       __clist_back(const list_t* _this)       
 HEADER_STATIC_INLINE list_value_t       clist_back(const list_t* _this)                                                                 { return i_dlist_back(_this); }
 HEADER_STATIC_INLINE list_value_t       __clist_front(const list_t* _this)                                                              { return __i_dlist_front(_this); }
 HEADER_STATIC_INLINE list_value_t       clist_front(const list_t* _this)                                                                { return i_dlist_front(_this); }
+HEADER_STATIC_INLINE bool               __clist_replace_it(list_t* _this, list_iterator_t iterator, list_data_t data)                   { return __i_clist_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool               clist_replace_it(list_t* _this, list_iterator_t iterator, list_data_t data)                     { return i_clist_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool               __clist_replace_index(list_t* _this, list_index_t index, list_data_t data)                      { return __i_clist_replace_index(_this, index, data); }
+HEADER_STATIC_INLINE bool               clist_replace_index(list_t* _this, list_index_t index, list_data_t data)                        { return i_clist_replace_index(_this, index, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_find(const list_t* _this, list_data_t data)                                               { return i_clist_find(_this, data); }
 HEADER_STATIC_INLINE bool               clist_push_back(list_t* _this, list_data_t data)                                                { return i_dlist_push_back(_this, data); }
 HEADER_STATIC_INLINE bool               clist_push_front(list_t* _this, list_data_t data)                                               { return i_dlist_push_front(_this, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_insert(list_t* _this, list_iterator_t iterator, list_data_t data)                         { return i_clist_insert(_this, iterator, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_insert_n(list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data)        { return i_clist_insert_n(_this, iterator, n, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_insert_range(list_t* _this, list_iterator_t iterator_pos, list_iterator_t iterator_begin, list_iterator_t iterator_end) { return i_clist_insert_range(_this, iterator_pos, iterator_begin, iterator_end); }
-HEADER_STATIC_INLINE bool               clist_replace_it(list_t* _this, list_iterator_t iterator, list_data_t data)                     { return i_clist_replace_it(_this, iterator, data); }
-HEADER_STATIC_INLINE bool               clist_replace_index(list_t* _this, list_index_t index, list_data_t data)                        { return i_clist_replace_index(_this, index, data); }
 HEADER_STATIC_INLINE list_iterator_t    clist_erase(list_t* _this, list_iterator_t iterator)                                            { return i_clist_erase(_this, iterator); }
 HEADER_STATIC_INLINE list_iterator_t    clist_erase_range(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)  { return i_clist_erase_range(_this, iterator_begin, iterator_end); }
 HEADER_STATIC_INLINE void               clist_pop_back(list_t* _this)                                                                   { i_dlist_pop_back(_this); }
@@ -108,39 +110,41 @@ typedef struct class_list {
     list_r_iterator_t (*rbegin)(const list_t* _this);
     list_r_iterator_t (*rnext)(const list_r_iterator_t r_iterator);
     list_r_iterator_t (*rprev)(const list_r_iterator_t r_iterator);
-    list_iterator_t (*__it)(const list_t* _this, list_index_t index);                                                  /* return iterator by n(index), but without checking parameters */
-    list_iterator_t (*it)(const list_t* _this, list_index_t index);                                                    /* return iterator by n(index) */
-    list_value_t (*__at)(const list_t* _this, list_index_t index);                                                     /* STL: ds[index], but without checking parameters */
-    list_value_t (*at)(const list_t* _this, list_index_t index);                                                       /* STL: ds->at(index) */
+    list_iterator_t (*__it)(const list_t* _this, list_index_t index);                                   /* return iterator by n(index), without checking parameters */
+    list_iterator_t (*it)(const list_t* _this, list_index_t index);                                     /* return iterator by n(index) */
+    list_value_t (*__at)(const list_t* _this, list_index_t index);                                      /* STL: ds[index], without checking parameters */
+    list_value_t (*at)(const list_t* _this, list_index_t index);                                        /* STL: ds->at(index) */
     list_value_t (*__back)(const list_t* _this);
     list_value_t (*back)(const list_t* _this);
     list_value_t (*__front)(const list_t* _this);
     list_value_t (*front)(const list_t* _this);
+    bool (*__replace_it)(list_t* _this, list_iterator_t iterator, list_data_t data);                    /* *iterator = data, without checking parameters */
+    bool (*replace_it)(list_t* _this, list_iterator_t iterator, list_data_t data);                      /* *iterator = data */
+    bool (*__replace_index)(list_t* _this, list_index_t index, list_data_t data);                       /* ds[index] = data, without checking parameters */
+    bool (*replace_index)(list_t* _this, list_index_t index, list_data_t data);                         /* ds[index] = data */
     list_iterator_t (*find)(const list_t* _this, list_data_t data);
     bool (*push_back)(list_t* _this, list_data_t data);
     bool (*push_front)(list_t* _this, list_data_t data);
-    list_iterator_t (*insert)(list_t* _this, list_iterator_t iterator, list_data_t data);                           /* insert data before `iterator` */
+    list_iterator_t (*insert)(list_t* _this, list_iterator_t iterator, list_data_t data);               /* Insert data before `iterator` */
     list_iterator_t (*insert_n)(list_t* _this, list_iterator_t iterator, list_size_t n, list_data_t data);
-    list_iterator_t (*insert_range)(list_t* _this, list_iterator_t iterator_pos, list_iterator_t iterator_begin, list_iterator_t iterator_end); /* Source range must have the same element layout/ops; ranges from _this are undefined. */
-    bool (*replace_it)(list_t* _this, list_iterator_t iterator, list_data_t data);                                  /* *iterator = data */
-    bool (*replace_index)(list_t* _this, list_index_t index, list_data_t data);                                     /* ds[index] = data */
+    list_iterator_t (*insert_range)(list_t* _this, list_iterator_t iterator_pos, list_iterator_t iterator_begin, list_iterator_t iterator_end);  /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
     list_iterator_t (*erase)(list_t* _this, list_iterator_t iterator);
-    list_iterator_t (*erase_range)(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end);   /* [iterator_begin, iterator_end) */
+    list_iterator_t (*erase_range)(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end);  /* [iterator_begin, iterator_end) */
     void (*pop_back)(list_t* _this);
     void (*pop_front)(list_t* _this);
     list_size_t (*remove)(list_t* _this, list_data_t data);
     list_size_t (*remove_if)(list_t* _this, remove_if_condition cond);
-    list_size_t (*unique)(list_t* _this);                                                                          /* STL: ds->unique()，删除连续重复元素，返回删除个数 */
+    list_size_t (*unique)(list_t* _this);
     list_size_t (*unique_if)(list_t* _this, unique_if_condition cond);
-    bool (*assign)(list_t* _this, list_size_t n, list_data_t data);                                                /* STL: ds->assign(n, data) */
-    bool (*assign_range)(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end);             /* STL: ds->assign_range(begin, end) */
+    bool (*assign)(list_t* _this, list_size_t n, list_data_t data);
+    bool (*assign_range)(list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end);  /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
     bool (*resize)(list_t* _this, list_size_t n, list_data_t default_data);
-    void (*splice)(list_t* _this, list_iterator_t iterator, list_t* other);                                        /* STL: ds->splice(pos, other)，整条链搬到 pos 之前 */
-    void (*splice_range)(list_t* _this, list_iterator_t iterator, list_t* other, list_iterator_t iterator_begin, list_iterator_t iterator_end);                            /* STL: ds->splice(pos, other, first, last)，[first, last) 搬到 pos 之前 */
-    void (*merge)(list_t* _this, list_t* other, __list_lt_t __lt);                                                   /* STL: ds->merge(other, cmp)，两条有序链归并 */
-    void (*sort)(list_t* _this, __list_lt_t __lt);                                                                  /* STL: ds->sort(cmp)，稳定归并排序 */
-    void (*reverse)(list_t* _this);                                                                                /* STL: ds->reverse()，原地翻转节点链接 */
-    void (*swap)(list_t* _this, list_t* other);                                                                    /* STL: ds->swap(other)，交换两条链的内容（要求 step/ops 一致） */
+    void (*splice)(list_t* _this, list_iterator_t iterator, list_t* other);                             /* Move the entire chain of `other` before `iterator` */
+    void (*splice_range)(list_t* _this, list_iterator_t iterator, list_t* other, list_iterator_t iterator_begin, list_iterator_t iterator_end);  /* Move `other`'s [first, last) before `pos` */
+    void (*merge)(list_t* _this, list_t* other, __list_lt_t __lt);                                      /* Merge two ordered chains. If `__lt` is NULL, append `other` directly after `_this`; otherwise behaves like STL's merge */
+    void (*sort)(list_t* _this, __list_lt_t __lt);                                                      /* `__lt` must not be NULL */
+    void (*reverse)(list_t* _this);
+    void (*swap)(list_t* _this, list_t* other);
     list_size_t (*clear)(list_t* _this);
 } class_list_t;
 

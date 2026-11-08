@@ -310,7 +310,7 @@ list_node_t* __i_dlist_it_list_node(const i_list_t* _this, list_index_t index)
     /* return NULL; */
 }
 
-HEADER_STATIC_INLINE
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
 list_iterator_t __i_dlist_iterator(const i_list_t* _this, list_index_t index)
 {
     return __i_dlist_make_iterator(__i_dlist_it_list_node(_this, index)->data);
@@ -324,7 +324,7 @@ list_iterator_t i_dlist_iterator(const i_list_t* _this, list_index_t index)
     return i_dlist_null_iterator();
 }
 
-HEADER_STATIC_INLINE
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
 list_value_t __i_dlist_at(const i_list_t* _this, list_index_t index)
 {
     return (list_value_t){ .u8 = (uint8_t*)__i_dlist_iterator(_this, index).d, };
@@ -482,41 +482,9 @@ void __i_dlist_slot_move(const i_list_t* _this, void* dest, const void* src)
     }
 }
 
-list_size_t __i_dlist_max_size(const i_list_t* _this);
-bool i_dlist_push_back(i_list_t* _this, list_data_t data);
-bool i_dlist_push_front(i_list_t* _this, list_data_t data);
-list_node_t* i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data);
-list_node_t* i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, list_data_t data);
-list_node_t* i_dlist_insert_range(i_list_t* _this, list_node_t* pos, list_node_t* begin, list_node_t* end);
-void i_dlist_pop_back(i_list_t* _this);
-void i_dlist_pop_front(i_list_t* _this);
-list_node_t* i_dlist_erase(i_list_t* _this, list_node_t* pos);
-list_node_t* i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_t* end);
-list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data);
-list_count_t i_dlist_count(const i_list_t* _this, list_data_t data);
-list_size_t i_dlist_remove(i_list_t* _this, list_data_t data);
-list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond);
-list_size_t i_dlist_unique(i_list_t* _this);
-list_size_t i_dlist_unique_if(i_list_t* _this, unique_if_condition cond);
-bool i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data);
-bool i_dlist_assign_range(i_list_t* _this, list_node_t* begin, list_node_t* end);
-bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data);
-void i_dlist_sort(i_list_t* _this, __list_lt_t __lt);
-void i_dlist_swap(i_list_t* _this, i_list_t* other);
-list_size_t i_dlist_clear(i_list_t* _this);
-
-HEADER_STATIC_INLINE
-list_size_t i_dlist_max_size(const i_list_t* _this)
-{
-    return !is_null(_this) ? __i_dlist_max_size(_this) : -1;
-}
-
-HEADER_STATIC_INLINE
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of `pos` */
 bool __i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
 {
-    if (__i_dlist_end(_this) == pos)
-        return false;
-
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return false;
 
@@ -552,9 +520,68 @@ bool __i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
 HEADER_STATIC_INLINE
 bool i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
 {
-    if (!is_null(_this) && !is_null(pos))
+    if (!is_null(_this) && !is_null(pos) && !__i_dlist_empty(_this) && __i_dlist_end(_this) != pos)
         return __i_dlist_replace(_this, pos, data);
     return false;
+}
+
+HEADER_STATIC_INLINE
+bool __i_clist_replace_it(i_list_t* _this, list_iterator_t pos, list_data_t data)
+{
+    return __i_dlist_replace(_this, __i_dlist_it_to_lnode(pos), data);
+}
+
+HEADER_STATIC_INLINE
+bool i_clist_replace_it(i_list_t* _this, list_iterator_t pos, list_data_t data)
+{
+    return i_dlist_replace(_this, __i_dlist_it_to_lnode(pos), data);
+}
+
+HEADER_STATIC_INLINE
+bool __i_clist_replace_index(i_list_t* _this, list_index_t index, list_data_t data)
+{
+    list_iterator_t pos = __i_dlist_iterator(_this, index);
+    return __i_clist_replace_it(_this, pos, data);
+}
+
+HEADER_STATIC_INLINE
+bool i_clist_replace_index(i_list_t* _this, list_index_t index, list_data_t data)
+{
+    list_iterator_t pos = i_dlist_iterator(_this, index);
+    return i_clist_replace_it(_this, pos, data);
+}
+
+
+
+
+
+list_size_t __i_dlist_max_size(const i_list_t* _this);
+bool i_dlist_push_back(i_list_t* _this, list_data_t data);
+bool i_dlist_push_front(i_list_t* _this, list_data_t data);
+list_node_t* i_dlist_insert(i_list_t* _this, list_node_t* pos, list_data_t data);
+list_node_t* i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n, list_data_t data);
+list_node_t* i_dlist_insert_range(i_list_t* _this, list_node_t* pos, list_node_t* begin, list_node_t* end);
+void i_dlist_pop_back(i_list_t* _this);
+void i_dlist_pop_front(i_list_t* _this);
+list_node_t* i_dlist_erase(i_list_t* _this, list_node_t* pos);
+list_node_t* i_dlist_erase_range(i_list_t* _this, list_node_t* begin, list_node_t* end);
+list_node_t* i_dlist_find(const i_list_t* _this, list_data_t data);
+list_count_t i_dlist_count(const i_list_t* _this, list_data_t data);
+list_size_t i_dlist_remove(i_list_t* _this, list_data_t data);
+list_size_t i_dlist_remove_if(i_list_t* _this, remove_if_condition cond);
+list_size_t i_dlist_unique(i_list_t* _this);
+list_size_t i_dlist_unique_if(i_list_t* _this, unique_if_condition cond);
+bool i_dlist_assign(i_list_t* _this, list_size_t n, list_data_t data);
+bool i_dlist_assign_range(i_list_t* _this, list_node_t* begin, list_node_t* end);
+bool i_dlist_resize(i_list_t* _this, list_size_t n, list_data_t default_data);
+void i_dlist_sort(i_list_t* _this, __list_lt_t __lt);
+void i_dlist_swap(i_list_t* _this, i_list_t* other);
+list_size_t i_dlist_clear(i_list_t* _this);
+
+HEADER_STATIC_INLINE
+list_size_t i_dlist_max_size(const i_list_t* _this)
+{
+    return !is_null(_this) ? __i_dlist_max_size(_this) : -1;
 }
 
 HEADER_STATIC_INLINE /* JDSC_ONLY_WRAPPER JDSC_NO_ITERATOR */
@@ -720,19 +747,6 @@ void i_dlist_reverse(i_list_t* _this)
 
 
 HEADER_STATIC_INLINE
-bool i_clist_replace_it(i_list_t* _this, list_iterator_t pos, list_data_t data)
-{
-    return i_dlist_replace(_this, __i_dlist_it_to_lnode(pos), data);
-}
-
-HEADER_STATIC_INLINE
-bool i_clist_replace_index(i_list_t* _this, list_index_t index, list_data_t data)
-{
-    list_iterator_t pos = i_dlist_iterator(_this, index);
-    return i_clist_replace_it(_this, pos, data);
-}
-
-HEADER_STATIC_INLINE
 list_iterator_t i_clist_find(const i_list_t* _this, list_data_t data)
 {
     return __i_dlist_lnode_to_it(i_dlist_find(_this, data));
@@ -770,6 +784,12 @@ list_iterator_t i_clist_erase_range(i_list_t* _this, list_iterator_t iterator_be
 }
 
 HEADER_STATIC_INLINE
+bool i_clist_assign_range(i_list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)
+{
+    return i_dlist_assign_range(_this, __i_dlist_it_to_lnode(iterator_begin), __i_dlist_it_to_lnode(iterator_end));
+}
+
+HEADER_STATIC_INLINE
 void i_clist_splice(i_list_t* _this, list_iterator_t iterator, i_list_t* other)
 {
     return i_dlist_splice(_this, __i_dlist_it_to_lnode(iterator), other);
@@ -779,12 +799,6 @@ HEADER_STATIC_INLINE
 void i_clist_splice_range(i_list_t* _this, list_iterator_t iterator_pos, i_list_t* other, list_iterator_t iterator_begin, list_iterator_t iterator_end)
 {
     return i_dlist_splice_range(_this, __i_dlist_it_to_lnode(iterator_pos), other, __i_dlist_it_to_lnode(iterator_begin), __i_dlist_it_to_lnode(iterator_end));
-}
-
-HEADER_STATIC_INLINE
-bool i_clist_assign_range(i_list_t* _this, list_iterator_t iterator_begin, list_iterator_t iterator_end)
-{
-    return i_dlist_assign_range(_this, __i_dlist_it_to_lnode(iterator_begin), __i_dlist_it_to_lnode(iterator_end));
 }
 
 #endif /* __J_I_LIST_H */
