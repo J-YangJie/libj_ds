@@ -42,6 +42,7 @@ JDSC_STATIC_ASSERT(sizeof(map_r_iterator_kv_t) <= sizeof(map_node_t),           
 
 struct map {
     const class_map_ops_t* ops;
+    class_map_ops_t ops_storage;
     struct rb_root root;
     map_size_t size;
 };
@@ -636,7 +637,12 @@ map_t* __map_new(const class_map_ops_t* ops)
         }
     }
 
-    map->ops  = ops;
+    if (is_null(ops)) {
+        map->ops = NULL;
+    } else {
+        map->ops_storage = *ops;
+        map->ops = &map->ops_storage;
+    }
     map->root = RB_ROOT;
     return map;
 

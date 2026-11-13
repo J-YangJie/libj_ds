@@ -17,12 +17,40 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <sequence_container/sequence_container.h>
+#include <sequence_container/sequence_container_ops.h>
+
+#include <_token.h>
+
+/* Floating-point equality is numeric, so 0.0 and -0.0 compare equal.
+ * The container default comparison is bitwise, hence this callback.
+ * U64/S64 need no callback: the step-8 comparison is exact on both widths. */
+
+static bool __ds_ops_eq_seq_float(ds_data_t left, ds_data_t right)  { return __ds_token_to_f32(left) == __ds_token_to_f32(right); }
+static bool __ds_ops_eq_seq_double(ds_data_t left, ds_data_t right) { return __ds_token_to_f64(left) == __ds_token_to_f64(right); }
+
+#define __CLASS_SEQUENCE_CONTAINER_OPS(_t, __func_eq) \
+const class_sequence_container_ops_t* class_sequence_container_ops_##_t##_ins(void) \
+{ \
+    static const class_sequence_container_ops_t ins = { \
+        .valid_data = NULL,         \
+        .__eq       = __func_eq,    \
+        .copy_data  = NULL,         \
+        .free_data  = NULL,         \
+        .__move     = NULL,         \
+    }; \
+    return &ins; \
+}
+
+__CLASS_SEQUENCE_CONTAINER_OPS(float,  __ds_ops_eq_seq_float)
+__CLASS_SEQUENCE_CONTAINER_OPS(double, __ds_ops_eq_seq_double)
+
+
+
+
 
 #include <operations/ds_ops_string.h>
-#include <sequence_container/operations/ds_ops_sso.h>
 
-const class_sequence_container_ops_t* class_sequence_container_ops_string_ins(void)
+const class_sequence_container_ops_t* class_sequence_container_ops_chars_ins(void)
 {
     static const class_sequence_container_ops_t ins = {
         .valid_data = ds_ops_valid_data_default_string,

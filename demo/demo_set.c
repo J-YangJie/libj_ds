@@ -67,7 +67,7 @@ static void demo_base_and_iterator(void)
 
 static void demo_about_insert(void)
 {
-    set_t* demo = SET_NEW_STRING();
+    set_t* demo = SET_NEW_T(string);
 
     cds->insert(demo, _tok("j"));
     cds->insert(demo, _tok("and"));
@@ -90,7 +90,7 @@ static bool demo_remove_if_condition_k(ds_key_t key)
 
 static void demo_about_erase(void)
 {
-    set_t* demo = SET_NEW_STRING();
+    set_t* demo = SET_NEW_T(string);
     set_iterator_t it;
     set_size_t ret;
 

@@ -1,6 +1,7 @@
 /*
   Map Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,8 +21,12 @@
 #ifndef __J_MAP_H
 #define __J_MAP_H
 
-#include <map/map_ops.h>
 #include <iterator/iterator.h>
+#include <associative_container/associative_container.h>
+
+typedef class_associative_container_key_ops_t   class_map_key_ops_t;
+typedef class_associative_container_value_ops_t class_map_value_ops_t;
+typedef class_associative_container_ops_t       class_map_ops_t;
 
 typedef struct map_iterator_kv {
     union {
@@ -115,5 +120,46 @@ const class_map_t* class_map_ins(void);
 #define MAP_NEW()          __map_new(NULL)
 #define MAP_NEW_OPS(_ops)  __map_new((_ops))
 #define MAP_DELETE(_pptr)  do { __map_delete((_pptr)); } while(0)
+
+#define MAP_NEW_KV_OPS(_ops_key, _ops_value) \
+        __map_new(&(class_map_ops_t[1]){ \
+            class_associative_container_ops_compose((_ops_key), (_ops_value)) \
+        }[0])
+
+/*
+    Keys are ordered ascending by default.
+
+    _ktype/_vtype includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    MAP_NEW_KV(_ktype, _vtype) like std::map<_ktype, _vtype>
+    Such as: map_t* demo = MAP_NEW_KV(string, double);
+    Such as: map_t* demo = MAP_NEW_KV(int16_t, float);
+    Such as: map_t* demo = MAP_NEW_KV(float, ssize_t);
+ */
+#define MAP_NEW_KV(_ktype, _vtype) \
+        MAP_NEW_KV_OPS(g_class_associative_container_key_ops_##_ktype(), \
+                       g_class_associative_container_value_ops_##_vtype())
+
+/*
+    Keys are ordered descending.
+
+    _ktype/_vtype includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    MAP_NEW_KV_GT(_ktype, _vtype) like std::map<_ktype, _vtype, std::greater<_ktype>>
+    Such as: map_t* demo = MAP_NEW_KV_GT(string, double);
+    Such as: map_t* demo = MAP_NEW_KV_GT(int16_t, float);
+    Such as: map_t* demo = MAP_NEW_KV_GT(float, ssize_t);
+ */
+#define MAP_NEW_KV_GT(_ktype, _vtype) \
+        MAP_NEW_KV_OPS(g_class_associative_container_key_ops_##_ktype##_greater(), \
+                       g_class_associative_container_value_ops_##_vtype())
 
 #endif /* __J_MAP_H */

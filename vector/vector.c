@@ -53,9 +53,7 @@ bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_
             case 1: *(uint8_t*)pos  = (uint8_t)data;  break;
             case 2: *(uint16_t*)pos = (uint16_t)data; break;
             case 4: *(uint32_t*)pos = (uint32_t)data; break;
-#ifdef JDSC_64BIT
-            case 8: *(uint64_t*)pos = (uint64_t)data; break;
-#endif /* JDSC_64BIT */
+            case 8: __ds_token_store_8(pos, data); break;
             default: return false;
             }
 
@@ -86,7 +84,7 @@ bool __i_vector_slot_write_n_range(const i_vector_t* _this, uint8_t* dest, const
         return true;
     }
 
-    if (_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
+    if (_this->dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) {
         if (_this->sso) {
             while (n-- > 0) {
                 if (ds_ops_copy_data_same_sso((vector_data_t)src, (vector_data_t*)dest))
@@ -114,6 +112,7 @@ bool __i_vector_slot_write_n_range(const i_vector_t* _this, uint8_t* dest, const
                 suc++;
             else
                 goto err;
+
             dest = __i_vector_ptr_add(dest, 1, step);
             src  = __i_vector_ptr_add(src, 1, step);
         }

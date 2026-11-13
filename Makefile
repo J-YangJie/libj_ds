@@ -41,6 +41,10 @@ AR  = $(CROSS_COMPILE)ar
 OBJS = \
 	operations/ds_ops_string.o
 
+ifneq ($(findstring y, $(WITH_HASHMAP)$(WITH_MAP)$(WITH_MULTIMAP)$(WITH_SET)$(WITH_MULTISET)),)
+OBJS += associative_container/associative_container_ops.o
+endif
+
 ifneq ($(findstring y, $(WITH_DEQUE)$(WITH_VECTOR)$(WITH_LIST)$(WITH_STACK)$(WITH_QUEUE)$(WITH_PRIORITY_QUEUE)),)
 OBJS += sequence_container/operations/ds_ops_sso.o
 OBJS += sequence_container/sequence_container_ops.o
@@ -71,7 +75,7 @@ OBJS += priority_queue/priority_queue.o priority_queue/priority_queue_ops.o
 endif
 
 ifeq ($(WITH_HASHMAP), y)
-OBJS += hashmap/hashmap.o
+OBJS += hashmap/hashmap.o hashmap/hashmap_ops.o
 endif
 
 ifeq ($(WITH_MAP), y)
@@ -83,11 +87,11 @@ OBJS += multimap/multimap.o
 endif
 
 ifeq ($(WITH_SET), y)
-OBJS += set/set.o set/set_ops.o
+OBJS += set/set.o
 endif
 
 ifeq ($(WITH_MULTISET), y)
-OBJS += multiset/multiset.o multiset/multiset_ops.o
+OBJS += multiset/multiset.o
 endif
 
 ifneq ($(findstring y, $(WITH_HASHMAP)$(WITH_MAP)$(WITH_MULTIMAP)$(WITH_SET)$(WITH_MULTISET)),)
@@ -248,6 +252,14 @@ DEMO_BINS += demo/demo_set_bin
 endif
 ifeq ($(WITH_MULTISET), y)
 DEMO_BINS += demo/demo_multiset_bin
+endif
+# demo_num.c uses map, multimap, set, multiset, vector and deque;
+# demo_num_bench.c uses map and vector only.
+ifeq ($(WITH_MAP)$(WITH_VECTOR),yy)
+DEMO_BINS += demo/demo_num_bench_bin
+endif
+ifeq ($(WITH_MAP)$(WITH_VECTOR)$(WITH_DEQUE)$(WITH_MULTIMAP)$(WITH_MULTISET)$(WITH_SET),yyyyyy)
+DEMO_BINS += demo/demo_num_bin
 endif
 endif # WITH_DEMO
 

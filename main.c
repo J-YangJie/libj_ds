@@ -154,30 +154,30 @@
 #endif
 
 #if defined(TEST_STACK_VECTOR)
-#define STACK_TEST_NEW()      STACK_NEW()
-#define STACK_TEST_NEW_SSO()  STACK_NEW_SSO()
+#define STACK_TEST_NEW()         STACK_NEW()
+#define STACK_TEST_NEW_STRING()  STACK_NEW_STRING()
 #elif defined(TEST_STACK_DEQUE)
-#define STACK_TEST_NEW()      STACK_NEW_T(stack_data_t, DEQUE)
-#define STACK_TEST_NEW_SSO()  STACK_NEW_OPS_T(g_class_stack_ops_sso(), ds_sso_t, DEQUE)
+#define STACK_TEST_NEW()         STACK_NEW_T(intptr_t, DEQUE)
+#define STACK_TEST_NEW_STRING()  STACK_NEW_STRING_T(DEQUE)
 #elif defined(TEST_STACK_LIST)
-#define STACK_TEST_NEW()      STACK_NEW_T(stack_data_t, LIST)
-#define STACK_TEST_NEW_SSO()  STACK_NEW_OPS_T(g_class_stack_ops_sso(), ds_sso_t, LIST)
+#define STACK_TEST_NEW()         STACK_NEW_T(intptr_t, LIST)
+#define STACK_TEST_NEW_STRING()  STACK_NEW_STRING_T(LIST)
 #endif
 
 #if defined(TEST_QUEUE_DEQUE)
-#define QUEUE_TEST_NEW()      QUEUE_NEW_T(queue_data_t, DEQUE)
-#define QUEUE_TEST_NEW_SSO()  QUEUE_NEW_OPS_T(g_class_queue_ops_sso(), ds_sso_t, DEQUE)
+#define QUEUE_TEST_NEW()         QUEUE_NEW()
+#define QUEUE_TEST_NEW_STRING()  QUEUE_NEW_STRING_T(DEQUE)
 #elif defined(TEST_QUEUE_LIST)
-#define QUEUE_TEST_NEW()      QUEUE_NEW_T(queue_data_t, LIST)
-#define QUEUE_TEST_NEW_SSO()  QUEUE_NEW_OPS_T(g_class_queue_ops_sso(), ds_sso_t, LIST)
+#define QUEUE_TEST_NEW()         QUEUE_NEW_T(intptr_t, LIST)
+#define QUEUE_TEST_NEW_STRING()  QUEUE_NEW_STRING_T(LIST)
 #endif
 
 #if defined(TEST_PQUEUE_VECTOR)
-#define PQ_TEST_NEW()         PRIORITY_QUEUE_NEW()
-#define PQ_TEST_NEW_STRING()  PRIORITY_QUEUE_NEW_SSO()
+#define PQUEUE_TEST_NEW()         PRIORITY_QUEUE_NEW()
+#define PQUEUE_TEST_NEW_STRING()  PRIORITY_QUEUE_NEW_STRING()
 #elif defined(TEST_PQUEUE_DEQUE)
-#define PQ_TEST_NEW()         PRIORITY_QUEUE_NEW_T(priority_queue_data_t, DEQUE)
-#define PQ_TEST_NEW_STRING()  PRIORITY_QUEUE_NEW_OPS_T(g_class_priority_queue_ops_sso(), ds_sso_t, DEQUE)
+#define PQUEUE_TEST_NEW()         PRIORITY_QUEUE_NEW_T(intptr_t, DEQUE)
+#define PQUEUE_TEST_NEW_STRING()  PRIORITY_QUEUE_NEW_STRING_T(DEQUE)
 #endif
 
 #if defined(TEST_LIST) || defined(TEST_VECTOR) || defined(TEST_DEQUE)
@@ -401,7 +401,7 @@ static void test_i_for(void)
 #elif TEST_QUEUE
     queue_t*          ds_queue_i    = QUEUE_TEST_NEW();
 #elif TEST_PQUEUE
-    priority_queue_t* ds_pqueue_i   = PQ_TEST_NEW();
+    priority_queue_t* ds_pqueue_i   = PQUEUE_TEST_NEW();
 #endif
 
     printf("%s\n", __func__);
@@ -730,7 +730,7 @@ static void test_i_rand(void)
 #elif TEST_QUEUE
     queue_t*          ds_queue_i    = QUEUE_TEST_NEW();
 #elif TEST_PQUEUE
-    priority_queue_t* ds_pqueue_i   = PQ_TEST_NEW();
+    priority_queue_t* ds_pqueue_i   = PQUEUE_TEST_NEW();
 #endif
 
     srand(time(0));
@@ -2255,33 +2255,19 @@ static void test_s_rand(void)
         .copy_key    = ds_ops_copy_data_default_string,
         .free_key    = ds_ops_free_data_default_string,
     };
-#elif TEST_MAP
-    class_map_ops_t tops_map = {
-        .valid_key   = ds_ops_valid_data_default_string,
-        .__lt        = __ds_ops_lt_default_string,
-        .copy_key    = ds_ops_copy_data_default_string,
-        .free_key    = ds_ops_free_data_default_string,
-    };
-#elif TEST_MULTIMAP
-    class_multimap_ops_t tops_multimap = {
-        .valid_key   = ds_ops_valid_data_default_string,
-        .__lt        = __ds_ops_lt_default_string,
-        .copy_key    = ds_ops_copy_data_default_string,
-        .free_key    = ds_ops_free_data_default_string,
-    };
 #endif
 
 #ifdef TEST_HASHMAP
     hashmap_t*        ds_hashmap_s  = HASHMAP_NEW_OPS_3(&tops_hashmap, HASHMAP_CAPACITY_INIT, 0, 0.0);
     printf("Hashmap reserve: %d\n", HASHMAP_CAPACITY_INIT);
 #elif TEST_MAP
-    map_t*            ds_map_s      = MAP_NEW_OPS(&tops_map);
+    map_t*            ds_map_s      = MAP_NEW_KV(string, int16_t);
 #elif TEST_SET
-    set_t*            ds_set_s      = SET_NEW_STRING();
+    set_t*            ds_set_s      = SET_NEW_T(string);
 #elif TEST_MULTIMAP
-    multimap_t*       ds_multimap_s = MULTIMAP_NEW_OPS(&tops_multimap);
+    multimap_t*       ds_multimap_s = MULTIMAP_NEW_KV(string, int16_t);
 #elif TEST_MULTISET
-    multiset_t*       ds_multiset_s = MULTISET_NEW_STRING();
+    multiset_t*       ds_multiset_s = MULTISET_NEW_T(string);
 #elif TEST_LIST
     list_t*           ds_list_s     = LIST_NEW_STRING();
 #elif TEST_VECTOR
@@ -2289,11 +2275,11 @@ static void test_s_rand(void)
 #elif TEST_DEQUE
     deque_t*          ds_deque_s    = DEQUE_NEW_STRING();
 #elif TEST_STACK
-    stack_t*          ds_stack_s    = STACK_TEST_NEW_SSO();
+    stack_t*          ds_stack_s    = STACK_TEST_NEW_STRING();
 #elif TEST_QUEUE
-    queue_t*          ds_queue_s    = QUEUE_TEST_NEW_SSO();
+    queue_t*          ds_queue_s    = QUEUE_TEST_NEW_STRING();
 #elif TEST_PQUEUE
-    priority_queue_t* ds_pqueue_s   = PQ_TEST_NEW_STRING();
+    priority_queue_t* ds_pqueue_s   = PQUEUE_TEST_NEW_STRING();
 #endif
 
     srand(time(0));

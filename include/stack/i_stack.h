@@ -120,19 +120,19 @@ void i_stack_swap(i_stack_t* _this, i_stack_t* other)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_VECTOR:
             JDSC_ASSERT(   _this->v->ops   == other->v->ops /* Include sso */
-                        && __sequence_container_dtype_swap_compatible(_this->v->dtype, other->v->dtype)
+                        && __container_adaptor_dtype_swap_compatible(_this->v->dtype, other->v->dtype)
                         && _this->v->step  == other->v->step 
                         && _this->v->align == other->v->align);
             break;
         case __CONTAINER_ADAPTOR_BASE_DEQUE:
             JDSC_ASSERT(   _this->d->ops   == other->d->ops /* Include sso */
-                        && __sequence_container_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
+                        && __container_adaptor_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
                         && _this->d->step  == other->d->step 
                         && _this->d->align == other->d->align);
             break;
         case __CONTAINER_ADAPTOR_BASE_LIST:
             JDSC_ASSERT(   _this->l->ops   == other->l->ops /* Include sso */
-                        && __sequence_container_dtype_swap_compatible(_this->l->dtype, other->l->dtype)
+                        && __container_adaptor_dtype_swap_compatible(_this->l->dtype, other->l->dtype)
                         && _this->l->step  == other->l->step 
                         && _this->l->align == other->l->align 
                         && _this->l->pad   == other->l->pad);

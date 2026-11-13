@@ -28,9 +28,21 @@
 
 #define TAG "[priority_queue]"
 
+/* Common */
 #define __i_priority_queue_fix_sso(p)  __ds_ops_fix_sso((priority_queue_data_t)(p))
 
-#define __i_priority_queue_define_heap(name, type, prep, __at, size, pop_back) \
+#define __i_pq_tok_u8(p)   (*(p)) /* __ds_token_from_u8(*(const uint8_t*)(p))   */
+#define __i_pq_tok_u16(p)  (*(p)) /* __ds_token_from_u16(*(const uint16_t*)(p)) */
+#define __i_pq_tok_u32(p)  (*(p)) /* __ds_token_from_u32(*(const uint32_t*)(p)) */
+#define __i_pq_tok_u64(p)  __ds_token_load_8(p)
+#define __i_pq_tok_s8(p)   (*(p)) /* __ds_token_from_s8(*(const int8_t*)(p))    */
+#define __i_pq_tok_s16(p)  (*(p)) /* __ds_token_from_s16(*(const int16_t*)(p))  */
+#define __i_pq_tok_s32(p)  (*(p)) /* __ds_token_from_s32(*(const int32_t*)(p))  */
+#define __i_pq_tok_s64(p)  __ds_token_load_8(p)
+#define __i_pq_tok_f32(p)  __ds_token_from_f32(*(p))
+#define __i_pq_tok_f64(p)  __ds_token_load_8(p)
+
+#define __i_priority_queue_define_heap(name, type, prep, __at, __tok, size, pop_back) \
 static                                                                  \
 void __i_priority_queue_rise_##name(i_priority_queue_t* _this,          \
                                     priority_queue_size_t index)        \
@@ -66,7 +78,7 @@ void __i_priority_queue_rise_##name(i_priority_queue_t* _this,          \
             priority_queue_size_t __parent = (__i - 1) >> 1;            \
             type* __pp = __at(__parent);                                \
                                                                         \
-            if (!__lt(*(__pp), __t))                                    \
+            if (!__lt(__tok(__pp), __tok(&__t)))                        \
                 break;                                                  \
                                                                         \
             *__hp = *__pp;                                              \
@@ -127,12 +139,12 @@ void __i_priority_queue_heapify_##name(i_priority_queue_t* _this,       \
             if (__r < __size) {                                         \
                 type* __rp = __at(__r);                                 \
                                                                         \
-                if (__lt(*(__mp), *(__rp))) {                           \
+                if (__lt(__tok(__mp), __tok(__rp))) {                   \
                     __m  = __r;                                         \
                     __mp = __rp;                                        \
                 }                                                       \
             }                                                           \
-            if (!__lt(__t, *(__mp)))                                    \
+            if (!__lt(__tok(&__t), __tok(__mp)))                        \
                 break;                                                  \
                                                                         \
             *__hp = *__mp;                                              \
@@ -175,27 +187,24 @@ void __i_priority_queue_pop_##name(i_priority_queue_t* _this)           \
 #define __i_pq_vec_at_u8(i)   ((uint8_t*)__v->begin + (i))
 #define __i_pq_vec_at_u16(i)  ((uint16_t*)__v->begin + (i))
 #define __i_pq_vec_at_u32(i)  ((uint32_t*)__v->begin + (i))
-#define __i_pq_vec_at_uptr(i) ((uintptr_t*)__v->begin + (i))
+#define __i_pq_vec_at_u64(i)  ((uint64_t*)__v->begin + (i))
 #define __i_pq_vec_at_s8(i)   ((int8_t*)__v->begin + (i))
 #define __i_pq_vec_at_s16(i)  ((int16_t*)__v->begin + (i))
 #define __i_pq_vec_at_s32(i)  ((int32_t*)__v->begin + (i))
-#define __i_pq_vec_at_iptr(i) ((intptr_t*)__v->begin + (i))
-#ifdef JDSC_64BIT
-#define __i_pq_vec_at_u64(i)  ((uint64_t*)__v->begin + (i))
 #define __i_pq_vec_at_s64(i)  ((int64_t*)__v->begin + (i))
-#endif /* JDSC_64BIT */
-__i_priority_queue_define_heap(vector_u8,   uint8_t,   __i_pq_vec_prep, __i_pq_vec_at_u8,   __i_vector_size(__v), cvector_pop_back(__v))
-__i_priority_queue_define_heap(vector_u16,  uint16_t,  __i_pq_vec_prep, __i_pq_vec_at_u16,  __i_vector_size(__v), cvector_pop_back(__v))
-__i_priority_queue_define_heap(vector_u32,  uint32_t,  __i_pq_vec_prep, __i_pq_vec_at_u32,  __i_vector_size(__v), cvector_pop_back(__v))
-__i_priority_queue_define_heap(vector_uptr, uintptr_t, __i_pq_vec_prep, __i_pq_vec_at_uptr, __i_vector_size(__v), cvector_pop_back(__v))
-__i_priority_queue_define_heap(vector_s8,   int8_t,    __i_pq_vec_prep, __i_pq_vec_at_s8,   __i_vector_size(__v), cvector_pop_back(__v))
-__i_priority_queue_define_heap(vector_s16,  int16_t,   __i_pq_vec_prep, __i_pq_vec_at_s16,  __i_vector_size(__v), cvector_pop_back(__v))
-__i_priority_queue_define_heap(vector_s32,  int32_t,   __i_pq_vec_prep, __i_pq_vec_at_s32,  __i_vector_size(__v), cvector_pop_back(__v))
-__i_priority_queue_define_heap(vector_iptr, intptr_t,  __i_pq_vec_prep, __i_pq_vec_at_iptr, __i_vector_size(__v), cvector_pop_back(__v))
-#ifdef JDSC_64BIT
-__i_priority_queue_define_heap(vector_u64,  uint64_t,  __i_pq_vec_prep, __i_pq_vec_at_u64,  __i_vector_size(__v), cvector_pop_back(__v))
-__i_priority_queue_define_heap(vector_s64,  int64_t,   __i_pq_vec_prep, __i_pq_vec_at_s64,  __i_vector_size(__v), cvector_pop_back(__v))
-#endif /* JDSC_64BIT */
+#define __i_pq_vec_at_f32(i)  ((float*)__v->begin + (i))
+#define __i_pq_vec_at_f64(i)  ((double*)__v->begin + (i))
+
+__i_priority_queue_define_heap(vector_u8,  uint8_t,  __i_pq_vec_prep, __i_pq_vec_at_u8,  __i_pq_tok_u8,  __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_u16, uint16_t, __i_pq_vec_prep, __i_pq_vec_at_u16, __i_pq_tok_u16, __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_u32, uint32_t, __i_pq_vec_prep, __i_pq_vec_at_u32, __i_pq_tok_u32, __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_u64, uint64_t, __i_pq_vec_prep, __i_pq_vec_at_u64, __i_pq_tok_u64, __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_s8,  int8_t,   __i_pq_vec_prep, __i_pq_vec_at_s8,  __i_pq_tok_s8,  __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_s16, int16_t,  __i_pq_vec_prep, __i_pq_vec_at_s16, __i_pq_tok_s16, __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_s32, int32_t,  __i_pq_vec_prep, __i_pq_vec_at_s32, __i_pq_tok_s32, __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_s64, int64_t,  __i_pq_vec_prep, __i_pq_vec_at_s64, __i_pq_tok_s64, __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_f32, float,    __i_pq_vec_prep, __i_pq_vec_at_f32, __i_pq_tok_f32, __i_vector_size(__v), cvector_pop_back(__v))
+__i_priority_queue_define_heap(vector_f64, double,   __i_pq_vec_prep, __i_pq_vec_at_f64, __i_pq_tok_f64, __i_vector_size(__v), cvector_pop_back(__v))
 
 
 
@@ -486,15 +495,13 @@ uint8_t* __i_priority_queue_deque_slot_addr_pow2(const i_deque_t* deque, deque_s
 #define __i_pq_deq_at_u8(i)   __i_pq_deq_at_pow2(uint8_t,   (i), 0)
 #define __i_pq_deq_at_u16(i)  __i_pq_deq_at_pow2(uint16_t,  (i), 1)
 #define __i_pq_deq_at_u32(i)  __i_pq_deq_at_pow2(uint32_t,  (i), 2)
-#define __i_pq_deq_at_uptr(i) __i_pq_deq_at_pow2(uintptr_t, (i), (int)__builtin_ctz((unsigned)sizeof(uintptr_t)))
+#define __i_pq_deq_at_u64(i)  __i_pq_deq_at_pow2(uint64_t,  (i), 3)
 #define __i_pq_deq_at_s8(i)   __i_pq_deq_at_pow2(int8_t,    (i), 0)
 #define __i_pq_deq_at_s16(i)  __i_pq_deq_at_pow2(int16_t,   (i), 1)
 #define __i_pq_deq_at_s32(i)  __i_pq_deq_at_pow2(int32_t,   (i), 2)
-#define __i_pq_deq_at_iptr(i) __i_pq_deq_at_pow2(intptr_t,  (i), (int)__builtin_ctz((unsigned)sizeof(intptr_t)))
-#ifdef JDSC_64BIT
-#define __i_pq_deq_at_u64(i)  __i_pq_deq_at_pow2(uint64_t,  (i), 3)
 #define __i_pq_deq_at_s64(i)  __i_pq_deq_at_pow2(int64_t,   (i), 3)
-#endif /* JDSC_64BIT */
+#define __i_pq_deq_at_f32(i)  __i_pq_deq_at_pow2(float,     (i), 2)
+#define __i_pq_deq_at_f64(i)  __i_pq_deq_at_pow2(double,    (i), 3)
 
 #if 1
 static JDSC_INLINE
@@ -511,18 +518,16 @@ deque_size_t __i_priority_queue_deque_size_pow2(const i_deque_t* deque, int elem
 #define __i_pq_deq_size_pow2(es) __i_deque_size(__d)
 #endif
 
-__i_priority_queue_define_heap(deque_u8,   uint8_t,   __i_pq_deq_prep, __i_pq_deq_at_u8,   __i_pq_deq_size_pow2(0),                                               cdeque_pop_back(__d))
-__i_priority_queue_define_heap(deque_u16,  uint16_t,  __i_pq_deq_prep, __i_pq_deq_at_u16,  __i_pq_deq_size_pow2(1),                                               cdeque_pop_back(__d))
-__i_priority_queue_define_heap(deque_u32,  uint32_t,  __i_pq_deq_prep, __i_pq_deq_at_u32,  __i_pq_deq_size_pow2(2),                                               cdeque_pop_back(__d))
-__i_priority_queue_define_heap(deque_uptr, uintptr_t, __i_pq_deq_prep, __i_pq_deq_at_uptr, __i_pq_deq_size_pow2((int)__builtin_ctz((unsigned)sizeof(uintptr_t))), cdeque_pop_back(__d))
-__i_priority_queue_define_heap(deque_s8,   int8_t,    __i_pq_deq_prep, __i_pq_deq_at_s8,   __i_pq_deq_size_pow2(0),                                               cdeque_pop_back(__d))
-__i_priority_queue_define_heap(deque_s16,  int16_t,   __i_pq_deq_prep, __i_pq_deq_at_s16,  __i_pq_deq_size_pow2(1),                                               cdeque_pop_back(__d))
-__i_priority_queue_define_heap(deque_s32,  int32_t,   __i_pq_deq_prep, __i_pq_deq_at_s32,  __i_pq_deq_size_pow2(2),                                               cdeque_pop_back(__d))
-__i_priority_queue_define_heap(deque_iptr, intptr_t,  __i_pq_deq_prep, __i_pq_deq_at_iptr, __i_pq_deq_size_pow2((int)__builtin_ctz((unsigned)sizeof(intptr_t))),  cdeque_pop_back(__d))
-#ifdef JDSC_64BIT
-__i_priority_queue_define_heap(deque_u64,  uint64_t,  __i_pq_deq_prep, __i_pq_deq_at_u64,  __i_pq_deq_size_pow2(3),                                               cdeque_pop_back(__d))
-__i_priority_queue_define_heap(deque_s64,  int64_t,   __i_pq_deq_prep, __i_pq_deq_at_s64,  __i_pq_deq_size_pow2(3),                                               cdeque_pop_back(__d))
-#endif /* JDSC_64BIT */
+__i_priority_queue_define_heap(deque_u8,  uint8_t,  __i_pq_deq_prep, __i_pq_deq_at_u8,  __i_pq_tok_u8,  __i_pq_deq_size_pow2(0), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_u16, uint16_t, __i_pq_deq_prep, __i_pq_deq_at_u16, __i_pq_tok_u16, __i_pq_deq_size_pow2(1), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_u32, uint32_t, __i_pq_deq_prep, __i_pq_deq_at_u32, __i_pq_tok_u32, __i_pq_deq_size_pow2(2), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_u64, uint64_t, __i_pq_deq_prep, __i_pq_deq_at_u64, __i_pq_tok_u64, __i_pq_deq_size_pow2(3), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_s8,  int8_t,   __i_pq_deq_prep, __i_pq_deq_at_s8,  __i_pq_tok_s8,  __i_pq_deq_size_pow2(0), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_s16, int16_t,  __i_pq_deq_prep, __i_pq_deq_at_s16, __i_pq_tok_s16, __i_pq_deq_size_pow2(1), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_s32, int32_t,  __i_pq_deq_prep, __i_pq_deq_at_s32, __i_pq_tok_s32, __i_pq_deq_size_pow2(2), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_s64, int64_t,  __i_pq_deq_prep, __i_pq_deq_at_s64, __i_pq_tok_s64, __i_pq_deq_size_pow2(3), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_f32, float,    __i_pq_deq_prep, __i_pq_deq_at_f32, __i_pq_tok_f32, __i_pq_deq_size_pow2(2), cdeque_pop_back(__d))
+__i_priority_queue_define_heap(deque_f64, double,   __i_pq_deq_prep, __i_pq_deq_at_f64, __i_pq_tok_f64, __i_pq_deq_size_pow2(3), cdeque_pop_back(__d))
 
 
 
@@ -908,6 +913,26 @@ bool __i_priority_queue_deque_step_pow2(deque_step_t step)
     return step != 0 && 0 == (step & (step - 1));
 }
 
+typedef enum priority_queue_order {
+    PQ_ORDER_MIN = 0,
+    PQ_ORDER_SINT,
+    PQ_ORDER_UINT,
+    PQ_ORDER_F32,
+    PQ_ORDER_F64,
+    PQ_ORDER_OPS,
+} pq_order_t;
+
+static JDSC_INLINE
+pq_order_t __pq_order_of(ds_dtype_t dtype)
+{
+    if (dtype & SEQ_CNTR_DTYPE_MASK_OPS)  return PQ_ORDER_OPS;
+    if (dtype & SEQ_CNTR_DTYPE_F32)       return PQ_ORDER_F32;
+    if (dtype & SEQ_CNTR_DTYPE_F64)       return PQ_ORDER_F64;
+    if (dtype & SEQ_CNTR_DTYPE_MASK_SINT) return PQ_ORDER_SINT;
+    if (dtype & SEQ_CNTR_DTYPE_MASK_UINT) return PQ_ORDER_UINT;
+    return PQ_ORDER_MIN;
+}
+
 void i_priority_queue_pop(i_priority_queue_t* _this)
 {
     if (unlikely(is_null(_this)))
@@ -921,29 +946,27 @@ void i_priority_queue_pop(i_priority_queue_t* _this)
             return ;
         }
 
-        if (SEQ_CNTR_DTYPE_PTR == v->dtype) {
-            __i_priority_queue_pop_vector_iptr(_this);
-            return ;
-        }
-
-        switch (v->dtype)
+        switch (__pq_order_of(v->dtype))
         {
-        case SEQ_CNTR_DTYPE_U8:      __i_priority_queue_pop_vector_u8(_this);      return ;
-        case SEQ_CNTR_DTYPE_U16:     __i_priority_queue_pop_vector_u16(_this);     return ;
-        case SEQ_CNTR_DTYPE_U32:     __i_priority_queue_pop_vector_u32(_this);     return ;
-        case SEQ_CNTR_DTYPE_UINTPTR: __i_priority_queue_pop_vector_uptr(_this);    return ;
-#ifdef JDSC_64BIT
-        case SEQ_CNTR_DTYPE_U64:     __i_priority_queue_pop_vector_u64(_this);     return ;
-#endif /* JDSC_64BIT */
-        case SEQ_CNTR_DTYPE_S8:      __i_priority_queue_pop_vector_s8(_this);      return ;
-        case SEQ_CNTR_DTYPE_S16:     __i_priority_queue_pop_vector_s16(_this);     return ;
-        case SEQ_CNTR_DTYPE_S32:     __i_priority_queue_pop_vector_s32(_this);     return ;
-        case SEQ_CNTR_DTYPE_INTPTR:  __i_priority_queue_pop_vector_iptr(_this);    return ;
-#ifdef JDSC_64BIT
-        case SEQ_CNTR_DTYPE_S64:     __i_priority_queue_pop_vector_s64(_this);     return ;
-#endif /* JDSC_64BIT */
-        case SEQ_CNTR_DTYPE_STRUCT:
-        case SEQ_CNTR_DTYPE_UNION:   __i_priority_queue_pop_vector_addr(_this);    return ;
+        case PQ_ORDER_OPS:  __i_priority_queue_pop_vector_addr(_this); return ;
+        case PQ_ORDER_F32:  __i_priority_queue_pop_vector_f32(_this);  return ;
+        case PQ_ORDER_F64:  __i_priority_queue_pop_vector_f64(_this);  return ;
+        case PQ_ORDER_SINT:
+            switch (v->step) {
+            case 1: __i_priority_queue_pop_vector_s8(_this);  return ;
+            case 2: __i_priority_queue_pop_vector_s16(_this); return ;
+            case 4: __i_priority_queue_pop_vector_s32(_this); return ;
+            case 8: __i_priority_queue_pop_vector_s64(_this); return ;
+            default: return ;
+            }
+        case PQ_ORDER_UINT:
+            switch (v->step) {
+            case 1: __i_priority_queue_pop_vector_u8(_this);  return ;
+            case 2: __i_priority_queue_pop_vector_u16(_this); return ;
+            case 4: __i_priority_queue_pop_vector_u32(_this); return ;
+            case 8: __i_priority_queue_pop_vector_u64(_this); return ;
+            default: return ;
+            }
         default: return ;
         }
     } else if (__CONTAINER_ADAPTOR_BASE_DEQUE == _this->id) {
@@ -957,29 +980,27 @@ void i_priority_queue_pop(i_priority_queue_t* _this)
             return ;
         }
 
-        if (SEQ_CNTR_DTYPE_PTR == d->dtype) {
-            __i_priority_queue_pop_deque_iptr(_this);
-            return ;
-        }
-
-        switch (d->dtype)
+        switch (__pq_order_of(d->dtype))
         {
-        case SEQ_CNTR_DTYPE_U8:      __i_priority_queue_pop_deque_u8(_this);      return ;
-        case SEQ_CNTR_DTYPE_U16:     __i_priority_queue_pop_deque_u16(_this);     return ;
-        case SEQ_CNTR_DTYPE_U32:     __i_priority_queue_pop_deque_u32(_this);     return ;
-        case SEQ_CNTR_DTYPE_UINTPTR: __i_priority_queue_pop_deque_uptr(_this);    return ;
-#ifdef JDSC_64BIT
-        case SEQ_CNTR_DTYPE_U64:     __i_priority_queue_pop_deque_u64(_this);     return ;
-#endif /* JDSC_64BIT */
-        case SEQ_CNTR_DTYPE_S8:      __i_priority_queue_pop_deque_s8(_this);      return ;
-        case SEQ_CNTR_DTYPE_S16:     __i_priority_queue_pop_deque_s16(_this);     return ;
-        case SEQ_CNTR_DTYPE_S32:     __i_priority_queue_pop_deque_s32(_this);     return ;
-        case SEQ_CNTR_DTYPE_INTPTR:  __i_priority_queue_pop_deque_iptr(_this);    return ;
-#ifdef JDSC_64BIT
-        case SEQ_CNTR_DTYPE_S64:     __i_priority_queue_pop_deque_s64(_this);     return ;
-#endif /* JDSC_64BIT */
-        case SEQ_CNTR_DTYPE_STRUCT:
-        case SEQ_CNTR_DTYPE_UNION:   __i_priority_queue_pop_deque_addr(_this);    return ;
+        case PQ_ORDER_OPS:  __i_priority_queue_pop_deque_addr(_this); return ;
+        case PQ_ORDER_F32:  __i_priority_queue_pop_deque_f32(_this);  return ;
+        case PQ_ORDER_F64:  __i_priority_queue_pop_deque_f64(_this);  return ;
+        case PQ_ORDER_SINT:
+            switch (d->step) {
+            case 1: __i_priority_queue_pop_deque_s8(_this);  return ;
+            case 2: __i_priority_queue_pop_deque_s16(_this); return ;
+            case 4: __i_priority_queue_pop_deque_s32(_this); return ;
+            case 8: __i_priority_queue_pop_deque_s64(_this); return ;
+            default: return ;
+            }
+        case PQ_ORDER_UINT:
+            switch (d->step) {
+            case 1: __i_priority_queue_pop_deque_u8(_this);  return ;
+            case 2: __i_priority_queue_pop_deque_u16(_this); return ;
+            case 4: __i_priority_queue_pop_deque_u32(_this); return ;
+            case 8: __i_priority_queue_pop_deque_u64(_this); return ;
+            default: return ;
+            }
         default: return ;
         }
     }
@@ -1005,28 +1026,27 @@ bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data
             return true;
         }
 
-        if (SEQ_CNTR_DTYPE_INTPTR == v->dtype) {
-            __i_priority_queue_rise_vector_iptr(_this, index);
-            return true;
-        }
-
-        switch (v->dtype)
+        switch (__pq_order_of(v->dtype))
         {
-        case SEQ_CNTR_DTYPE_U8:      __i_priority_queue_rise_vector_u8(_this, index);      return true;
-        case SEQ_CNTR_DTYPE_U16:     __i_priority_queue_rise_vector_u16(_this, index);     return true;
-        case SEQ_CNTR_DTYPE_U32:     __i_priority_queue_rise_vector_u32(_this, index);     return true;
-        case SEQ_CNTR_DTYPE_UINTPTR: __i_priority_queue_rise_vector_uptr(_this, index);    return true;
-#ifdef JDSC_64BIT
-        case SEQ_CNTR_DTYPE_U64:     __i_priority_queue_rise_vector_u64(_this, index);     return true;
-#endif /* JDSC_64BIT */
-        case SEQ_CNTR_DTYPE_S8:      __i_priority_queue_rise_vector_s8(_this, index);      return true;
-        case SEQ_CNTR_DTYPE_S16:     __i_priority_queue_rise_vector_s16(_this, index);     return true;
-        case SEQ_CNTR_DTYPE_S32:     __i_priority_queue_rise_vector_s32(_this, index);     return true;
-#ifdef JDSC_64BIT
-        case SEQ_CNTR_DTYPE_S64:     __i_priority_queue_rise_vector_s64(_this, index);     return true;
-#endif /* JDSC_64BIT */
-        case SEQ_CNTR_DTYPE_STRUCT:
-        case SEQ_CNTR_DTYPE_UNION:   __i_priority_queue_rise_vector_addr(_this, index);    return true;
+        case PQ_ORDER_OPS: __i_priority_queue_rise_vector_addr(_this, index); return true;
+        case PQ_ORDER_F32: __i_priority_queue_rise_vector_f32(_this, index);  return true;
+        case PQ_ORDER_F64: __i_priority_queue_rise_vector_f64(_this, index);  return true;
+        case PQ_ORDER_SINT:
+            switch (v->step) {
+            case 1: __i_priority_queue_rise_vector_s8(_this, index);  return true;
+            case 2: __i_priority_queue_rise_vector_s16(_this, index); return true;
+            case 4: __i_priority_queue_rise_vector_s32(_this, index); return true;
+            case 8: __i_priority_queue_rise_vector_s64(_this, index); return true;
+            default: return false;
+            }
+        case PQ_ORDER_UINT:
+            switch (v->step) {
+            case 1: __i_priority_queue_rise_vector_u8(_this, index);  return true;
+            case 2: __i_priority_queue_rise_vector_u16(_this, index); return true;
+            case 4: __i_priority_queue_rise_vector_u32(_this, index); return true;
+            case 8: __i_priority_queue_rise_vector_u64(_this, index); return true;
+            default: return false;
+            }
         default: return false;
         }
     } else if (__CONTAINER_ADAPTOR_BASE_DEQUE == _this->id) {
@@ -1047,29 +1067,27 @@ bool i_priority_queue_push(i_priority_queue_t* _this, priority_queue_data_t data
             return true;
         }
 
-        if (SEQ_CNTR_DTYPE_INTPTR == d->dtype) {
-            __i_priority_queue_rise_deque_iptr(_this, index);
-            return true;
-        }
-
-        switch (d->dtype)
+        switch (__pq_order_of(d->dtype))
         {
-        case SEQ_CNTR_DTYPE_U8:      __i_priority_queue_rise_deque_u8(_this, index);      return true;
-        case SEQ_CNTR_DTYPE_U16:     __i_priority_queue_rise_deque_u16(_this, index);     return true;
-        case SEQ_CNTR_DTYPE_U32:     __i_priority_queue_rise_deque_u32(_this, index);     return true;
-        case SEQ_CNTR_DTYPE_UINTPTR: __i_priority_queue_rise_deque_uptr(_this, index);    return true;
-#ifdef JDSC_64BIT
-        case SEQ_CNTR_DTYPE_U64:     __i_priority_queue_rise_deque_u64(_this, index);     return true;
-#endif /* JDSC_64BIT */
-        case SEQ_CNTR_DTYPE_S8:      __i_priority_queue_rise_deque_s8(_this, index);      return true;
-        case SEQ_CNTR_DTYPE_S16:     __i_priority_queue_rise_deque_s16(_this, index);     return true;
-        case SEQ_CNTR_DTYPE_S32:     __i_priority_queue_rise_deque_s32(_this, index);     return true;
-        case SEQ_CNTR_DTYPE_INTPTR:  __i_priority_queue_rise_deque_iptr(_this, index);    return true;
-#ifdef JDSC_64BIT
-        case SEQ_CNTR_DTYPE_S64:     __i_priority_queue_rise_deque_s64(_this, index);     return true;
-#endif /* JDSC_64BIT */
-        case SEQ_CNTR_DTYPE_STRUCT:
-        case SEQ_CNTR_DTYPE_UNION:   __i_priority_queue_rise_deque_addr(_this, index);    return true;
+        case PQ_ORDER_OPS: __i_priority_queue_rise_deque_addr(_this, index); return true;
+        case PQ_ORDER_F32: __i_priority_queue_rise_deque_f32(_this, index);  return true;
+        case PQ_ORDER_F64: __i_priority_queue_rise_deque_f64(_this, index);  return true;
+        case PQ_ORDER_SINT:
+            switch (d->step) {
+            case 1: __i_priority_queue_rise_deque_s8(_this, index);  return true;
+            case 2: __i_priority_queue_rise_deque_s16(_this, index); return true;
+            case 4: __i_priority_queue_rise_deque_s32(_this, index); return true;
+            case 8: __i_priority_queue_rise_deque_s64(_this, index); return true;
+            default: return false;
+            }
+        case PQ_ORDER_UINT:
+            switch (d->step) {
+            case 1: __i_priority_queue_rise_deque_u8(_this, index);  return true;
+            case 2: __i_priority_queue_rise_deque_u16(_this, index); return true;
+            case 4: __i_priority_queue_rise_deque_u32(_this, index); return true;
+            case 8: __i_priority_queue_rise_deque_u64(_this, index); return true;
+            default: return false;
+            }
         default: return false;
         }
     }
@@ -1109,7 +1127,7 @@ priority_queue_t* __priority_queue_new(container_adaptor_base_t id, void* pbase,
             goto free_priority_queue;
         }
 
-        if ((dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(ops) || is_null(ops->__lt))) {
+        if ((dtype & SEQ_CNTR_DTYPE_MASK_OPS) && (is_null(ops) || is_null(ops->__lt))) {
             JDSC_ASSERT_NEW(0, "%s: The `ops->__lt` is required for struct/union element types!",
                             __func__);
             goto free_priority_queue;
@@ -1122,7 +1140,8 @@ priority_queue_t* __priority_queue_new(container_adaptor_base_t id, void* pbase,
         goto free_priority_queue;
     }
 
-    if (g_class_priority_queue_ops_sso() == priority_queue->ops) {
+    if (g_class_priority_queue_ops_sso() == priority_queue->ops ||
+        g_class_priority_queue_ops_sso_greater() == priority_queue->ops) {
         priority_queue->sso = true;
         switch (id) {
         case __CONTAINER_ADAPTOR_BASE_VECTOR: priority_queue->v->sso = true; break;

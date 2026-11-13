@@ -489,9 +489,7 @@ bool __i_deque_slot_write(const i_deque_t* _this, void* slot, deque_data_t data)
     case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
     case 2: *(uint16_t*)slot = (uint16_t)data; break;
     case 4: *(uint32_t*)slot = (uint32_t)data; break;
-#ifdef JDSC_64BIT
-    case 8: *(uint64_t*)slot = (uint64_t)data; break;
-#endif /* JDSC_64BIT */
+    case 8: __ds_token_store_8(slot, data); break;
     default: return false;
     }
     return true;
@@ -502,7 +500,7 @@ deque_data_t __i_deque_slot_read(const i_deque_t* _this, const void* slot)
 {
     const deque_dtype_t dtype = _this->dtype;
 
-    if (dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
+    if (dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) {
         return (deque_data_t)(uintptr_t)slot;
     } else if (dtype & SEQ_CNTR_DTYPE_MASK_SINT) {
         switch (_this->step)
@@ -510,20 +508,16 @@ deque_data_t __i_deque_slot_read(const i_deque_t* _this, const void* slot)
         case 1: return (int8_t)*(const int8_t*)slot;
         case 2: return (int16_t)*(const int16_t*)slot;
         case 4: return (int32_t)*(const int32_t*)slot;
-#ifdef JDSC_64BIT
-        case 8: return (int64_t)*(const int64_t*)slot;
-#endif /* JDSC_64BIT */
+        case 8: return __ds_token_load_8(slot);
         default: return (deque_data_t)(uintptr_t)slot;
         }
-    } else if (dtype & SEQ_CNTR_DTYPE_MASK_UINT) {
+    } else if (dtype & (SEQ_CNTR_DTYPE_MASK_UINT | SEQ_CNTR_DTYPE_MASK_FLOAT)) {
         switch (_this->step)
         {
         case 1: return (uint8_t)*(const uint8_t*)slot;
         case 2: return (uint16_t)*(const uint16_t*)slot;
         case 4: return (uint32_t)*(const uint32_t*)slot;
-#ifdef JDSC_64BIT
-        case 8: return (uint64_t)*(const uint64_t*)slot;
-#endif /* JDSC_64BIT */
+        case 8: return __ds_token_load_8(slot);
         default: return (deque_data_t)(uintptr_t)slot;
         }
     } else {
@@ -538,9 +532,7 @@ bool __i_deque_slot_equal(deque_step_t step, deque_data_t data, const void* slot
     case 1: return (uint8_t)data  == *(const uint8_t*)slot;
     case 2: return (uint16_t)data == *(const uint16_t*)slot;
     case 4: return (uint32_t)data == *(const uint32_t*)slot;
-#ifdef JDSC_64BIT
-    case 8: return (uint64_t)data == *(const uint64_t*)slot;
-#endif /* JDSC_64BIT */
+    case 8: return __ds_token_equal_8(data, slot);
     default: return false;
     }
 }
@@ -588,7 +580,7 @@ bool __i_deque_replace(i_deque_t* _this, uint8_t* slot, deque_data_t data)
     if (_this->sso) {
         if (data == __ds_ops_char_addr_sso((deque_data_t)slot))
             return true;
-    } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && data == (deque_data_t)slot) {
+    } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) && data == (deque_data_t)slot) {
         return true;
     } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data)
                && !is_null(_this->ops->free_data) && data == __i_deque_slot_read(_this, slot)) {

@@ -1,6 +1,7 @@
 /*
   Multimap Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,8 +21,10 @@
 #ifndef __J_MULTIMAP_H
 #define __J_MULTIMAP_H
 
-#include <multimap/multimap_ops.h>
 #include <iterator/iterator.h>
+#include <associative_container/associative_container.h>
+
+typedef class_associative_container_ops_t class_multimap_ops_t;
 
 typedef struct multimap_iterator_kv {
     union {
@@ -113,5 +116,46 @@ const class_multimap_t* class_multimap_ins(void);
 #define MULTIMAP_NEW()          __multimap_new(NULL)
 #define MULTIMAP_NEW_OPS(_ops)  __multimap_new((_ops))
 #define MULTIMAP_DELETE(_pptr)  do { __multimap_delete((_pptr)); } while(0)
+
+#define MULTIMAP_NEW_KV_OPS(_ops_key, _ops_value) \
+        __multimap_new(&(class_multimap_ops_t[1]){ \
+            class_associative_container_ops_compose((_ops_key), (_ops_value)) \
+        }[0])
+
+/*
+    Keys are ordered ascending by default.
+
+    _ktype/_vtype includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    MULTIMAP_NEW_KV(_ktype, _vtype) like std::multimap<_ktype, _vtype>
+    Such as: multimap_t* demo = MULTIMAP_NEW_KV(string, double);
+    Such as: multimap_t* demo = MULTIMAP_NEW_KV(int16_t, float);
+    Such as: multimap_t* demo = MULTIMAP_NEW_KV(float, ssize_t);
+ */
+#define MULTIMAP_NEW_KV(_ktype, _vtype) \
+        MULTIMAP_NEW_KV_OPS(g_class_associative_container_key_ops_##_ktype(), \
+                            g_class_associative_container_value_ops_##_vtype())
+
+/*
+    Keys are ordered descending.
+
+    _ktype/_vtype includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    MULTIMAP_NEW_KV_GT(_ktype, _vtype) like std::multimap<_ktype, _vtype, std::greater<_ktype>>
+    Such as: multimap_t* demo = MULTIMAP_NEW_KV_GT(string, double);
+    Such as: multimap_t* demo = MULTIMAP_NEW_KV_GT(int16_t, float);
+    Such as: multimap_t* demo = MULTIMAP_NEW_KV_GT(float, ssize_t);
+ */
+#define MULTIMAP_NEW_KV_GT(_ktype, _vtype) \
+        MULTIMAP_NEW_KV_OPS(g_class_associative_container_key_ops_##_ktype##_greater(), \
+                            g_class_associative_container_value_ops_##_vtype())
 
 #endif /* __J_MULTIMAP_H */

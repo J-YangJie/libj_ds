@@ -17,7 +17,7 @@ static int failures = 0;
 
 #define TEST_INT_BASE(_base) do { \
     enum { N = 1000 }; \
-    queue_t* q = QUEUE_NEW_T(queue_data_t, _base); \
+    queue_t* q = QUEUE_NEW_T(intptr_t, _base); \
     int i; \
     CHECK(NULL != q, "queue constructor " #_base); \
     if (NULL == q) break; \
@@ -110,8 +110,8 @@ static void test_string_ops(void)
 
 static void test_swap(void)
 {
-    queue_t* a = QUEUE_NEW_T(queue_data_t, DEQUE);
-    queue_t* b = QUEUE_NEW_T(queue_data_t, DEQUE);
+    queue_t* a = QUEUE_NEW_T(intptr_t, DEQUE);
+    queue_t* b = QUEUE_NEW_T(intptr_t, DEQUE);
 
     CHECK(NULL != a && NULL != b, "swap constructors");
     if (!a || !b)

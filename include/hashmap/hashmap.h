@@ -20,8 +20,8 @@
 #ifndef __J_HASH_MAP_H
 #define __J_HASH_MAP_H
 
-#include <hashmap/hashmap_ops.h>
 #include <iterator/iterator.h>
+#include <hashmap/hashmap_ops.h>
 
 typedef struct hashmap_iterator_kv {
     union {
@@ -146,5 +146,26 @@ const class_hashmap_t* class_hashmap_ins(void);
         __hashmap_new((_ops), (_bucket_count_init), (_bucket_count_max), (_load_factor), NULL)
 #define HASHMAP_NEW_OPS_4(_ops, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
         __hashmap_new((_ops), (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
+
+#define HASHMAP_NEW_KV_OPS(_ops_key, _ops_value) \
+        __hashmap_new(&(class_hashmap_ops_t[1]){ \
+            class_hashmap_ops_compose((_ops_key), (_ops_value)) \
+        }[0], 0, 0, 0.0f, NULL)
+
+/*
+    _ktype/_vtype includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    HASHMAP_NEW_KV(_ktype, _vtype) like std::unordered_map<_ktype, _vtype>
+    Such as: hashmap_t* demo = HASHMAP_NEW_KV(string, double);
+    Such as: hashmap_t* demo = HASHMAP_NEW_KV(int16_t, float);
+    Such as: hashmap_t* demo = HASHMAP_NEW_KV(float, ssize_t);
+ */
+#define HASHMAP_NEW_KV(_ktype, _vtype) \
+        HASHMAP_NEW_KV_OPS(g_class_hashmap_key_ops_##_ktype(), \
+                           g_class_hashmap_value_ops_##_vtype())
 
 #endif /* __J_HASH_MAP_H */

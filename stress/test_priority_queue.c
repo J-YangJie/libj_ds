@@ -12,7 +12,7 @@ static int failures;
 static void test_base(int deque_base)
 {
     priority_queue_t* pq = deque_base
-        ? PRIORITY_QUEUE_NEW_T(priority_queue_data_t, DEQUE)
+        ? PRIORITY_QUEUE_NEW_T(intptr_t, DEQUE)
         : PRIORITY_QUEUE_NEW();
     priority_queue_data_t vals[] = { 5, 3, 8, 1, 9, 2 };
     int i;
@@ -63,7 +63,7 @@ static void test_string_sso(int deque_base)
 {
     static const char* order[] = { "watermelon-long-string", "cherry", "banana", "apple" };
     priority_queue_t* pq = deque_base
-        ? PRIORITY_QUEUE_NEW_OPS_T(g_class_priority_queue_ops_sso(), ds_sso_t, DEQUE)
+        ? PRIORITY_QUEUE_NEW_SSO_T(DEQUE)
         : PRIORITY_QUEUE_NEW_SSO();
     int i;
 
@@ -124,7 +124,7 @@ static void test_string_sso(int deque_base)
 
     {
         priority_queue_t* other = deque_base
-            ? PRIORITY_QUEUE_NEW_OPS_T(g_class_priority_queue_ops_sso(), ds_sso_t, DEQUE)
+            ? PRIORITY_QUEUE_NEW_SSO_T(DEQUE)
             : PRIORITY_QUEUE_NEW_SSO();
         CHECK(other != NULL, "sso other new");
         if (other) {
@@ -161,7 +161,10 @@ static void test_swap(void)
 typedef struct { int64_t key; char pad[16]; } big24_t;
 
 static bool big24_valid(priority_queue_data_t d) { return d != 0; }
-static bool big24_lt(priority_queue_data_t l, priority_queue_data_t r) { return l < r; }
+static bool big24_lt(priority_queue_data_t l, priority_queue_data_t r)
+{
+    return ((const big24_t*)l)->key < ((const big24_t*)r)->key;
+}
 static bool big24_copy(priority_queue_data_t in, priority_queue_data_t* out)
 {
     memcpy(out, (void*)in, sizeof(big24_t));
@@ -179,8 +182,8 @@ static const class_priority_queue_ops_t big24_ops = {
 static void test_generic_step(int deque_base)
 {
     priority_queue_t* pq = deque_base
-        ? PRIORITY_QUEUE_NEW_OPS_T(&big24_ops, big24_t, DEQUE)
-        : PRIORITY_QUEUE_NEW_OPS_T(&big24_ops, big24_t, VECTOR);
+        ? PRIORITY_QUEUE_NEW_OPS_COMPLATE(&big24_ops, SEQ_CNTR_DTYPE_STRUCT, big24_t, DEQUE, 0)
+        : PRIORITY_QUEUE_NEW_OPS_COMPLATE(&big24_ops, SEQ_CNTR_DTYPE_STRUCT, big24_t, VECTOR, 0);
     big24_t v[5];
     static const int order[] = { 5, 1, 9, 3, 7 };
     int i;

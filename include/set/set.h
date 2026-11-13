@@ -1,6 +1,7 @@
 /*
   Set Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,8 +21,10 @@
 #ifndef __J_SET_H
 #define __J_SET_H
 
-#include <set/set_ops.h>
 #include <iterator/iterator.h>
+#include <associative_container/associative_container.h>
+
+typedef class_associative_container_key_ops_t class_set_ops_t;
 
 typedef struct set_iterator {
     union {
@@ -91,7 +94,38 @@ const class_set_t* class_set_ins(void);
 #define cset               g_class_set()
 #define SET_NEW()          __set_new(NULL)
 #define SET_NEW_OPS(_ops)  __set_new((_ops))
-#define SET_NEW_STRING()   __set_new(g_class_set_ops_string())
 #define SET_DELETE(_pptr)  do { __set_delete((_pptr)); } while(0)
+
+/*
+    Keys are ordered ascending by default.
+
+    _type includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    SET_NEW_T(_type) like std::set<_type>
+    Such as: set_t* demo = SET_NEW_T(string);
+    Such as: set_t* demo = SET_NEW_T(int16_t);
+    Such as: set_t* demo = SET_NEW_T(float);
+ */
+#define SET_NEW_T(_type)     SET_NEW_OPS(g_class_associative_container_key_ops_##_type())
+
+/*
+    Keys are ordered descending.
+
+    _type includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    SET_NEW_T_GT(_type) like std::set<_type, std::greater<_type>>
+    Such as: set_t* demo = SET_NEW_T_GT(string);
+    Such as: set_t* demo = SET_NEW_T_GT(int16_t);
+    Such as: set_t* demo = SET_NEW_T_GT(float);
+ */
+#define SET_NEW_T_GT(_type)  SET_NEW_OPS(g_class_associative_container_key_ops_##_type##_greater())
 
 #endif /* __J_SET_H */

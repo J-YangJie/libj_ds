@@ -1,6 +1,7 @@
 /*
   Multiset Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,8 +21,10 @@
 #ifndef __J_MULTISET_H
 #define __J_MULTISET_H
 
-#include <multiset/multiset_ops.h>
 #include <iterator/iterator.h>
+#include <associative_container/associative_container.h>
+
+typedef class_associative_container_key_ops_t class_multiset_ops_t;
 
 typedef struct multiset_iterator {
     union {
@@ -91,7 +94,38 @@ const class_multiset_t* class_multiset_ins(void);
 #define cmultiset               g_class_multiset()
 #define MULTISET_NEW()          __multiset_new(NULL)
 #define MULTISET_NEW_OPS(_ops)  __multiset_new((_ops))
-#define MULTISET_NEW_STRING()   __multiset_new(g_class_multiset_ops_string())
 #define MULTISET_DELETE(_pptr)  do { __multiset_delete((_pptr)); } while(0)
+
+/*
+    Keys are ordered ascending by default.
+
+    _type includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    MULTISET_NEW_T(_type) like std::multiset<_type>
+    Such as: multiset_t* demo = MULTISET_NEW_T(string);
+    Such as: multiset_t* demo = MULTISET_NEW_T(int16_t);
+    Such as: multiset_t* demo = MULTISET_NEW_T(float);
+ */
+#define MULTISET_NEW_T(_type)     MULTISET_NEW_OPS(g_class_associative_container_key_ops_##_type())
+
+/*
+    Keys are ordered descending.
+
+    _type includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/string
+
+    MULTISET_NEW_T_GT(_type) like std::multiset<_type, std::greater<_type>>
+    Such as: multiset_t* demo = MULTISET_NEW_T_GT(string);
+    Such as: multiset_t* demo = MULTISET_NEW_T_GT(int16_t);
+    Such as: multiset_t* demo = MULTISET_NEW_T_GT(float);
+ */
+#define MULTISET_NEW_T_GT(_type)  MULTISET_NEW_OPS(g_class_associative_container_key_ops_##_type##_greater())
 
 #endif /* __J_MULTISET_H */

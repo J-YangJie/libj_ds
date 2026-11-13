@@ -17,7 +17,7 @@ static int failures = 0;
 
 #define TEST_INT_BASE(_base) do { \
     enum { N = 1000 }; \
-    stack_t* s = STACK_NEW_T(int, _base); \
+    stack_t* s = STACK_NEW_T(int32_t, _base); \
     int i; \
     CHECK(NULL != s, "stack constructor " #_base); \
     if (NULL == s) break; \
@@ -66,7 +66,7 @@ static void test_default_token(void)
 
 static void test_sso(void)
 {
-    stack_t* s = STACK_NEW_OPS_T(g_class_stack_ops_sso(), ds_sso_t, LIST);
+    stack_t* s = STACK_NEW_SSO_T(LIST);
     stack_value_t top;
 
     CHECK(NULL != s, "sso constructor");
@@ -89,7 +89,7 @@ static void test_sso(void)
 
 static void test_string_ops(void)
 {
-    stack_t* s = STACK_NEW_OPS_T(g_class_deque_ops_string(), stack_data_t, DEQUE);
+    stack_t* s = STACK_NEW_CHAR_T(DEQUE);
     stack_value_t top;
 
     CHECK(NULL != s, "string ops constructor");
@@ -110,7 +110,7 @@ static void test_ops_t_bases(void)
     stack_t* s;
     int i;
 
-    s = STACK_NEW_OPS_T(NULL, int, DEQUE);
+    s = STACK_NEW_OPS_T(NULL, int32_t, DEQUE);
     CHECK(NULL != s, "ops_t deque constructor");
     if (s) {
         for (i = 0; i < N; ++i)
@@ -119,7 +119,7 @@ static void test_ops_t_bases(void)
         STACK_DELETE(&s);
     }
 
-    s = STACK_NEW_OPS_T(NULL, int, LIST);
+    s = STACK_NEW_OPS_T(NULL, int32_t, LIST);
     CHECK(NULL != s, "ops_t list constructor");
     if (s) {
         for (i = 0; i < N; ++i)
@@ -128,7 +128,7 @@ static void test_ops_t_bases(void)
         STACK_DELETE(&s);
     }
 
-    s = STACK_NEW_OPS_T(g_class_deque_ops_string(), char*, DEQUE);
+    s = STACK_NEW_CHAR_T(DEQUE);
     CHECK(NULL != s, "ops_t string constructor");
     if (s) {
         stack_value_t top;
@@ -142,7 +142,7 @@ static void test_ops_t_bases(void)
 static void test_vector_base(void)
 {
     enum { N = 1000 };
-    stack_t* s = STACK_NEW_OPS_T(NULL, int, VECTOR);
+    stack_t* s = STACK_NEW_OPS_T(NULL, int32_t, VECTOR);
     int i;
 
     CHECK(NULL != s, "vector base constructor");

@@ -1,5 +1,5 @@
 /*
-  Sequence Containers Common Operations Defines
+  Container Adaptors Common Defines
   Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -20,7 +20,7 @@
 #ifndef __J_CONTAINER_ADAPTOR_H
 #define __J_CONTAINER_ADAPTOR_H
 
-#include <sequence_container/sequence_container.h>
+#include <container_adaptor/container_adaptor_ops.h>
 
 typedef enum container_adaptor_base {
     __CONTAINER_ADAPTOR_BASE_VECTOR = 1,

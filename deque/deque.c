@@ -54,9 +54,7 @@ bool __i_deque_slot_write_n(const i_deque_t* _this, deque_iterator_t pos, deque_
             case 1: *(uint8_t*)pos.cur  = (uint8_t)data;  break;
             case 2: *(uint16_t*)pos.cur = (uint16_t)data; break;
             case 4: *(uint32_t*)pos.cur = (uint32_t)data; break;
-#ifdef JDSC_64BIT
-            case 8: *(uint64_t*)pos.cur = (uint64_t)data; break;
-#endif /* JDSC_64BIT */
+            case 8: __ds_token_store_8(pos.cur, data); break;
             default: return false;
             }
 
@@ -91,7 +89,7 @@ bool __i_deque_slot_write_n_range(const i_deque_t* _this, deque_iterator_t dest,
         return true;
     }
 
-    if (_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) {
+    if (_this->dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) {
         if (_this->sso) {
             while (n-- > 0) {
                 if (ds_ops_copy_data_same_sso((deque_data_t)src.cur, (deque_data_t*)dest.cur))

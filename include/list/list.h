@@ -148,22 +148,38 @@ typedef struct class_list {
     list_size_t (*clear)(list_t* _this);
 } class_list_t;
 
-list_t* __list_new(const class_list_ops_t* ops, list_dtype_t data_type, list_step_t step, list_align_t align);
+list_t* __list_new(const class_list_ops_t* ops,
+                   /* sequence_container_data_type_t */ list_dtype_t data_type,
+                   list_step_t step, list_align_t align);
 void    __list_delete(list_t** _this);
 const class_list_t* class_list_ins(void);
 #define g_class_list()               class_list_ins()
 #define clist                        g_class_list()
-#define g_class_list_ops_string()    g_class_sequence_container_ops_string()
+#define g_class_list_ops_chars()     g_class_sequence_container_ops_chars()
 #define g_class_list_ops_sso()       g_class_sequence_container_ops_sso()
-#define LIST_NEW_COMPLATE(_type_id, _type)            __list_new(NULL,   (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
-#define LIST_NEW_OPS_COMPLATE(_ops, _type_id, _type)  __list_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
-#define LIST_NEW_T(_type)            LIST_NEW_OPS_COMPLATE((NULL), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
-#define LIST_NEW_OPS_T(_ops, _type)  LIST_NEW_OPS_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
-#define LIST_NEW()                   LIST_NEW_OPS_T(NULL,   list_data_t)
-#define LIST_NEW_OPS(_ops)           LIST_NEW_OPS_T((_ops), list_data_t)
-#define LIST_NEW_CHAR()              LIST_NEW_OPS_T(g_class_list_ops_string(), list_data_t)
-#define LIST_NEW_SSO()               LIST_NEW_OPS_T(g_class_list_ops_sso(),    ds_sso_t)
-#define LIST_NEW_STRING()            LIST_NEW_SSO()
+#define LIST_NEW_COMPLATE(_ops, _type_id, _type)  __list_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
+#define LIST_NEW_OPS_T(_ops, _type)  LIST_NEW_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
+#define LIST_NEW()                   LIST_NEW_OPS_T(NULL,   intptr_t)
+#define LIST_NEW_OPS(_ops)           LIST_NEW_OPS_T((_ops), intptr_t)
 #define LIST_DELETE(_pptr)           do { __list_delete((_pptr)); } while(0)
+
+/*
+    _type includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/ds_sso_t(string optimization)
+
+    LIST_NEW_T(_type) like std::list<_type>
+    Such as: list_t* demo = LIST_NEW_T(ds_sso_t);
+    Such as: list_t* demo = LIST_NEW_T(int16_t);
+    Such as: list_t* demo = LIST_NEW_T(float);
+ */
+#define LIST_NEW_T(_type)            LIST_NEW_OPS_T(g_class_sequence_container_ops_##_type(), _type)
+
+/* About string */
+#define LIST_NEW_CHAR()              LIST_NEW_OPS_T(g_class_list_ops_chars(), intptr_t)
+#define LIST_NEW_SSO()               LIST_NEW_T(ds_sso_t)
+#define LIST_NEW_STRING()            LIST_NEW_SSO()
 
 #endif /* __J_LIST_H */

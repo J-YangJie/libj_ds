@@ -45,6 +45,7 @@ JDSC_STATIC_ASSERT(sizeof(hashmap_r_iterator_kv_t) <= sizeof(bucket_node_t),    
 
 struct hashmap {
     const class_hashmap_ops_t* ops;
+    class_hashmap_ops_t ops_storage;
     hashmap_node_t*  head;
     hashmap_size_t   size;
     hashmap_bcount_t bucket_count;
@@ -1010,7 +1011,12 @@ hashmap_t* __hashmap_new(const class_hashmap_ops_t* ops,
         }
     }
 
-    hashmap->ops  = ops;
+    if (is_null(ops)) {
+        hashmap->ops = NULL;
+    } else {
+        hashmap->ops_storage = *ops;
+        hashmap->ops = &hashmap->ops_storage;
+    }
     hashmap->pi_s = -1;
     hashmap->pi_e = -1;
 

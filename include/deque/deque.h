@@ -146,22 +146,38 @@ typedef struct class_deque {
     deque_size_t (*clear)(deque_t* _this);
 } class_deque_t;
 
-deque_t* __deque_new(const class_deque_ops_t* ops, deque_dtype_t data_type, deque_step_t step, deque_align_t align);
+deque_t* __deque_new(const class_deque_ops_t* ops,
+                     /* sequence_container_data_type_t */ deque_dtype_t data_type,
+                     deque_step_t step, deque_align_t align);
 void     __deque_delete(deque_t** _this);
 const class_deque_t* class_deque_ins(void);
 #define g_class_deque()               class_deque_ins()
 #define cdeque                        g_class_deque()
-#define g_class_deque_ops_string()    g_class_sequence_container_ops_string()
+#define g_class_deque_ops_chars()     g_class_sequence_container_ops_chars()
 #define g_class_deque_ops_sso()       g_class_sequence_container_ops_sso()
-#define DEQUE_NEW_COMPLATE(_type_id, _type)            __deque_new(NULL,   (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
-#define DEQUE_NEW_OPS_COMPLATE(_ops, _type_id, _type)  __deque_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
-#define DEQUE_NEW_T(_type)            DEQUE_NEW_OPS_COMPLATE((NULL), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
-#define DEQUE_NEW_OPS_T(_ops, _type)  DEQUE_NEW_OPS_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
-#define DEQUE_NEW()                   DEQUE_NEW_OPS_T(NULL,   deque_data_t)
-#define DEQUE_NEW_OPS(_ops)           DEQUE_NEW_OPS_T((_ops), deque_data_t)
-#define DEQUE_NEW_CHAR()              DEQUE_NEW_OPS_T(g_class_deque_ops_string(), deque_data_t)
-#define DEQUE_NEW_SSO()               DEQUE_NEW_OPS_T(g_class_deque_ops_sso(),    ds_sso_t)
-#define DEQUE_NEW_STRING()            DEQUE_NEW_SSO()
+#define DEQUE_NEW_COMPLATE(_ops, _type_id, _type)  __deque_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
+#define DEQUE_NEW_OPS_T(_ops, _type)  DEQUE_NEW_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
+#define DEQUE_NEW()                   DEQUE_NEW_OPS_T(NULL,   intptr_t)
+#define DEQUE_NEW_OPS(_ops)           DEQUE_NEW_OPS_T((_ops), intptr_t)
 #define DEQUE_DELETE(_pptr)           do { __deque_delete((_pptr)); } while(0)
+
+/*
+    _type includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/ds_sso_t(string optimization)
+
+    DEQUE_NEW_T(_type) like std::deque<_type>
+    Such as: deque_t* demo = DEQUE_NEW_T(ds_sso_t);
+    Such as: deque_t* demo = DEQUE_NEW_T(int16_t);
+    Such as: deque_t* demo = DEQUE_NEW_T(float);
+ */
+#define DEQUE_NEW_T(_type)            DEQUE_NEW_OPS_T(g_class_sequence_container_ops_##_type(), _type)
+
+/* About string */
+#define DEQUE_NEW_CHAR()              DEQUE_NEW_OPS_T(g_class_deque_ops_chars(), intptr_t)
+#define DEQUE_NEW_SSO()               DEQUE_NEW_T(ds_sso_t)
+#define DEQUE_NEW_STRING()            DEQUE_NEW_SSO()
 
 #endif /* __J_DEQUE_H */

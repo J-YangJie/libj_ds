@@ -140,22 +140,38 @@ typedef struct class_vector {
     vector_size_t (*clear)(vector_t* _this);
 } class_vector_t;
 
-vector_t* __vector_new(const class_vector_ops_t* ops, vector_dtype_t data_type, vector_step_t step, vector_align_t align, vector_size_t capacity_init);
+vector_t* __vector_new(const class_vector_ops_t* ops,
+                       /* sequence_container_data_type_t */ vector_dtype_t data_type,
+                       vector_step_t step, vector_align_t align, vector_size_t capacity_init);
 void      __vector_delete(vector_t** _this);
 const class_vector_t* class_vector_ins(void);
 #define g_class_vector()               class_vector_ins()
 #define cvector                        g_class_vector()
-#define g_class_vector_ops_string()    g_class_sequence_container_ops_string()
+#define g_class_vector_ops_chars()     g_class_sequence_container_ops_chars()
 #define g_class_vector_ops_sso()       g_class_sequence_container_ops_sso()
-#define VECTOR_NEW_COMPLATE(_type_id, _type, _capacity_init)            __vector_new(NULL,   (_type_id), sizeof(_type), JDSC_ALIGNOF(_type), (_capacity_init))
-#define VECTOR_NEW_OPS_COMPLATE(_ops, _type_id, _type, _capacity_init)  __vector_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type), (_capacity_init))
-#define VECTOR_NEW_T(_type)            VECTOR_NEW_OPS_COMPLATE((NULL), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type, 0)
-#define VECTOR_NEW_OPS_T(_ops, _type)  VECTOR_NEW_OPS_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type, 0)
-#define VECTOR_NEW()                   VECTOR_NEW_OPS_T(NULL,   vector_data_t)
-#define VECTOR_NEW_OPS(_ops)           VECTOR_NEW_OPS_T((_ops), vector_data_t)
-#define VECTOR_NEW_CHAR()              VECTOR_NEW_OPS_T(g_class_vector_ops_string(), vector_data_t)
-#define VECTOR_NEW_SSO()               VECTOR_NEW_OPS_T(g_class_vector_ops_sso(),    ds_sso_t)
+#define VECTOR_NEW_COMPLATE(_ops, _type_id, _type, _capacity_init)  __vector_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type), (_capacity_init))
+#define VECTOR_NEW_OPS_T(_ops, _type)  VECTOR_NEW_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type, 0)
+#define VECTOR_NEW()                   VECTOR_NEW_OPS_T(NULL,   intptr_t)
+#define VECTOR_NEW_OPS(_ops)           VECTOR_NEW_OPS_T((_ops), intptr_t)
+#define VECTOR_DELETE(_pptr)           do { __vector_delete((_pptr)); } while (0)
+
+/*
+    _type includes:
+    1. uint8_t/uint16_t/uint32_t/uint64_t
+    2. int8_t/int16_t/int32_t/int64_t
+    3. uintptr_t/intptr_t/size_t/ssize_t
+    4. float/double/ds_sso_t(string optimization)
+
+    VECTOR_NEW_T(_type) like std::vector<_type>
+    Such as: vector_t* demo = VECTOR_NEW_T(ds_sso_t);
+    Such as: vector_t* demo = VECTOR_NEW_T(int16_t);
+    Such as: vector_t* demo = VECTOR_NEW_T(float);
+ */
+#define VECTOR_NEW_T(_type)            VECTOR_NEW_OPS_T(g_class_sequence_container_ops_##_type(), _type)
+
+/* About string */
+#define VECTOR_NEW_CHAR()              VECTOR_NEW_OPS_T(g_class_vector_ops_chars(), intptr_t)
+#define VECTOR_NEW_SSO()               VECTOR_NEW_T(ds_sso_t)
 #define VECTOR_NEW_STRING()            VECTOR_NEW_SSO()
-#define VECTOR_DELETE(_pptr)           do { __vector_delete((_pptr)); } while(0)
 
 #endif /* __J_VECTOR_H */

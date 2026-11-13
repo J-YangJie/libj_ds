@@ -99,12 +99,12 @@ void i_priority_queue_swap(i_priority_queue_t* _this, i_priority_queue_t* other)
         JDSC_ASSERT(_this->ops == other->ops); /* Include sso */
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_VECTOR:
-            JDSC_ASSERT(__sequence_container_dtype_swap_compatible(_this->v->dtype, other->v->dtype)
+            JDSC_ASSERT(__container_adaptor_dtype_swap_compatible(_this->v->dtype, other->v->dtype)
                         && _this->v->step  == other->v->step
                         && _this->v->align == other->v->align);
             break;
         case __CONTAINER_ADAPTOR_BASE_DEQUE:
-            JDSC_ASSERT(__sequence_container_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
+            JDSC_ASSERT(__container_adaptor_dtype_swap_compatible(_this->d->dtype, other->d->dtype)
                         && _this->d->step  == other->d->step
                         && _this->d->align == other->d->align);
             break;

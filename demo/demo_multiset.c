@@ -68,7 +68,7 @@ static void demo_base_and_iterator(void)
 
 static void demo_about_insert(void)
 {
-    multiset_t* demo = MULTISET_NEW_STRING();
+    multiset_t* demo = MULTISET_NEW_T(string);
 
     cds->insert(demo, _tok("j"));
     cds->insert(demo, _tok("and"));
@@ -92,7 +92,7 @@ static bool demo_remove_if_condition_k(ds_key_t key)
 
 static void demo_about_erase(void)
 {
-    multiset_t* demo = MULTISET_NEW_STRING();
+    multiset_t* demo = MULTISET_NEW_T(string);
     multiset_iterator_t it;
     multiset_size_t ret;
 

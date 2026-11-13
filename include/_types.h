@@ -27,7 +27,7 @@
 /* common */
 typedef uintptr_t  ds_uintptr_t;
 typedef intptr_t   ds_data_t;
-typedef intptr_t   ds_hash_t;
+typedef uintptr_t  ds_hash_t;
 typedef ds_data_t  ds_key_t;
 typedef ds_data_t  ds_value_t;
 typedef ssize_t    ds_size_t;

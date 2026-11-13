@@ -42,6 +42,7 @@ JDSC_STATIC_ASSERT(sizeof(multimap_r_iterator_kv_t) <= sizeof(multimap_node_t), 
 
 struct multimap {
     const class_multimap_ops_t* ops;
+    class_multimap_ops_t ops_storage;
     struct rb_root root;
     multimap_size_t size;
 };
@@ -680,7 +681,12 @@ multimap_t* __multimap_new(const class_multimap_ops_t* ops)
         }
     }
 
-    multimap->ops  = ops;
+    if (is_null(ops)) {
+        multimap->ops = NULL;
+    } else {
+        multimap->ops_storage = *ops;
+        multimap->ops = &multimap->ops_storage;
+    }
     multimap->root = RB_ROOT;
     return multimap;
 
