@@ -86,8 +86,9 @@ const class_stack_t* class_stack_ins(void)
     static const class_stack_t ins = {
         .size    = cstack_size,
         .__empty = __cstack_empty,
-        .top     = cstack_top,
         .push    = cstack_push,
+        .__top   = __cstack_top,
+        .top     = cstack_top,
         .pop     = cstack_pop,
         .swap    = cstack_swap,
         .clear   = cstack_clear,

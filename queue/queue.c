@@ -83,9 +83,11 @@ const class_queue_t* class_queue_ins(void)
     static const class_queue_t ins = {
         .size    = cqueue_size,
         .__empty = __cqueue_empty,
-        .front   = cqueue_front,
-        .back    = cqueue_back,
         .push    = cqueue_push,
+        .__back  = __cqueue_back,
+        .back    = cqueue_back,
+        .__front = __cqueue_front,
+        .front   = cqueue_front,
         .pop     = cqueue_pop,
         .swap    = cqueue_swap,
         .clear   = cqueue_clear,

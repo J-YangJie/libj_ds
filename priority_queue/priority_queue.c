@@ -1183,6 +1183,7 @@ const class_priority_queue_t* class_priority_queue_ins(void)
         .size    = cpqueue_size,
         .__empty = __cpqueue_empty,
         .push    = cpqueue_push,
+        .__top   = __cpqueue_top,
         .top     = cpqueue_top,
         .pop     = cpqueue_pop,
         .swap    = cpqueue_swap,
