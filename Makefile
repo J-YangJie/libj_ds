@@ -100,7 +100,6 @@ endif
 
 ifneq ($(findstring y, $(WITH_VECTOR)$(WITH_DEQUE)),)
 OBJS += sort/sort.o
-OBJS += sort/sort_seq.o
 endif
 
 CFLAGS += -Iinclude

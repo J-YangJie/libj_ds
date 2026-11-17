@@ -22,7 +22,6 @@
 
 #include <stddef.h> /* ptrdiff_t */
 #include <_compiler.h>
-#include <sort/sort_intro.h>
 
 #ifndef is_null
 #define is_null(X) (!(X))
@@ -503,22 +502,8 @@ bool i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data
 
 
 
-/* ============================================================================
- * 排序钩子 + 便捷展开
- *
- * 容器侧这一组只描述「本容器怎么走路 + 怎么从迭代器落到元素上」：
- *   add/next/prev/dist/eq/lt  —— 纯迭代器操作，与元素类型无关
- *   get(type, it)             —— 取元素的 type 左值；容器知道元素在哪，type 由调用点给
- * 剩下 type / move / less 才是元素类型与排序方向的事。
- *
- * 排序迭代器取裸 type* —— 和 STL 的 vector<T>::iterator 就是 T* 一样，所以 iter 要按
- * 类型展开（typedef），这也是唯一没法固定名字的一项。带上 step 的 vector_iterator_t
- * 也能通用，但每个元素多一次乘法和一次结构体读写，实测「已升序」输入上慢 70%+。
- *
- * 用法：
- *   __i_vector_sort_define(sort_vt_int, vector_data_t, VT_MOVE, VT_LESS)
- *   sort_vt_int((vector_data_t*)cvector_begin(v).cur, (vector_data_t*)cvector_end(v).cur);
- * ========================================================================== */
+#include <sort/sort_macro.h>
+
 #define __i_vector_sort_get(type, it)  (*(type*)(it))
 #define __i_vector_sort_add(it, n)     ((it) + (n))
 #define __i_vector_sort_next(it)       ((it) + 1)
@@ -527,12 +512,28 @@ bool i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data
 #define __i_vector_sort_eq(a, b)       ((a) == (b))
 #define __i_vector_sort_lt(a, b)       ((a) < (b))
 
-#define __i_vector_sort_define(name, type, move, less)           \
-    typedef type* name##_vit;                                    \
-    __i_sort_define(name, type, name##_vit, __i_vector_sort_add, \
-                    __i_vector_sort_next, __i_vector_sort_prev,  \
-                    __i_vector_sort_dist, __i_vector_sort_eq,    \
-                    __i_vector_sort_get, move, less, __i_vector_sort_lt)
+#define __i_vector_sort_define_move(name, type, less, move)                     \
+    typedef type* __i_##name##_vector_iter;                                     \
+    __i_sort_define(name, type, less, move,                                     \
+                    __i_##name##_vector_iter,                                   \
+                    __i_vector_sort_add, __i_vector_sort_next,                  \
+                    __i_vector_sort_prev, __i_vector_sort_dist,                 \
+                    __i_vector_sort_eq, __i_vector_sort_lt,                     \
+                    __i_vector_sort_get)                                        \
+    HEADER_STATIC_INLINE void name(vector_iterator_t _first,                    \
+                                   vector_iterator_t _last)                     \
+    {                                                                           \
+        __algo_sort_##name((type*)(_first).cur, (type*)(_last).cur);            \
+    }                                                                           \
+    HEADER_STATIC_INLINE bool name##_sorted(vector_iterator_t _first,           \
+                                           vector_iterator_t _last)             \
+    {                                                                           \
+        return __algo_sort_##name##_sorted((type*)(_first).cur,                 \
+                                               (type*)(_last).cur);             \
+    }
+
+#define __i_vector_sort_define(name, type, less)                                \
+    __i_vector_sort_define_move(name, type, less, __i_sort_default_move)
 
 
 

@@ -213,55 +213,47 @@
                             (void)time_deque; } while (0)
 
 
-#include <sort/sort_intro.h>
-
-#define DQ_MOVE_NUM(_d, _s)   (*(_d) = *(_s))
-#define DQ_LT_NUM(_a, _b)     ((_a) < (_b))
-#define DQ_GT_NUM(_a, _b)     ((_a) > (_b))
+#include <sort/sort_macro.h>
 
 #ifdef DEQUE_STR_SSO
-#define DQ_MOVE_STR(_d, _s)   __ds_ops_move_same_sso((_d), (_s))
-#define DQ_LT_STR(_a, _b)     (0 > __ds_ops_cmp_same_sso(&(_a), &(_b)))
-#define DQ_GT_STR(_a, _b)     (0 < __ds_ops_cmp_same_sso(&(_a), &(_b)))
-#define DQ_STR_T              ds_sso_t
+#define dq_move_str(_d, _s)   __ds_ops_move_same_sso((_d), (_s))
+#define dq_lt_str(_a, _b)     (0 > __ds_ops_cmp_same_sso(&(_a), &(_b)))
+#define dq_gt_str(_a, _b)     (0 < __ds_ops_cmp_same_sso(&(_a), &(_b)))
+#define dq_str_t              ds_sso_t
 #else
-#define DQ_MOVE_STR(_d, _s)   (*(_d) = *(_s))
-#define DQ_LT_STR(_a, _b)     (0 > strcmp((const char*)(_a), (const char*)(_b)))
-#define DQ_GT_STR(_a, _b)     (0 < strcmp((const char*)(_a), (const char*)(_b)))
-#define DQ_STR_T              char*
+#define dq_move_str(_d, _s)   __i_sort_default_move((_d), (_s))
+#define dq_lt_str(_a, _b)     (0 > strcmp((const char*)(_a), (const char*)(_b)))
+#define dq_gt_str(_a, _b)     (0 < strcmp((const char*)(_a), (const char*)(_b)))
+#define dq_str_t              char*
 #endif
 
-__i_deque_sort_define(sort_dq_int,  deque_data_t, DQ_MOVE_NUM, DQ_LT_NUM)
-__i_deque_sort_define(sort_dq_ides, deque_data_t, DQ_MOVE_NUM, DQ_GT_NUM)
-__i_deque_sort_define(sort_dq_str,  DQ_STR_T,     DQ_MOVE_STR, DQ_LT_STR)
-__i_deque_sort_define(sort_dq_sdes, DQ_STR_T,     DQ_MOVE_STR, DQ_GT_STR)
+__i_deque_sort_define(sort_dq_int,  deque_data_t, __i_sort_default_less)
+__i_deque_sort_define(sort_dq_ides, deque_data_t, __i_sort_default_greater)
+__i_deque_sort_define_move(sort_dq_str,  dq_str_t, dq_lt_str, dq_move_str)
+__i_deque_sort_define_move(sort_dq_sdes, dq_str_t, dq_gt_str, dq_move_str)
 
 
-
-#define VT_MOVE_NUM(_d, _s)   (*(_d) = *(_s))
-#define VT_LT_NUM(_a, _b)     ((_a) < (_b))
-#define VT_GT_NUM(_a, _b)     ((_a) > (_b))
 
 /* vector 的字符串元素类型跟 deque 用同一个开关（Makefile 的 vector 目标也传
-   -DDEQUE_STR_SSO），所以这里保持和 DQ_ 完全一样的两分支：
+   -DDEQUE_STR_SSO），所以这里保持和 dq_ 完全一样的两分支：
    SSO 版元素是 ds_sso_t，char* 版元素是 char*。
-   注意 __i_vector_sort_define 的 iter 是裸 type*，排序调用要拿迭代器的 .cur。 */
+   入口收 vector_iterator_t，直接传 cvector->begin/end。 */
 #ifdef DEQUE_STR_SSO
-#define VT_MOVE_STR(_d, _s)   __ds_ops_move_same_sso((_d), (_s))
-#define VT_LT_STR(_a, _b)     (0 > __ds_ops_cmp_same_sso(&(_a), &(_b)))
-#define VT_GT_STR(_a, _b)     (0 < __ds_ops_cmp_same_sso(&(_a), &(_b)))
-#define VT_STR_T              ds_sso_t
+#define vt_move_str(_d, _s)   __ds_ops_move_same_sso((_d), (_s))
+#define vt_lt_str(_a, _b)     (0 > __ds_ops_cmp_same_sso(&(_a), &(_b)))
+#define vt_gt_str(_a, _b)     (0 < __ds_ops_cmp_same_sso(&(_a), &(_b)))
+#define vt_str_t              ds_sso_t
 #else
-#define VT_MOVE_STR(_d, _s)   (*(_d) = *(_s))
-#define VT_LT_STR(_a, _b)     (0 > strcmp((const char*)(_a), (const char*)(_b)))
-#define VT_GT_STR(_a, _b)     (0 < strcmp((const char*)(_a), (const char*)(_b)))
-#define VT_STR_T              char*
+#define vt_move_str(_d, _s)   __i_sort_default_move((_d), (_s))
+#define vt_lt_str(_a, _b)     (0 > strcmp((const char*)(_a), (const char*)(_b)))
+#define vt_gt_str(_a, _b)     (0 < strcmp((const char*)(_a), (const char*)(_b)))
+#define vt_str_t              char*
 #endif
 
-__i_vector_sort_define(sort_vt_int,  vector_data_t, VT_MOVE_NUM, VT_LT_NUM)
-__i_vector_sort_define(sort_vt_ides, vector_data_t, VT_MOVE_NUM, VT_GT_NUM)
-__i_vector_sort_define(sort_vt_str,  VT_STR_T,      VT_MOVE_STR, VT_LT_STR)
-__i_vector_sort_define(sort_vt_sdes, VT_STR_T,      VT_MOVE_STR, VT_GT_STR)
+__i_vector_sort_define(sort_vt_int,  vector_data_t, __i_sort_default_less)
+__i_vector_sort_define(sort_vt_ides, vector_data_t, __i_sort_default_greater)
+__i_vector_sort_define_move(sort_vt_str,  vt_str_t, vt_lt_str, vt_move_str)
+__i_vector_sort_define_move(sort_vt_sdes, vt_str_t, vt_gt_str, vt_move_str)
 
 #ifdef TEST_LIST
 static bool list_lt_num(list_data_t a, list_data_t b)
@@ -1669,20 +1661,20 @@ static void test_i_rand(void)
         DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_i, (vector_data_t)(rand()));
 
         time_vector = 0;
-        GET_DURATION({ sort_vt_int((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur); }, time_vector);
+        GET_DURATION({ sort_vt_int(DSL(cvector, begin)(ds_vector_i), DSL(cvector, end)(ds_vector_i)); }, time_vector);
         printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000),
-               sort_vt_int_sorted((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur),
+               sort_vt_int_sorted(DSL(cvector, begin)(ds_vector_i), DSL(cvector, end)(ds_vector_i)),
                DSL(cvector, size)(ds_vector_i));
 
         srand(SORT_SEED);
         DSL(cvector, clear)(ds_vector_i); DSL(cvector, shrink_to_fit)(ds_vector_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_i, (vector_data_t)(rand()));
 
         time_vector = 0;
-        GET_DURATION({ sort_vt_ides((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur); }, time_vector);
+        GET_DURATION({ sort_vt_ides(DSL(cvector, begin)(ds_vector_i), DSL(cvector, end)(ds_vector_i)); }, time_vector);
         printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000),
-               sort_vt_ides_sorted((vector_data_t*)DSL(cvector, begin)(ds_vector_i).cur, (vector_data_t*)DSL(cvector, end)(ds_vector_i).cur),
+               sort_vt_ides_sorted(DSL(cvector, begin)(ds_vector_i), DSL(cvector, end)(ds_vector_i)),
                DSL(cvector, size)(ds_vector_i));
 
 #undef DS_CAP
@@ -3247,20 +3239,20 @@ static void test_s_rand(void)
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_s, DS_ARG());
 
         time_vector = 0;
-        GET_DURATION({ sort_vt_str((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur); }, time_vector);
+        GET_DURATION({ sort_vt_str(DSL(cvector, begin)(ds_vector_s), DSL(cvector, end)(ds_vector_s)); }, time_vector);
         printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000),
-               sort_vt_str_sorted((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur),
+               sort_vt_str_sorted(DSL(cvector, begin)(ds_vector_s), DSL(cvector, end)(ds_vector_s)),
                DSL(cvector, size)(ds_vector_s));
 
         srand(SORT_SEED);
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(cvector, push_back)(ds_vector_s, DS_ARG());
 
         time_vector = 0;
-        GET_DURATION({ sort_vt_sdes((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur); }, time_vector);
+        GET_DURATION({ sort_vt_sdes(DSL(cvector, begin)(ds_vector_s), DSL(cvector, end)(ds_vector_s)); }, time_vector);
         printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_vector / 1000),
-               sort_vt_sdes_sorted((VT_STR_T*)DSL(cvector, begin)(ds_vector_s).cur, (VT_STR_T*)DSL(cvector, end)(ds_vector_s).cur),
+               sort_vt_sdes_sorted(DSL(cvector, begin)(ds_vector_s), DSL(cvector, end)(ds_vector_s)),
                DSL(cvector, size)(ds_vector_s));
 
 #undef DS_CAP

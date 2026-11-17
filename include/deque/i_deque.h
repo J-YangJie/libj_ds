@@ -148,6 +148,7 @@ deque_iterator_t __i_deque_advance(deque_iterator_t it, deque_size_t n)
     return __i_deque_advance_fast(it, n);
 }
 
+#if 1
 HEADER_STATIC_INLINE
 deque_size_t __i_deque_iterator_distance(deque_iterator_t begin, deque_iterator_t end)
 {
@@ -158,6 +159,18 @@ deque_size_t __i_deque_iterator_distance(deque_iterator_t begin, deque_iterator_
             + __i_deque_ptr_diff(end.cur, end.begin, begin.step)
             + __i_deque_ptr_diff(begin.end, begin.cur, begin.step));
 }
+#else
+HEADER_STATIC_INLINE
+deque_size_t __i_deque_iterator_distance(deque_iterator_t begin, deque_iterator_t end)
+{
+    if (begin.bkt == end.bkt)
+        return (deque_size_t)__i_deque_ptr_diff(end.cur, begin.cur, begin.step);
+    return (deque_size_t)(
+            ((size_t)(begin.end - begin.cur)
+             + (size_t)(end.bkt - begin.bkt - 1) * (size_t)(begin.end - begin.begin)
+             + (size_t)(end.cur - end.begin)) / begin.step);
+}
+#endif
 
 HEADER_STATIC_INLINE
 bool i_deque_is_null_iterator(deque_iterator_t it)
@@ -667,21 +680,8 @@ bool i_deque_replace_index(i_deque_t* _this, deque_index_t index, deque_data_t d
 
 
 
-/* ============================================================================
- * 排序钩子 —— 给 include/sort/sort_intro.h 的 __i_sort_define 用
- *
- * 这一组只描述「本容器怎么随机访问 / 前后走 / 量距离 / 判相等 / 判先后 / 取元素地址」，
- * 与元素类型无关，所以固定放在这里。调用点写 __i_sort_define 时直接引用这几个名字，
- * 不必再自己定义一遍。
- * 剩下的 type / move / less 才是「元素类型 + 排序方向」的事，由使用者给。
- *
- * 用法：
- *   __i_sort_define(sort_dq_asc, deque_data_t, __i_deque_sort_it,
- *                   __i_deque_sort_add, __i_deque_sort_next,
- *                   __i_deque_sort_prev, __i_deque_sort_dist,
- *                   __i_deque_sort_eq, __i_deque_sort_get,
- *                   DQ_MOVE, DQ_LESS, __i_deque_sort_lt)
- * ========================================================================== */
+#include <sort/sort_macro.h>
+
 HEADER_STATIC_INLINE
 bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
 {
@@ -696,16 +696,28 @@ bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
 #define __i_deque_sort_prev(it)      __i_deque_prev(it)
 #define __i_deque_sort_dist(a, b)    __i_deque_iterator_distance((a), (b))
 #define __i_deque_sort_eq(a, b)      ((a).cur == (b).cur)
-#define __i_deque_sort_lt(a, b)      i_deque_iter_lt((a), (b))   /* 跨 bkt 不能比 .cur */
-#define __i_deque_sort_get(type, it) (*(type*)((it).cur))        /* 取元素 type 左值 */
+#define __i_deque_sort_lt(a, b)      i_deque_iter_lt((a), (b))
+#define __i_deque_sort_get(type, it) (*(type*)((it).cur))
 
-/* 便捷展开：deque 的迭代器天生就是类型擦除的（要跨 bkt，没法是裸指针），
-   所以上面那套钩子可以固定名字，这里直接用。 */
-#define __i_deque_sort_define(name, type, move, less)                  \
-    __i_sort_define(name, type, __i_deque_sort_it, __i_deque_sort_add, \
-                    __i_deque_sort_next, __i_deque_sort_prev,          \
-                    __i_deque_sort_dist, __i_deque_sort_eq,            \
-                    __i_deque_sort_get, move, less, __i_deque_sort_lt)
+#define __i_deque_sort_define_move(name, type, less, move)                    \
+    __i_sort_define(name, type, less, move, __i_deque_sort_it,                \
+                    __i_deque_sort_add, __i_deque_sort_next,                  \
+                    __i_deque_sort_prev, __i_deque_sort_dist,                 \
+                    __i_deque_sort_eq, __i_deque_sort_lt,                     \
+                    __i_deque_sort_get)                                       \
+    HEADER_STATIC_INLINE void name(deque_iterator_t _first,                   \
+                                   deque_iterator_t _last)                    \
+    {                                                                         \
+        __algo_sort_##name((_first), (_last));                                \
+    }                                                                         \
+    HEADER_STATIC_INLINE bool name##_sorted(deque_iterator_t _first,          \
+                                           deque_iterator_t _last)            \
+    {                                                                         \
+        return __algo_sort_##name##_sorted((_first), (_last));                \
+    }
+
+#define __i_deque_sort_define(name, type, less)                               \
+    __i_deque_sort_define_move(name, type, less, __i_sort_default_move)
 
 
 
