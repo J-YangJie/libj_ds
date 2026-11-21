@@ -1,6 +1,7 @@
 /*
   Sorting Algorithms Implementations
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -157,7 +158,7 @@ static bool test_is_same(stress_t* stress)
     }
 
     while (cpriority_queue->size(ds) > 0) {
-        ds_data_t tdata = cpriority_queue->pop(ds, 0);
+        ds_data_t tdata = *(priority_queue_data_t*)cpriority_queue->top(ds).d;
         for (int i = 0; stress[i].this; ++i) {
             void* this = stress[i].this;
             const class_stress_interface_t* interface = stress[i].interface;
@@ -167,7 +168,7 @@ static bool test_is_same(stress_t* stress)
             if (stress_it_eq(interface->end(this), interface->find(this, tdata)))
                 while(true); /* 排查问题 */
         }
-        demo_free_key(&tdata);
+        cpriority_queue->pop(ds);
     }
 
     pr_test("Is same [ true ]!");

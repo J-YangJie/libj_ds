@@ -1,5 +1,5 @@
 
-DLIB_VERSION = 1.1.0
+DLIB_VERSION = 2.0.0
 DLIB_NAME := libj_ds.so
 SLIB_NAME := libj_ds.a
 
@@ -111,6 +111,7 @@ CFLAGS += -Iinclude
 CFLAGS += -std=gnu99 -Wall -fmessage-length=0 -fPIC -fno-common
 CFLAGS += -O2
 # CFLAGS += -DJDSC_DEBUG
+CFLAGS += -DJDSC_MEMPOOL
 # CFLAGS += -g3
 CFLAGS += -Werror
 ifeq ($(WITH_ALIGNMEM), y)
