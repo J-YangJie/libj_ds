@@ -545,6 +545,44 @@ bool i_clist_replace_index(i_list_t* _this, list_index_t index, list_data_t data
 
 
 
+/*
+ *  Sorted checks
+ *
+ *  The i_dlist_sorted_* macros bind the comparator to the element
+ *  representation; list.h provides the matching `__list_lt_*`/`__list_gt_*`.
+ */
+HEADER_STATIC_INLINE
+bool i_dlist_sorted(const i_list_t* _this, __list_lt_t __lt)
+{
+    list_node_t* it;
+
+    if (is_null(_this) || is_null(__lt))
+        return false;
+
+    for (it = __i_dlist_begin(_this); __i_dlist_next(it) != __i_dlist_end(_this); it = __i_dlist_next(it)) {
+        if (__lt(__i_dlist_slot_read(_this, __i_dlist_next(it)->data),
+                 __i_dlist_slot_read(_this, it->data)))
+            return false;
+    }
+    return true;
+}
+
+#define i_dlist_sorted_default(_this, ascending) \
+    i_dlist_sorted((_this), (ascending) ? __list_lt_default : __list_gt_default)
+
+#define i_dlist_sorted_sso(_this, ascending) \
+    i_dlist_sorted((_this), (ascending) ? __list_lt_sso : __list_gt_sso)
+
+#define i_dlist_sorted_chars(_this, ascending) \
+    i_dlist_sorted((_this), (ascending) ? __list_lt_chars : __list_gt_chars)
+
+#define i_dlist_sorted_string(_this, ascending) \
+    i_dlist_sorted_sso(_this, ascending)
+
+
+
+
+
 list_size_t __i_dlist_max_size(const i_list_t* _this);
 bool i_dlist_push_back(i_list_t* _this, list_data_t data);
 bool i_dlist_push_front(i_list_t* _this, list_data_t data);

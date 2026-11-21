@@ -66,6 +66,7 @@ typedef struct class_unordered_associative_container_ops {
 #define __DS_KEY_CTORS_DEFINED
 #define ds_key(v)         __ds_key(v)
 #define ds_skey(v)        __ds_skey(v)
+#define ds_cstkey(v)      (ds_key_t)(v) /* custom type */
 
 #define ds_u8key(v)       __ds_u8key(v)
 #define ds_u16key(v)      __ds_u16key(v)
@@ -88,6 +89,7 @@ typedef struct class_unordered_associative_container_ops {
 #define __DS_VALUE_CTORS_DEFINED
 #define ds_value(v)       __ds_value(v)
 #define ds_svalue(v)      __ds_svalue(v)
+#define ds_cstvalue(v)    (ds_value_t)(v) /* custom type */
 
 #define ds_u8value(v)     __ds_u8value(v)
 #define ds_u16value(v)    __ds_u16value(v)

@@ -147,25 +147,46 @@ const class_hashmap_t* class_hashmap_ins(void);
 #define HASHMAP_NEW_OPS_4(_ops, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
         __hashmap_new((_ops), (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
 
-#define HASHMAP_NEW_KV_OPS(_ops_key, _ops_value) \
+#define HASHMAP_NEW_KV_OPS_4(_ops_key, _ops_value, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
         __hashmap_new(&(class_hashmap_ops_t[1]){ \
             class_hashmap_ops_compose((_ops_key), (_ops_value)) \
-        }[0], 0, 0, 0.0f, NULL)
+        }[0], (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
 
 /*
-    _ktype/_vtype includes:
-    1. uint8_t/uint16_t/uint32_t/uint64_t
-    2. int8_t/int16_t/int32_t/int64_t
-    3. uintptr_t/intptr_t/size_t/ssize_t
-    4. float/double/string
-
-    HASHMAP_NEW_KV(_ktype, _vtype) like std::unordered_map<_ktype, _vtype>
-    Such as: hashmap_t* demo = HASHMAP_NEW_KV(string, double);
-    Such as: hashmap_t* demo = HASHMAP_NEW_KV(int16_t, float);
-    Such as: hashmap_t* demo = HASHMAP_NEW_KV(float, ssize_t);
+ *  _ktype/_vtype includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/string
+ *
+ *  HASHMAP_NEW_KV(_ktype, _vtype) like std::unordered_map<_ktype, _vtype>
+ *  Such as: hashmap_t* demo = HASHMAP_NEW_KV(string, double);
+ *  Such as: hashmap_t* demo = HASHMAP_NEW_KV(int16_t, float);
+ *  Such as: hashmap_t* demo = HASHMAP_NEW_KV(float, ssize_t);
  */
 #define HASHMAP_NEW_KV(_ktype, _vtype) \
-        HASHMAP_NEW_KV_OPS(g_class_hashmap_key_ops_##_ktype(), \
-                           g_class_hashmap_value_ops_##_vtype())
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             0, 0, 0.0f, NULL)
+
+#define HASHMAP_NEW_KV_1(_ktype, _vtype, _bucket_count_init) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             _bucket_count_init, 0, 0.0f, NULL)
+
+#define HASHMAP_NEW_KV_2(_ktype, _vtype, _bucket_count_init, _bucket_count_max) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             _bucket_count_init, _bucket_count_max, 0.0f, NULL)
+
+#define HASHMAP_NEW_KV_3(_ktype, _vtype, _bucket_count_init, _bucket_count_max, _load_factor) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             _bucket_count_init, _bucket_count_max, _load_factor, NULL)
+
+#define HASHMAP_NEW_KV_4(_ktype, _vtype, _bucket_count_init, _bucket_count_max, _load_factor) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             _bucket_count_init, _bucket_count_max, _load_factor, _load_factor)
 
 #endif /* __J_HASH_MAP_H */

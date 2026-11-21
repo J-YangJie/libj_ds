@@ -85,21 +85,21 @@ const class_stack_t* class_stack_ins(void);
 #define STACK_DELETE(_pptr)                       do { __stack_delete((_pptr)); } while (0)
 
 /*
-    _type includes:
-    1. uint8_t/uint16_t/uint32_t/uint64_t
-    2. int8_t/int16_t/int32_t/int64_t
-    3. uintptr_t/intptr_t/size_t/ssize_t
-    4. float/double/ds_sso_t(string optimization)
-
-    _BASE_NAME includes:
-    1. VECTOR
-    2. DEQUE
-    3. LIST
-
-    STACK_NEW_T(_type, _BASE_NAME) like std::stack<_type>
-    Such as: stack_t* demo = STACK_NEW_T(ds_sso_t, VECTOR);
-    Such as: stack_t* demo = STACK_NEW_T(int16_t, DEQUE);
-    Such as: stack_t* demo = STACK_NEW_T(float, LIST);
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  _BASE_NAME includes:
+ *  1. VECTOR
+ *  2. DEQUE
+ *  3. LIST
+ *
+ *  STACK_NEW_T(_type, _BASE_NAME) like std::stack<_type>
+ *  Such as: stack_t* demo = STACK_NEW_T(ds_sso_t, VECTOR);
+ *  Such as: stack_t* demo = STACK_NEW_T(int16_t, DEQUE);
+ *  Such as: stack_t* demo = STACK_NEW_T(float, LIST);
  */
 #define STACK_NEW_T(_type, _BASE_NAME)            _STACK_NEW_T(_type, _BASE_NAME)
 

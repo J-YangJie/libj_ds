@@ -31,6 +31,7 @@ typedef struct vector_iterator {
     union {
         vector_data_t* d;
         char** sd;
+        ds_sso_t* ssd;
         uint8_t* cur;
     };
     vector_step_t step;
@@ -40,6 +41,7 @@ typedef struct vector_reverse_iterator {
     union {
         vector_data_t* d;
         char** sd;
+        ds_sso_t* ssd;
         uint8_t* cur;
     };
     vector_step_t step;
@@ -49,6 +51,51 @@ typedef vector_reverse_iterator_t vector_r_iterator_t;
 #include <vector/i_vector.h>
 
 typedef i_vector_t vector_t;
+
+/*
+ * Vector sort define
+ */
+#define vector_sort_define_move(name, type, less, move) \
+    __i_vector_sort_define_move(name, type, less, move)
+
+#define vector_sort_define(name, type, less) \
+    __i_vector_sort_define(name, type, less)
+
+/*
+ * Vector sort define less/greater
+ */
+#define vector_sort_define_less(name, type) \
+        vector_sort_define(name, type, __i_sort_default_less)
+
+#define vector_sort_define_greater(name, type) \
+        vector_sort_define(name, type, __i_sort_default_greater)
+
+/*
+ * Vector sort define sso less/greater
+ */
+#define vector_sort_define_sso_less(name) \
+        vector_sort_define_move(name, ds_sso_t, __i_sort_sso_less, __i_sort_sso_move)
+
+#define vector_sort_define_sso_greater(name) \
+        vector_sort_define_move(name, ds_sso_t, __i_sort_sso_greater, __i_sort_sso_move)
+
+/*
+ * Vector sort define char* less/greater
+ */
+#define vector_sort_define_chars_less(name) \
+        vector_sort_define(name, char*, __i_sort_chars_less)
+
+#define vector_sort_define_chars_greater(name) \
+        vector_sort_define(name, char*, __i_sort_chars_greater)
+
+/*
+ * Vector sort define string less/greater, same as sso
+ */
+#define vector_sort_define_string_less(name) \
+        vector_sort_define_sso_less(name)
+
+#define vector_sort_define_string_greater(name) \
+        vector_sort_define_sso_greater(name)
 
 /* Method 1 */
 HEADER_STATIC_INLINE vector_size_t        cvector_size(const vector_t* _this)                                                                     { return i_vector_size(_this); }
@@ -156,16 +203,16 @@ const class_vector_t* class_vector_ins(void);
 #define VECTOR_DELETE(_pptr)           do { __vector_delete((_pptr)); } while (0)
 
 /*
-    _type includes:
-    1. uint8_t/uint16_t/uint32_t/uint64_t
-    2. int8_t/int16_t/int32_t/int64_t
-    3. uintptr_t/intptr_t/size_t/ssize_t
-    4. float/double/ds_sso_t(string optimization)
-
-    VECTOR_NEW_T(_type) like std::vector<_type>
-    Such as: vector_t* demo = VECTOR_NEW_T(ds_sso_t);
-    Such as: vector_t* demo = VECTOR_NEW_T(int16_t);
-    Such as: vector_t* demo = VECTOR_NEW_T(float);
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  VECTOR_NEW_T(_type) like std::vector<_type>
+ *  Such as: vector_t* demo = VECTOR_NEW_T(ds_sso_t);
+ *  Such as: vector_t* demo = VECTOR_NEW_T(int16_t);
+ *  Such as: vector_t* demo = VECTOR_NEW_T(float);
  */
 #define VECTOR_NEW_T(_type)            VECTOR_NEW_OPS_T(g_class_sequence_container_ops_##_type(), _type)
 

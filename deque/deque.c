@@ -210,9 +210,11 @@ bool __i_deque_reserve(i_deque_t* _this)
     deque_bcount_t off_n;
     uint8_t**      bkt_n;
 
-    /* The logic of functions `__i_deque_push_back_bkt_alloc` and `__i_deque_push_front_bkt_alloc` 
-       assumes by default that, after `reserve`, at least one empty slot is guaranteed to remain 
-       both before and after the reserved region. */
+    /*
+     *  The logic of functions `__i_deque_push_back_bkt_alloc` and `__i_deque_push_front_bkt_alloc`
+     *  assumes by default that, after `reserve`, at least one empty slot is guaranteed to remain
+     *  both before and after the reserved region.
+     */
     if (unlikely(bcnt_n < DEQUE_CAPACITY_INIT))
         bcnt_n = DEQUE_CAPACITY_INIT;
 

@@ -31,6 +31,7 @@ typedef struct list_iterator {
     union {
         list_data_t* d;
         char** sd;
+        ds_sso_t* ssd;
     };
 } list_iterator_t;
 
@@ -38,6 +39,7 @@ typedef struct list_reverse_iterator {
     union {
         list_data_t* d;
         char** sd;
+        ds_sso_t* ssd;
     };
 } list_reverse_iterator_t;
 typedef list_reverse_iterator_t list_r_iterator_t;
@@ -45,6 +47,40 @@ typedef list_reverse_iterator_t list_r_iterator_t;
 #include <list/i_list.h>
 
 typedef i_list_t list_t;
+
+/*
+ *  Merge/sort comparators
+ *
+ *  `sso` and `chars` follow the string representation used by the list.
+ *  `chars` requires <operations/ds_ops_string.h> at the use site.
+ *  `default` compares signed integer elements such as int32_t/intptr_t.
+ */
+HEADER_STATIC_INLINE bool __list_lt_default(list_data_t left, list_data_t right) { return left < right; }
+HEADER_STATIC_INLINE bool __list_gt_default(list_data_t left, list_data_t right) { return left > right; }
+#define __list_lt_sso     __ds_ops_lt_same_sso
+#define __list_gt_sso     __ds_ops_gt_same_sso
+#define __list_lt_chars   __ds_ops_lt_default_string
+#define __list_gt_chars   __ds_ops_gt_default_string
+#define __list_lt_string  __list_lt_sso
+#define __list_gt_string  __list_gt_sso
+
+/*
+ *  Sorted checks
+ *
+ *  `ascending` selects the matching `less`/`greater` comparator.
+ *  `chars` requires <operations/ds_ops_string.h> at the use site.
+ */
+#define clist_sorted_default(_this, ascending) \
+    i_dlist_sorted_default(_this, ascending)
+
+#define clist_sorted_sso(_this, ascending) \
+    i_dlist_sorted_sso(_this, ascending)
+
+#define clist_sorted_chars(_this, ascending) \
+    i_dlist_sorted_chars(_this, ascending)
+
+#define clist_sorted_string(_this, ascending) \
+    i_dlist_sorted_string(_this, ascending)
 
 /* Method 1 */
 HEADER_STATIC_INLINE list_size_t        clist_size(const list_t* _this)                                                                 { return i_dlist_size(_this); }
@@ -164,16 +200,16 @@ const class_list_t* class_list_ins(void);
 #define LIST_DELETE(_pptr)           do { __list_delete((_pptr)); } while(0)
 
 /*
-    _type includes:
-    1. uint8_t/uint16_t/uint32_t/uint64_t
-    2. int8_t/int16_t/int32_t/int64_t
-    3. uintptr_t/intptr_t/size_t/ssize_t
-    4. float/double/ds_sso_t(string optimization)
-
-    LIST_NEW_T(_type) like std::list<_type>
-    Such as: list_t* demo = LIST_NEW_T(ds_sso_t);
-    Such as: list_t* demo = LIST_NEW_T(int16_t);
-    Such as: list_t* demo = LIST_NEW_T(float);
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  LIST_NEW_T(_type) like std::list<_type>
+ *  Such as: list_t* demo = LIST_NEW_T(ds_sso_t);
+ *  Such as: list_t* demo = LIST_NEW_T(int16_t);
+ *  Such as: list_t* demo = LIST_NEW_T(float);
  */
 #define LIST_NEW_T(_type)            LIST_NEW_OPS_T(g_class_sequence_container_ops_##_type(), _type)
 

@@ -30,6 +30,7 @@ typedef struct deque_iterator {
     union {
         deque_data_t* d;
         char** sd;
+        ds_sso_t* ssd;
         uint8_t* cur;
     };
     uint8_t*  begin;
@@ -42,6 +43,7 @@ typedef struct deque_reverse_iterator {
     union {
         deque_data_t* d;
         char** sd;
+        ds_sso_t* ssd;
         uint8_t* cur;
     };
     uint8_t*  begin;
@@ -55,6 +57,51 @@ typedef deque_reverse_iterator_t deque_r_iterator_t;
 #include <deque/i_deque.h>
 
 typedef i_deque_t deque_t;
+
+/*
+ * Deque sort define
+ */
+#define deque_sort_define_move(name, type, less, move) \
+    __i_deque_sort_define_move(name, type, less, move)
+
+#define deque_sort_define(name, type, less) \
+    __i_deque_sort_define(name, type, less)
+
+/*
+ * Deque sort define less/greater
+ */
+#define deque_sort_define_less(name, type) \
+        deque_sort_define(name, type, __i_sort_default_less)
+
+#define deque_sort_define_greater(name, type) \
+        deque_sort_define(name, type, __i_sort_default_greater)
+
+/*
+ * Deque sort define sso less/greater
+ */
+#define deque_sort_define_sso_less(name) \
+        deque_sort_define_move(name, ds_sso_t, __i_sort_sso_less, __i_sort_sso_move)
+
+#define deque_sort_define_sso_greater(name) \
+        deque_sort_define_move(name, ds_sso_t, __i_sort_sso_greater, __i_sort_sso_move)
+
+/*
+ * Deque sort define char* less/greater
+ */
+#define deque_sort_define_chars_less(name) \
+        deque_sort_define(name, char*, __i_sort_chars_less)
+
+#define deque_sort_define_chars_greater(name) \
+        deque_sort_define(name, char*, __i_sort_chars_greater)
+
+/*
+ * Deque sort define string less/greater, same as sso
+ */
+#define deque_sort_define_string_less(name) \
+        deque_sort_define_sso_less(name)
+
+#define deque_sort_define_string_greater(name) \
+        deque_sort_define_sso_greater(name)
 
 /* Method 1 */
 HEADER_STATIC_INLINE deque_size_t        cdeque_size(const deque_t* _this)                                                                   { return i_deque_size(_this); }
@@ -162,16 +209,16 @@ const class_deque_t* class_deque_ins(void);
 #define DEQUE_DELETE(_pptr)           do { __deque_delete((_pptr)); } while(0)
 
 /*
-    _type includes:
-    1. uint8_t/uint16_t/uint32_t/uint64_t
-    2. int8_t/int16_t/int32_t/int64_t
-    3. uintptr_t/intptr_t/size_t/ssize_t
-    4. float/double/ds_sso_t(string optimization)
-
-    DEQUE_NEW_T(_type) like std::deque<_type>
-    Such as: deque_t* demo = DEQUE_NEW_T(ds_sso_t);
-    Such as: deque_t* demo = DEQUE_NEW_T(int16_t);
-    Such as: deque_t* demo = DEQUE_NEW_T(float);
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  DEQUE_NEW_T(_type) like std::deque<_type>
+ *  Such as: deque_t* demo = DEQUE_NEW_T(ds_sso_t);
+ *  Such as: deque_t* demo = DEQUE_NEW_T(int16_t);
+ *  Such as: deque_t* demo = DEQUE_NEW_T(float);
  */
 #define DEQUE_NEW_T(_type)            DEQUE_NEW_OPS_T(g_class_sequence_container_ops_##_type(), _type)
 

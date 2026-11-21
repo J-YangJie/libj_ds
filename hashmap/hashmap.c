@@ -473,8 +473,10 @@ hashmap_bnode_t* hashmap_find(const hashmap_t* _this, hashmap_key_t key)
     if (unlikely(is_null(_this)))
         return NULL;
 
-    /* TODO: in order to improve performance, the size check comes before parameter check.
-             However, the return value needs to be considered carefully */
+    /*
+     *  TODO: in order to improve performance, the size check comes before parameter check.
+     *  However, the return value needs to be considered carefully
+     */
     if (unlikely(__hashmap_size(_this) <= 0))
         return __hashmap_end(_this);
 
@@ -656,8 +658,10 @@ bool __hashmap_rehash(hashmap_t* _this)
     if (bcnt_o >= _this->bucket_count_max)
         return true;
 
-    /* `rehash` follows the 2x bucket_count expansion logic by default. 
-       If multi-fold expansion is used, the logic needs to be checked */
+    /*
+     *  `rehash` follows the 2x bucket_count expansion logic by default.
+     *  If multi-fold expansion is used, the logic needs to be checked
+     */
     bcnt_n = bcnt_o << 1;
 
     n = p_realloc(_this->head, bcnt_n * sizeof(hashmap_node_t));
@@ -852,10 +856,12 @@ hashmap_bnode_t* hashmap_erase(hashmap_t* _this, hashmap_bnode_t* pos)
         }
     }
 
-    /* 1. The `pos` belongs to this bucket, erase normally.
-       2. The `pos` belongs to this bucket, memory issues are detected.
-       3. The `pos` doesn't belong to this bucket, erase normally.
-       4. The `pos` doesn't belong to this bucket, memory issues are detected. */
+    /*
+     *  1. The `pos` belongs to this bucket, erase normally.
+     *  2. The `pos` belongs to this bucket, memory issues are detected.
+     *  3. The `pos` doesn't belong to this bucket, erase normally.
+     *  4. The `pos` doesn't belong to this bucket, memory issues are detected.
+     */
     bkt_node = hmbucket_erase(bkt_sh, bucket_ops(_this), pos);
     JDSC_ASSERT(!is_null(bkt_node));
     if (unlikely(is_null(bkt_node)))

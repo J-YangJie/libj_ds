@@ -206,9 +206,3 @@ void ds_ops_free_data_default_string(ds_data_t* data)
     char** s = (char**)data;
     p_free(*s);
 }
-
-JDSC_INLINE
-bool __ds_ops_gt_default(ds_data_t left, ds_data_t right)
-{
-    return left > right;
-}

@@ -105,6 +105,7 @@ __CLASS_PRIORITY_QUEUE_OPS_GREATER_DECL(sso)
 #define __DS_DATA_CTORS_DEFINED
 #define ds_data(v)       __ds_data(v)
 #define ds_sdata(v)      __ds_sdata(v)
+#define ds_cstdata(v)    (ds_data_t)(v) /* custom type */
 
 #define ds_u8data(v)     __ds_u8data(v)
 #define ds_u16data(v)    __ds_u16data(v)

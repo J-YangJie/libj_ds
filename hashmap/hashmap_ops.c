@@ -23,6 +23,13 @@
 #include <_memory.h>
 #include <linux/_compiler.h>
 
+/*
+ *  Default numeric key operations
+ *
+ *  Key ops tables for the built-in numeric types. On 32-bit builds,
+ *  8-byte keys are boxed so they fit in a pointer-sized key slot.
+ */
+
 #ifndef JDSC_64BIT
 
 static inline uint64_t __ds_key_box8_load(ds_key_t key)               { return *(const uint64_t*)(uintptr_t)key; }
@@ -73,9 +80,11 @@ ds_hash_t __ds_ops_hash_default_double(ds_key_t key)
     return (ds_hash_t)v.u;
 }
 
-/* Floating-point keys use numeric equality: `+0.0` and `-0.0` are the same key.
- * The hash normalizes `-0.0` so that equal keys hash equally.
- * NaN is not equal to anything, so it cannot be used as a key, as in the STL. */
+/*
+ *  Floating-point keys use numeric equality: `+0.0` and `-0.0` are the same key.
+ *  The hash normalizes `-0.0` so that equal keys hash equally.
+ *  NaN is not equal to anything, so it cannot be used as a key, as in the STL.
+ */
 
 static bool __ds_ops_eq_default_float(ds_key_t left, ds_key_t right)  { return __ds_token_to_f32(left) == __ds_token_to_f32(right); }
 static bool __ds_ops_lt_default_float(ds_key_t left, ds_key_t right)  { return __ds_token_to_f32(left) <  __ds_token_to_f32(right); }
@@ -126,6 +135,12 @@ __CLASS_HASHMAP_KEY_OPS(double,    __ds_ops_hash_default_double,   __ds_ops_eq_d
 
 
 
+
+/*
+ *  String key operations
+ *
+ *  Key ops table backed by the default string callbacks.
+ */
 
 #include <operations/ds_ops_string.h>
 

@@ -80,22 +80,22 @@ const class_priority_queue_t* class_priority_queue_ins(void);
 #define PRIORITY_QUEUE_DELETE(_pptr)                       do { __priority_queue_delete((_pptr)); } while (0)
 
 /*
-    The default comparator is `<`, so `top()` returns the greatest element.
-
-    _type includes:
-    1. uint8_t/uint16_t/uint32_t/uint64_t
-    2. int8_t/int16_t/int32_t/int64_t
-    3. uintptr_t/intptr_t/size_t/ssize_t
-    4. float/double/ds_sso_t(string optimization)
-
-    _BASE_NAME includes:
-    1. VECTOR
-    2. DEQUE
-
-    PRIORITY_QUEUE_NEW_T(_type, _BASE_NAME) like std::priority_queue<_type>
-    Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T(ds_sso_t, VECTOR);
-    Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T(int16_t, DEQUE);
-    Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T(float, VECTOR);
+ *  The default comparator is `<`, so `top()` returns the greatest element.
+ *
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  _BASE_NAME includes:
+ *  1. VECTOR
+ *  2. DEQUE
+ *
+ *  PRIORITY_QUEUE_NEW_T(_type, _BASE_NAME) like std::priority_queue<_type>
+ *  Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T(ds_sso_t, VECTOR);
+ *  Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T(int16_t, DEQUE);
+ *  Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T(float, VECTOR);
  */
 #define PRIORITY_QUEUE_NEW_T(_type, _BASE_NAME)            _PRIORITY_QUEUE_NEW_T(g_class_priority_queue_ops_##_type(), _type, _BASE_NAME)
 
@@ -109,22 +109,22 @@ const class_priority_queue_t* class_priority_queue_ins(void);
 
 
 /*
-    `_GT` uses `>` as the comparator, so `top()` returns the smallest element.
-
-    _type includes:
-    1. uint8_t/uint16_t/uint32_t/uint64_t
-    2. int8_t/int16_t/int32_t/int64_t
-    3. uintptr_t/intptr_t/size_t/ssize_t
-    4. float/double/ds_sso_t(string optimization)
-
-    _BASE_NAME includes:
-    1. VECTOR
-    2. DEQUE
-
-    PRIORITY_QUEUE_NEW_T_GT(_type, _BASE_NAME) like std::priority_queue<_type, Container, std::greater<_type>>
-    Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T_GT(ds_sso_t, VECTOR);
-    Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T_GT(int16_t, DEQUE);
-    Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T_GT(float, VECTOR);
+ *  `_GT` uses `>` as the comparator, so `top()` returns the smallest element.
+ *
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  _BASE_NAME includes:
+ *  1. VECTOR
+ *  2. DEQUE
+ *
+ *  PRIORITY_QUEUE_NEW_T_GT(_type, _BASE_NAME) like std::priority_queue<_type, Container, std::greater<_type>>
+ *  Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T_GT(ds_sso_t, VECTOR);
+ *  Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T_GT(int16_t, DEQUE);
+ *  Such as: priority_queue_t* demo = PRIORITY_QUEUE_NEW_T_GT(float, VECTOR);
  */
 #define PRIORITY_QUEUE_NEW_T_GT(_type, _BASE_NAME)         _PRIORITY_QUEUE_NEW_T(g_class_priority_queue_ops_##_type##_greater(), _type, _BASE_NAME)
 

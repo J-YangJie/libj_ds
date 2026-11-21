@@ -81,8 +81,10 @@ multimap_count_t multimap_count(const multimap_t* _this, multimap_key_t key)
     if (__multimap_end(_this) == t)
         return 0;
 
-    /* TODO: The current way of writing code will result in low performance. It's 
-             necessary to balance the memory usage and performance for optimization. */
+    /*
+     *  TODO: The current way of writing code will result in low performance. It's
+     *  necessary to balance the memory usage and performance for optimization.
+     */
     if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         for (; __multimap_end(_this) != t; t = __multimap_next(_this, t)) {
             if (key != t->key)
@@ -154,11 +156,15 @@ multimap_node_t* __multimap_next(const multimap_t* _this, const multimap_node_t*
         return NULL;
 #endif /* JDSC_ITERATOR_ERR_NULL */
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
 
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
+    /*
+     *  This check should come after `end` or `rend`.
+     *  This is a pre-judgment condition for `rb_next` or `rb_prev`
+     */
     JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_next(&node->node);
@@ -184,8 +190,10 @@ multimap_node_t* __multimap_prev(const multimap_t* _this, const multimap_node_t*
         return ___multimap_last(_this); /* Err: since the `ds` is non-empty, 
                                                 the return value includes the error case of `NULL` */
 
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
+    /*
+     *  This check should come after `end` or `rend`.
+     *  This is a pre-judgment condition for `rb_next` or `rb_prev`
+     */
     JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_prev(&node->node);
@@ -241,11 +249,15 @@ multimap_node_t* __multimap_rnext(const multimap_t* _this, const multimap_node_t
         return NULL;
 #endif /* JDSC_ITERATOR_ERR_NULL */
 
-    /* The input parameter is `reverse_iterator`, and there's no need 
-       to check whether it equals `end` */
+    /*
+     *  The input parameter is `reverse_iterator`, and there's no need
+     *  to check whether it equals `end`
+     */
 
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
+    /*
+     *  This check should come after `end` or `rend`.
+     *  This is a pre-judgment condition for `rb_next` or `rb_prev`
+     */
     JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_prev(&node->node);
@@ -271,8 +283,10 @@ multimap_node_t* __multimap_rprev(const multimap_t* _this, const multimap_node_t
         return ___multimap_first(_this); /* Err: since the `ds` is non-empty, 
                                                 the return value includes the error case of `NULL` */
 
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
+    /*
+     *  This check should come after `end` or `rend`.
+     *  This is a pre-judgment condition for `rb_next` or `rb_prev`
+     */
     JDSC_ASSERT(!RB_EMPTY_NODE(&node->node));
 
     t = rb_next(&node->node);
@@ -561,8 +575,10 @@ multimap_node_t* multimap_erase(multimap_t* _this, multimap_node_t* pos)
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(RB_EMPTY_ROOT(&_this->root) || __multimap_end(_this) == pos)/* || __multimap_rend(_this) == pos*/)
         return NULL;
 

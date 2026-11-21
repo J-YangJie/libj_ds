@@ -22,6 +22,13 @@
 
 #include <_token.h>
 
+/*
+ *  Greater numeric operations
+ *
+ *  Ops tables whose `__lt` callback implements `left > right`, so the
+ *  priority queue behaves as a min-heap.
+ */
+
 #define __DS_OPS_DEFINE_GT(_t, _tok) \
 static bool __ds_ops_gt_default_##_t(priority_queue_data_t left, priority_queue_data_t right) \
 { \
@@ -76,6 +83,13 @@ __CLASS_PRIORITY_QUEUE_OPS_GREATER(double)
 
 
 
+
+/*
+ *  String and SSO operations
+ *
+ *  Ops tables for `char*` and SSO strings, in default and greater
+ *  order.
+ */
 
 #include <operations/ds_ops_string.h>
 

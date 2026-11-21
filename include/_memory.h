@@ -71,10 +71,10 @@ JDSC_MEMFUNC_PREFIX      void  _p_free(void** ptr)                   { if (NULL 
 #elif defined(__unix__) || defined(__unix) || defined(__APPLE__) || \
       (defined(__STDC_HOSTED__) && __STDC_HOSTED__ && !defined(_WIN32))
    /*
-    * posix_memalign() is declared in <stdlib.h> only when
-    * _POSIX_C_SOURCE >= 200112L (or _XOPEN_SOURCE >= 600).
-    * Under strict -std=c99 / -std=c11 the build system MUST define:
-    *     -D_POSIX_C_SOURCE=200112L
+    *  posix_memalign() is declared in <stdlib.h> only when
+    *  _POSIX_C_SOURCE >= 200112L (or _XOPEN_SOURCE >= 600).
+    *  Under strict -std=c99 / -std=c11 the build system MUST define:
+    *      -D_POSIX_C_SOURCE=200112L
     */
 #   define JDSC_ALIGN_IMPL_MSVC  0
 #   define JDSC_ALIGN_IMPL_POSIX 1
@@ -165,8 +165,10 @@ void* _p_aligned_realloc(void* ptr, size_t alignment, size_t size, size_t old_si
         JDSC_ASSERT(JDSC_ALIGN_IS_VALID(alignment));
 
 #if JDSC_ALIGN_IMPL_MSVC
-        /* _aligned_realloc() does not document NULL handling; route NULL
-           through _p_aligned_malloc() so it behaves like realloc(NULL, n). */
+        /*
+         *  _aligned_realloc() does not document NULL handling; route NULL
+         *  through _p_aligned_malloc() so it behaves like realloc(NULL, n).
+         */
         if (NULL == ptr)
             return _p_aligned_malloc(alignment, size);
         return _aligned_realloc(ptr, size, alignment);
@@ -184,9 +186,11 @@ void* _p_aligned_realloc(void* ptr, size_t alignment, size_t size, size_t old_si
 #endif
     }
 
-    /* size == 0: free the block and return NULL.  This matches the common
-       realloc(ptr, 0) behavior (glibc frees and returns NULL); C11/C17 leave
-       it implementation-defined, and C23 makes it undefined. */
+    /*
+     *  size == 0: free the block and return NULL.  This matches the common
+     *  realloc(ptr, 0) behavior (glibc frees and returns NULL); C11/C17 leave
+     *  it implementation-defined, and C23 makes it undefined.
+     */
     p_aligned_free(ptr, alignment);
     return NULL;
 }

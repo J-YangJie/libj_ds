@@ -75,8 +75,10 @@ multiset_count_t multiset_count(const multiset_t* _this, multiset_key_t key)
     if (__multiset_end(_this) == t)
         return 0;
 
-    /* TODO: The current way of writing code will result in low performance. It's 
-             necessary to balance the memory usage and performance for optimization. */
+    /*
+     *  TODO: The current way of writing code will result in low performance. It's
+     *  necessary to balance the memory usage and performance for optimization.
+     */
     if (is_null(_this->ops) || is_null(_this->ops->__lt)) {
         for (; __multiset_end(_this) != t; t = __multiset_next(_this, t)) {
             if (key != t->key)
@@ -366,8 +368,10 @@ multiset_node_t* multiset_erase(multiset_t* _this, multiset_node_t* pos)
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(RB_EMPTY_ROOT(&_this->root) || __multiset_end(_this) == pos)/* || __multiset_rend(_this) == pos*/)
         return NULL;
 

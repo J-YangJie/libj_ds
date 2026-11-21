@@ -334,8 +334,10 @@ set_node_t* set_erase(set_t* _this, set_node_t* pos)
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(RB_EMPTY_ROOT(&_this->root) || __set_end(_this) == pos)/* || __set_rend(_this) == pos*/)
         return NULL;
 

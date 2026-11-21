@@ -841,8 +841,8 @@ vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
 
 HEADER_STATIC_INLINE vector_size_t i_vector_clear(i_vector_t* _this);
 /*
- * Unlike STL's in-place assign: this keeps rollback on copy failure and
- * trades a little performance for it.
+ *  Unlike STL's in-place assign: this keeps rollback on copy failure and
+ *  trades a little performance for it.
  */
 HEADER_STATIC_INLINE
 bool i_vector_assign(i_vector_t* _this, vector_size_t n, vector_data_t data)

@@ -333,8 +333,10 @@ list_node_t* __i_dlist_erase(i_list_t* _this, list_node_t* pos)
 {
     list_node_t* n;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(__i_dlist_empty(_this) || __i_dlist_end(_this) == pos) /* || __i_dlist_rend(_this) == pos*/)
         return NULL;
 

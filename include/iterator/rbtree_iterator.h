@@ -128,11 +128,15 @@ rbtree_iterator_t __rbtree_next(const struct rb_root *root, rbtree_const_iterato
         return NULL;
 #endif /* JDSC_ITERATOR_ERR_NULL */
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
 
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
+    /*
+     *  This check should come after `end` or `rend`.
+     *  This is a pre-judgment condition for `rb_next` or `rb_prev`
+     */
     JDSC_ASSERT(!RB_EMPTY_NODE(it));
     return __red_rb_next(it);
 }
@@ -148,8 +152,10 @@ rbtree_iterator_t __rbtree_prev(const struct rb_root *root, rbtree_const_iterato
         return rb_last(root); /* Err: since the `ds` is non-empty, 
                                         the return value includes the error case of `NULL` */
 
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
+    /*
+     *  This check should come after `end` or `rend`.
+     *  This is a pre-judgment condition for `rb_next` or `rb_prev`
+     */
     JDSC_ASSERT(!RB_EMPTY_NODE(it));
 
     t = rb_prev(it);
@@ -181,11 +187,15 @@ rbtree_iterator_t __rbtree_rnext(const struct rb_root *root, rbtree_const_iterat
         return NULL;
 #endif /* JDSC_ITERATOR_ERR_NULL */
 
-    /* The input parameter is `reverse_iterator`, and there's no need 
-       to check whether it equals `end` */
+    /*
+     *  The input parameter is `reverse_iterator`, and there's no need
+     *  to check whether it equals `end`
+     */
 
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
+    /*
+     *  This check should come after `end` or `rend`.
+     *  This is a pre-judgment condition for `rb_next` or `rb_prev`
+     */
     JDSC_ASSERT(!RB_EMPTY_NODE(it));
     return __red_rb_prev(it);
 }
@@ -201,8 +211,10 @@ rbtree_iterator_t __rbtree_rprev(const struct rb_root *root, rbtree_const_iterat
         return rb_first(root); /* Err: since the `ds` is non-empty, 
                                         the return value includes the error case of `NULL` */
 
-    /* This check should come after `end` or `rend`.
-       This is a pre-judgment condition for `rb_next` or `rb_prev` */
+    /*
+     *  This check should come after `end` or `rend`.
+     *  This is a pre-judgment condition for `rb_next` or `rb_prev`
+     */
     JDSC_ASSERT(!RB_EMPTY_NODE(it));
 
     t = rb_next(it);

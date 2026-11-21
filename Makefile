@@ -23,14 +23,19 @@ WITH_PERFORMANCE_STL=y
 WITH_DEMO=y
 
 ifeq ($(WITH_STACK), y)
-WITH_LIST=y
 WITH_VECTOR=y
 WITH_DEQUE=y
+WITH_LIST=y
 endif
 
 ifeq ($(WITH_QUEUE), y)
 WITH_DEQUE=y
 WITH_LIST=y
+endif
+
+ifeq ($(WITH_PRIORITY_QUEUE), y)
+WITH_VECTOR=y
+WITH_DEQUE=y
 endif
 
 
@@ -229,13 +234,13 @@ ifeq ($(WITH_STACK), y)
 DEMO_BINS += demo/demo_stack_bin
 endif
 ifeq ($(WITH_VECTOR), y)
-# DEMO_BINS += demo/demo_vector_bin
+DEMO_BINS += demo/demo_vector_bin
 endif
 ifeq ($(WITH_LIST), y)
-# DEMO_BINS += demo/demo_list_bin
+DEMO_BINS += demo/demo_list_bin
 endif
 ifeq ($(WITH_DEQUE), y)
-# DEMO_BINS += demo/demo_deque_bin
+DEMO_BINS += demo/demo_deque_bin
 endif
 ifeq ($(WITH_HASHMAP), y)
 DEMO_BINS += demo/demo_hashmap_bin
@@ -251,14 +256,6 @@ DEMO_BINS += demo/demo_set_bin
 endif
 ifeq ($(WITH_MULTISET), y)
 DEMO_BINS += demo/demo_multiset_bin
-endif
-# demo_num.c uses map, multimap, set, multiset, vector and deque;
-# demo_num_bench.c uses map and vector only.
-ifeq ($(WITH_MAP)$(WITH_VECTOR),yy)
-DEMO_BINS += demo/demo_num_bench_bin
-endif
-ifeq ($(WITH_MAP)$(WITH_VECTOR)$(WITH_DEQUE)$(WITH_MULTIMAP)$(WITH_MULTISET)$(WITH_SET),yyyyyy)
-DEMO_BINS += demo/demo_num_bin
 endif
 endif # WITH_DEMO
 
@@ -281,40 +278,42 @@ PERFORMANCE_J_DS_DEFINES= \
 PERFORMANCE_STR_LEN_MIN ?= 1
 PERFORMANCE_STR_LEN_MAX ?= 15
 PERFORMANCE_STR_DEFINES = -DS_STR_LEN_MIN=$(PERFORMANCE_STR_LEN_MIN) -DS_STR_LEN_MAX=$(PERFORMANCE_STR_LEN_MAX)
+
+PERFORMANCE_STR_SSO_DEFINES = -DTEST_STR_SSO
 PERFORMANCE_J_DS_HASH_DEFINES= \
 		-DTIMES_INSERT=20000000 \
 		-DTIMES_FIND=100000000 -DTIMES_FIND_V_L=$(PERFORMANCE_J_DS_TIMES_FIND_V_L) \
 		-DTIMES_REMOVE=100000000 -DTIMES_REMOVE_V_L=$(PERFORMANCE_J_DS_TIMES_REMOVE_V_L)
 
 performance_jds_list.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_LIST
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_LIST $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_vector.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_VECTOR -DDEQUE_STR_SSO
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_VECTOR $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_deque.o : main.c Makefile
-	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE -DDEQUE_STR_SSO
+	@$(CC) $(CFLAGS) -c -o $@ $< $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_stack_vector.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_VECTOR
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_VECTOR $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_stack_deque.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_DEQUE
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_DEQUE $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_stack_list.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_LIST
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_LIST $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_queue_deque.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_DEQUE
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_DEQUE $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_queue_list.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_LIST
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_LIST $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_pqueue_vector.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_VECTOR
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_VECTOR $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_pqueue_deque.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_DEQUE
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_DEQUE $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_hashmap.o : main.c
 	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_HASH_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=0
@@ -449,16 +448,16 @@ stress/?.o : stress/?.c
 stress_fast : stress/main.o stress/test_hashmap.o stress/test_map.o stress/test_set.o stress/test_multimap.o stress/test_multiset.o
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 
-stress_slow : stress/main_slow.o stress/test_vector.o stress/test_list.o
+stress_slow : stress/main_slow.o stress/test_vector.o stress/test_list.o stress/test_deque.o
+	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
+
+stress_adapter : stress/main_adapter.o stress/test_adapter_stack.o stress/test_adapter_queue.o
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 
 stress_stack : stress/test_stack.o
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 
 stress_queue : stress/test_queue.o
-	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
-
-stress_priority_queue : stress/test_priority_queue.o
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 
 

@@ -526,8 +526,10 @@ map_node_t* map_erase(map_t* _this, map_node_t* pos)
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(RB_EMPTY_ROOT(&_this->root) || __map_end(_this) == pos)/* || __map_rend(_this) == pos*/)
         return NULL;
 

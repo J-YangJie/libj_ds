@@ -1680,8 +1680,10 @@ static void test_i_rand(void)
 
 
         /* insert mid + erase mid */ /* only TIMES_INSERT / 5 times */
-        /* 和 main.c 的 list 块一致：std::list 的 it(n) 同样是 O(n)，所以中点只定位一次、
-           循环里复用（list 的 insert 不让别的迭代器失效，erase 返回下一个）。 */
+        /*
+         *  和 main.c 的 list 块一致：std::list 的 it(n) 同样是 O(n)，所以中点只定位一次、
+         *  循环里复用（list 的 insert 不让别的迭代器失效，erase 返回下一个）。
+         */
         ds_list_i.clear();
         for (int i = 0; i < TIMES_INSERT; ++i) ds_list_i.push_back(rand() % TIMES_FIND);
         {

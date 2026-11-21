@@ -21,9 +21,13 @@
 
 #include <_token.h>
 
-/* Floating-point equality is numeric, so 0.0 and -0.0 compare equal.
- * The container default comparison is bitwise, hence this callback.
- * U64/S64 need no callback: the step-8 comparison is exact on both widths. */
+/*
+ *  Floating-point equality operations
+ *
+ *  Floating-point equality is numeric, so 0.0 and -0.0 compare equal.
+ *  The container default comparison is bitwise, hence this callback.
+ *  U64/S64 need no callback: the step-8 comparison is exact on both widths.
+ */
 
 static bool __ds_ops_eq_seq_float(ds_data_t left, ds_data_t right)  { return __ds_token_to_f32(left) == __ds_token_to_f32(right); }
 static bool __ds_ops_eq_seq_double(ds_data_t left, ds_data_t right) { return __ds_token_to_f64(left) == __ds_token_to_f64(right); }
@@ -47,6 +51,13 @@ __CLASS_SEQUENCE_CONTAINER_OPS(double, __ds_ops_eq_seq_double)
 
 
 
+
+/*
+ *  String and SSO operations
+ *
+ *  Ops tables backed by the default string callbacks and the SSO
+ *  callbacks.
+ */
 
 #include <operations/ds_ops_string.h>
 

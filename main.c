@@ -36,7 +36,7 @@
 #include <multimap/multimap.h>
 #include <set/set.h>
 #include <multiset/multiset.h>
-#include <operations/ds_ops_string.h>   /* hashmap/map/multimap 的字符串基准要用到（sso 那个 deque.h 已经带进来了） */
+#include <operations/ds_ops_string.h>
 
 
 #define GET_DURATION(_data, _time) do { gettimeofday(&time_begin, NULL); _data gettimeofday(&time_end, NULL); \
@@ -153,31 +153,61 @@
 #define TIME_DS      time_vector
 #endif
 
+/*
+ *  String representation used by test_s_rand()
+ *
+ *  TEST_STR_SSO selects SSO strings; without it, every sequence container
+ *  and adapter that supports both forms uses `char*` strings instead.
+ */
+#ifdef TEST_STR_SSO
+#define seq_move_str(_d, _s)       __ds_ops_move_same_sso((_d), (_s))
+#define seq_lt_str(_a, _b)         __ds_ops_lt_same_sso((ds_data_t)&(_a), (ds_data_t)&(_b))
+#define seq_gt_str(_a, _b)         __ds_ops_gt_same_sso((ds_data_t)&(_a), (ds_data_t)&(_b))
+#define seq_str_t                  ds_sso_t
+#define VECTOR_NEW_STR()           VECTOR_NEW_SSO()
+#define DEQUE_NEW_STR()            DEQUE_NEW_SSO()
+#define LIST_NEW_STR()             LIST_NEW_SSO()
+#define STACK_NEW_STR_T(_BASE)     STACK_NEW_SSO_T(_BASE)
+#define QUEUE_NEW_STR_T(_BASE)     QUEUE_NEW_SSO_T(_BASE)
+#define PQUEUE_NEW_STR_T(_BASE)    PRIORITY_QUEUE_NEW_SSO_T(_BASE)
+#else
+#define seq_move_str(_d, _s)       __i_sort_default_move((_d), (_s))
+#define seq_lt_str(_a, _b)         __ds_ops_lt_default_string((ds_data_t)(_a), (ds_data_t)(_b))
+#define seq_gt_str(_a, _b)         __ds_ops_gt_default_string((ds_data_t)(_a), (ds_data_t)(_b))
+#define seq_str_t                  char*
+#define VECTOR_NEW_STR()           VECTOR_NEW_CHAR()
+#define DEQUE_NEW_STR()            DEQUE_NEW_CHAR()
+#define LIST_NEW_STR()             LIST_NEW_CHAR()
+#define STACK_NEW_STR_T(_BASE)     STACK_NEW_CHAR_T(_BASE)
+#define QUEUE_NEW_STR_T(_BASE)     QUEUE_NEW_CHAR_T(_BASE)
+#define PQUEUE_NEW_STR_T(_BASE)    PRIORITY_QUEUE_NEW_CHAR_T(_BASE)
+#endif
+
 #if defined(TEST_STACK_VECTOR)
-#define STACK_TEST_NEW()         STACK_NEW()
-#define STACK_TEST_NEW_STRING()  STACK_NEW_STRING()
+#define STACK_TEST_NEW()          STACK_NEW()
+#define STACK_TEST_NEW_STRING()   STACK_NEW_STR_T(VECTOR)
 #elif defined(TEST_STACK_DEQUE)
-#define STACK_TEST_NEW()         STACK_NEW_T(intptr_t, DEQUE)
-#define STACK_TEST_NEW_STRING()  STACK_NEW_STRING_T(DEQUE)
+#define STACK_TEST_NEW()          STACK_NEW_T(intptr_t, DEQUE)
+#define STACK_TEST_NEW_STRING()   STACK_NEW_STR_T(DEQUE)
 #elif defined(TEST_STACK_LIST)
-#define STACK_TEST_NEW()         STACK_NEW_T(intptr_t, LIST)
-#define STACK_TEST_NEW_STRING()  STACK_NEW_STRING_T(LIST)
+#define STACK_TEST_NEW()          STACK_NEW_T(intptr_t, LIST)
+#define STACK_TEST_NEW_STRING()   STACK_NEW_STR_T(LIST)
 #endif
 
 #if defined(TEST_QUEUE_DEQUE)
-#define QUEUE_TEST_NEW()         QUEUE_NEW()
-#define QUEUE_TEST_NEW_STRING()  QUEUE_NEW_STRING_T(DEQUE)
+#define QUEUE_TEST_NEW()          QUEUE_NEW()
+#define QUEUE_TEST_NEW_STRING()   QUEUE_NEW_STR_T(DEQUE)
 #elif defined(TEST_QUEUE_LIST)
-#define QUEUE_TEST_NEW()         QUEUE_NEW_T(intptr_t, LIST)
-#define QUEUE_TEST_NEW_STRING()  QUEUE_NEW_STRING_T(LIST)
+#define QUEUE_TEST_NEW()          QUEUE_NEW_T(intptr_t, LIST)
+#define QUEUE_TEST_NEW_STRING()   QUEUE_NEW_STR_T(LIST)
 #endif
 
 #if defined(TEST_PQUEUE_VECTOR)
 #define PQUEUE_TEST_NEW()         PRIORITY_QUEUE_NEW()
-#define PQUEUE_TEST_NEW_STRING()  PRIORITY_QUEUE_NEW_STRING()
+#define PQUEUE_TEST_NEW_STRING()  PQUEUE_NEW_STR_T(VECTOR)
 #elif defined(TEST_PQUEUE_DEQUE)
 #define PQUEUE_TEST_NEW()         PRIORITY_QUEUE_NEW_T(intptr_t, DEQUE)
-#define PQUEUE_TEST_NEW_STRING()  PRIORITY_QUEUE_NEW_STRING_T(DEQUE)
+#define PQUEUE_TEST_NEW_STRING()  PQUEUE_NEW_STR_T(DEQUE)
 #endif
 
 #if defined(TEST_LIST) || defined(TEST_VECTOR) || defined(TEST_DEQUE)
@@ -207,83 +237,26 @@
 #endif
 
 #define TOUCH_TIMERS() do { (void)time_hashmap; (void)time_map; (void)time_set; \
-                            (void)time_multimap; (void)time_multiset; (void)time_list; \
-                            (void)time_vector; (void)time_stack; \
-                            (void)time_queue; (void)time_pqueue; \
-                            (void)time_deque; } while (0)
+                            (void)time_multimap; (void)time_multiset; \
+                            (void)time_list; (void)time_vector; (void)time_deque; \
+                            (void)time_stack; (void)time_queue; (void)time_pqueue; } while (0)
 
 
-#include <sort/sort_macro.h>
+deque_sort_define(sort_dq_int,    deque_data_t,  __i_sort_default_less)
+deque_sort_define(sort_dq_ides,   deque_data_t,  __i_sort_default_greater)
+deque_sort_define_move(sort_dq_str,   seq_str_t, seq_lt_str, seq_move_str)
+deque_sort_define_move(sort_dq_sdes,  seq_str_t, seq_gt_str, seq_move_str)
 
-#ifdef DEQUE_STR_SSO
-#define dq_move_str(_d, _s)   __ds_ops_move_same_sso((_d), (_s))
-#define dq_lt_str(_a, _b)     (0 > __ds_ops_cmp_same_sso(&(_a), &(_b)))
-#define dq_gt_str(_a, _b)     (0 < __ds_ops_cmp_same_sso(&(_a), &(_b)))
-#define dq_str_t              ds_sso_t
-#else
-#define dq_move_str(_d, _s)   __i_sort_default_move((_d), (_s))
-#define dq_lt_str(_a, _b)     (0 > strcmp((const char*)(_a), (const char*)(_b)))
-#define dq_gt_str(_a, _b)     (0 < strcmp((const char*)(_a), (const char*)(_b)))
-#define dq_str_t              char*
-#endif
-
-__i_deque_sort_define(sort_dq_int,  deque_data_t, __i_sort_default_less)
-__i_deque_sort_define(sort_dq_ides, deque_data_t, __i_sort_default_greater)
-__i_deque_sort_define_move(sort_dq_str,  dq_str_t, dq_lt_str, dq_move_str)
-__i_deque_sort_define_move(sort_dq_sdes, dq_str_t, dq_gt_str, dq_move_str)
-
-
-
-/* vector 的字符串元素类型跟 deque 用同一个开关（Makefile 的 vector 目标也传
-   -DDEQUE_STR_SSO），所以这里保持和 dq_ 完全一样的两分支：
-   SSO 版元素是 ds_sso_t，char* 版元素是 char*。
-   入口收 vector_iterator_t，直接传 cvector->begin/end。 */
-#ifdef DEQUE_STR_SSO
-#define vt_move_str(_d, _s)   __ds_ops_move_same_sso((_d), (_s))
-#define vt_lt_str(_a, _b)     (0 > __ds_ops_cmp_same_sso(&(_a), &(_b)))
-#define vt_gt_str(_a, _b)     (0 < __ds_ops_cmp_same_sso(&(_a), &(_b)))
-#define vt_str_t              ds_sso_t
-#else
-#define vt_move_str(_d, _s)   __i_sort_default_move((_d), (_s))
-#define vt_lt_str(_a, _b)     (0 > strcmp((const char*)(_a), (const char*)(_b)))
-#define vt_gt_str(_a, _b)     (0 < strcmp((const char*)(_a), (const char*)(_b)))
-#define vt_str_t              char*
-#endif
-
-__i_vector_sort_define(sort_vt_int,  vector_data_t, __i_sort_default_less)
-__i_vector_sort_define(sort_vt_ides, vector_data_t, __i_sort_default_greater)
-__i_vector_sort_define_move(sort_vt_str,  vt_str_t, vt_lt_str, vt_move_str)
-__i_vector_sort_define_move(sort_vt_sdes, vt_str_t, vt_gt_str, vt_move_str)
+vector_sort_define(sort_vt_int,   vector_data_t, __i_sort_default_less)
+vector_sort_define(sort_vt_ides,  vector_data_t, __i_sort_default_greater)
+vector_sort_define_move(sort_vt_str,  seq_str_t, seq_lt_str, seq_move_str)
+vector_sort_define_move(sort_vt_sdes, seq_str_t, seq_gt_str, seq_move_str)
 
 #ifdef TEST_LIST
-static bool list_lt_num(list_data_t a, list_data_t b)
-{
-    return a < b;
-}
-
-static bool list_gt_num(list_data_t a, list_data_t b)
-{
-    return a > b;
-}
-
-static bool list_lt_sso(list_data_t a, list_data_t b)
-{
-    return 0 > __ds_ops_cmp_same_sso((const ds_sso_t*)(uintptr_t)a, (const ds_sso_t*)(uintptr_t)b);
-}
-
-static bool list_gt_sso(list_data_t a, list_data_t b)
-{
-    return 0 < __ds_ops_cmp_same_sso((const ds_sso_t*)(uintptr_t)a, (const ds_sso_t*)(uintptr_t)b);
-}
 
 static bool list_remove_if_odd(list_data_t data)
 {
     return 0 != (data & 1);
-}
-
-static bool list_unique_eq(list_data_t a, list_data_t b)
-{
-    return a == b;
 }
 
 static bool list_remove_if_char_odd(list_data_t data)
@@ -291,44 +264,15 @@ static bool list_remove_if_char_odd(list_data_t data)
     return 0 != (((const char*)(uintptr_t)data)[0] & 1);
 }
 
-static bool list_unique_eq_sso(list_data_t a, list_data_t b)
-{
-    return 0 == strcmp((const char*)(uintptr_t)a, (const char*)(uintptr_t)b);
-}
-
-static int list_is_sorted_num(list_t* _this, __list_lt_t __lt)
-{
-    list_iterator_t it  = clist_begin(_this);
-    list_iterator_t end = clist_end(_this);
-
-    while (it.d != end.d) {
-        list_iterator_t next = clist_next(it);
-
-        if (next.d == end.d)
-            return 1;
-        if (__lt(*(list_data_t*)next.d, *(list_data_t*)it.d))
-            return 0;
-        it = next;
-    }
-    return 1;
-}
-
-static int list_is_sorted_sso(list_t* _this, __list_lt_t __lt)
-{
-    list_iterator_t it  = clist_begin(_this);
-    list_iterator_t end = clist_end(_this);
-
-    while (it.d != end.d) {
-        list_iterator_t next = clist_next(it);
-
-        if (next.d == end.d)
-            return 1;
-        if (__lt((list_data_t)(uintptr_t)next.d, (list_data_t)(uintptr_t)it.d))
-            return 0;
-        it = next;
-    }
-    return 1;
-}
+#ifdef TEST_STR_SSO
+#define list_lt_str __list_lt_sso
+#define list_gt_str __list_gt_sso
+#define list_sorted_str(_this, ascending) clist_sorted_sso((_this), (ascending))
+#else
+#define list_lt_str __list_lt_chars
+#define list_gt_str __list_gt_chars
+#define list_sorted_str(_this, ascending) clist_sorted_chars((_this), (ascending))
+#endif
 #endif /* TEST_LIST */
 
 #ifdef TEST_VECTOR
@@ -1964,7 +1908,7 @@ static void test_i_rand(void)
             {
                 list_size_t removed;
 
-                GET_DURATION({ removed = DSL(clist, unique_if)(ds_list_i, list_unique_eq); }, time_list);
+                GET_DURATION({ removed = DSL(clist, unique_if)(ds_list_i, __ds_ops_eq_default); }, time_list);
                 printf("RESULT %s unique_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_i));
             }
         }
@@ -2032,12 +1976,12 @@ static void test_i_rand(void)
 
             for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
             for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(src, (list_data_t)(rand()));
-            DSL(clist, sort)(ds_list_i, list_lt_num);
-            DSL(clist, sort)(src, list_lt_num);
+            DSL(clist, sort)(ds_list_i, __list_lt_default);
+            DSL(clist, sort)(src, __list_lt_default);
 
             time_list = 0;
-            GET_DURATION({ DSL(clist, merge)(ds_list_i, src, list_lt_num); }, time_list);
-            printf("RESULT %s merge            %s %8zd %6zd ms sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), list_is_sorted_num(ds_list_i, list_lt_num), DSL(clist, size)(ds_list_i));
+            GET_DURATION({ DSL(clist, merge)(ds_list_i, src, __list_lt_default); }, time_list);
+            printf("RESULT %s merge            %s %8zd %6zd ms sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), clist_sorted_default(ds_list_i, true), DSL(clist, size)(ds_list_i));
 
             LIST_DELETE(&src);
         }
@@ -2099,20 +2043,20 @@ static void test_i_rand(void)
         DSL(clist, clear)(ds_list_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
 
         time_list = 0;
-        GET_DURATION({ DSL(clist, sort)(ds_list_i, list_lt_num); }, time_list);
+        GET_DURATION({ DSL(clist, sort)(ds_list_i, __list_lt_default); }, time_list);
         printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000),
-               list_is_sorted_num(ds_list_i, list_lt_num),
+               clist_sorted_default(ds_list_i, true),
                DSL(clist, size)(ds_list_i));
 
         srand(SORT_SEED);
         DSL(clist, clear)(ds_list_i); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, (list_data_t)(rand()));
 
         time_list = 0;
-        GET_DURATION({ DSL(clist, sort)(ds_list_i, list_gt_num); }, time_list);
+        GET_DURATION({ DSL(clist, sort)(ds_list_i, __list_gt_default); }, time_list);
         printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000),
-               list_is_sorted_num(ds_list_i, list_gt_num),
+               clist_sorted_default(ds_list_i, false),
                DSL(clist, size)(ds_list_i));
     }
 #endif
@@ -2239,18 +2183,7 @@ static void test_s_rand(void)
     TOUCH_TIMERS();
 
 #ifdef TEST_HASHMAP
-    class_hashmap_ops_t tops_hashmap = {
-        .__hash      = __ds_ops_hash_default_string,
-        .valid_key   = ds_ops_valid_data_default_string,
-        .__lt        = __ds_ops_lt_default_string,
-        .__eq        = __ds_ops_eq_default_string,
-        .copy_key    = ds_ops_copy_data_default_string,
-        .free_key    = ds_ops_free_data_default_string,
-    };
-#endif
-
-#ifdef TEST_HASHMAP
-    hashmap_t*        ds_hashmap_s  = HASHMAP_NEW_OPS_3(&tops_hashmap, HASHMAP_CAPACITY_INIT, 0, 0.0);
+    hashmap_t*        ds_hashmap_s  = HASHMAP_NEW_KV_3(string, intptr_t, HASHMAP_CAPACITY_INIT, 0, 0.0);
     printf("Hashmap reserve: %d\n", HASHMAP_CAPACITY_INIT);
 #elif TEST_MAP
     map_t*            ds_map_s      = MAP_NEW_KV(string, int16_t);
@@ -2261,11 +2194,11 @@ static void test_s_rand(void)
 #elif TEST_MULTISET
     multiset_t*       ds_multiset_s = MULTISET_NEW_T(string);
 #elif TEST_LIST
-    list_t*           ds_list_s     = LIST_NEW_STRING();
+    list_t*           ds_list_s     = LIST_NEW_STR();
 #elif TEST_VECTOR
-    vector_t*         ds_vector_s   = VECTOR_NEW_STRING();
+    vector_t*         ds_vector_s   = VECTOR_NEW_STR();
 #elif TEST_DEQUE
-    deque_t*          ds_deque_s    = DEQUE_NEW_STRING();
+    deque_t*          ds_deque_s    = DEQUE_NEW_STR();
 #elif TEST_STACK
     stack_t*          ds_stack_s    = STACK_TEST_NEW_STRING();
 #elif TEST_QUEUE
@@ -2417,7 +2350,7 @@ static void test_s_rand(void)
         {
             volatile size_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = __cstack_top(ds_stack_s).ssd->len;
+                sink = (size_t)(uintptr_t)*__cstack_top(ds_stack_s).sd;
             }, time_stack);
             (void)sink;
         }
@@ -2428,7 +2361,7 @@ static void test_s_rand(void)
         {
             volatile size_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = __cqueue_front(ds_queue_s).ssd->len;
+                sink = (size_t)(uintptr_t)*__cqueue_front(ds_queue_s).sd;
             }, time_queue);
             (void)sink;
         }
@@ -2439,7 +2372,7 @@ static void test_s_rand(void)
         {
             volatile size_t sink = 0;
             GET_DURATION(for (int i = 0; i < TIMES_FIND; ++i) {
-                sink = __cpqueue_top(ds_pqueue_s).ssd->len;
+                sink = (size_t)(uintptr_t)*__cpqueue_top(ds_pqueue_s).sd;
             }, time_pqueue);
             (void)sink;
         }
@@ -2682,7 +2615,7 @@ static void test_s_rand(void)
         /* insert_n + insert_range */
         DSL(cdeque, clear)(ds_deque_s);
         {
-            deque_t* src = DEQUE_NEW_STRING();
+            deque_t* src = DEQUE_NEW_STR();
 
             DSL(cdeque, insert_n)(ds_deque_s, DSL(cdeque, end)(ds_deque_s), (deque_size_t)TIMES_INSERT / 2, DS_ARG());
             DSL(cdeque, insert_n)(src,        DSL(cdeque, end)(src),        (deque_size_t)TIMES_INSERT / 1, DS_ARG());
@@ -2704,7 +2637,7 @@ static void test_s_rand(void)
         /* insert_n + assign_range */
         DSL(cdeque, clear)(ds_deque_s);
         {
-            deque_t* src = DEQUE_NEW_STRING();
+            deque_t* src = DEQUE_NEW_STR();
 
             DSL(cdeque, insert_n)(ds_deque_s, DSL(cdeque, end)(ds_deque_s), (deque_size_t)TIMES_INSERT / 2, DS_ARG());
             DSL(cdeque, insert_n)(src,        DSL(cdeque, end)(src),        (deque_size_t)(TIMES_INSERT * 1.2), DS_ARG());
@@ -2819,7 +2752,7 @@ static void test_s_rand(void)
             deque_iterator_t      end  = DSL(cdeque, end)(ds_deque_s);
 
             time_deque = 0;
-            GET_DURATION(for (; it.cur != end.cur; it = DSL(cdeque, next)(it)) { sink += (deque_data_t)((const ds_sso_t*)it.cur)->len; }, time_deque);
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cdeque, next)(it)) { sink += (deque_data_t)(uintptr_t)*it.sd; }, time_deque);
             printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
         }
 
@@ -2829,7 +2762,7 @@ static void test_s_rand(void)
             deque_r_iterator_t    end  = DSL(cdeque, rend)(ds_deque_s);
 
             time_deque = 0;
-            GET_DURATION(for (; it.cur != end.cur; it = DSL(cdeque, rnext)(it)) { sink += (deque_data_t)((const ds_sso_t*)it.cur)->len; }, time_deque);
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cdeque, rnext)(it)) { sink += (deque_data_t)(uintptr_t)*it.sd; }, time_deque);
             printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
         }
 
@@ -2846,15 +2779,15 @@ static void test_s_rand(void)
             printf("RESULT %s max_size         %s %8zd %6zd ms max_size=%zd empty=%d\n", __func__, DS_NAME, (ssize_t)1, (ssize_t)(time_deque / 1000), max_size, is_empty);
 
             time_deque = 0;
-            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (deque_data_t)((const ds_sso_t*)DSL(cdeque, front)(ds_deque_s).d)->len; sink = (deque_data_t)((const ds_sso_t*)DSL(cdeque, back)(ds_deque_s).d)->len; }, time_deque);
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (deque_data_t)(uintptr_t)*DSL(cdeque, front)(ds_deque_s).sd; sink = (deque_data_t)(uintptr_t)*DSL(cdeque, back)(ds_deque_s).sd; }, time_deque);
             printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
 
             time_deque = 0;
-            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (deque_data_t)((const ds_sso_t*)__cdeque_at(ds_deque_s, rand() % DSL(cdeque, size)(ds_deque_s)).d)->len; }, time_deque);
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (deque_data_t)(uintptr_t)*__cdeque_at(ds_deque_s, rand() % DSL(cdeque, size)(ds_deque_s)).sd; }, time_deque);
             printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
 
             time_deque = 0;
-            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { mid = __cdeque_it(ds_deque_s, rand() % DSL(cdeque, size)(ds_deque_s)); sink += (deque_data_t)((const ds_sso_t*)mid.cur)->len; }, time_deque);
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { mid = __cdeque_it(ds_deque_s, rand() % DSL(cdeque, size)(ds_deque_s)); sink += (deque_data_t)(uintptr_t)*mid.sd; }, time_deque);
             printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_deque / 1000), (ssize_t)sink);
         }
 
@@ -3036,7 +2969,7 @@ static void test_s_rand(void)
         /* insert_n + insert_range */
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
         {
-            vector_t* src = VECTOR_NEW_STRING();
+            vector_t* src = VECTOR_NEW_STR();
 
             DSL(cvector, insert_n)(ds_vector_s, DSL(cvector, end)(ds_vector_s), (vector_size_t)TIMES_INSERT / 2, DS_ARG());
             DSL(cvector, insert_n)(src,         DSL(cvector, end)(src),         (vector_size_t)TIMES_INSERT / 1, DS_ARG());
@@ -3055,7 +2988,7 @@ static void test_s_rand(void)
         /* insert_n + assign_range */
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
         {
-            vector_t* src = VECTOR_NEW_STRING();
+            vector_t* src = VECTOR_NEW_STR();
 
             DSL(cvector, reserve)(ds_vector_s, (vector_size_t)TIMES_INSERT);
             DSL(cvector, insert_n)(ds_vector_s, DSL(cvector, end)(ds_vector_s), (vector_size_t)TIMES_INSERT / 2, DS_ARG());
@@ -3084,7 +3017,7 @@ static void test_s_rand(void)
         /* insert_n + assign */
         DSL(cvector, clear)(ds_vector_s); DSL(cvector, shrink_to_fit)(ds_vector_s);
         {
-            vector_t* src = VECTOR_NEW_STRING();
+            vector_t* src = VECTOR_NEW_STR();
 
             DSL(cvector, reserve)(ds_vector_s, (vector_size_t)TIMES_INSERT);
             DSL(cvector, insert_n)(ds_vector_s, DSL(cvector, end)(ds_vector_s), (vector_size_t)TIMES_INSERT / 2, DS_ARG());
@@ -3194,7 +3127,7 @@ static void test_s_rand(void)
             vector_iterator_t      end  = DSL(cvector, end)(ds_vector_s);
 
             time_vector = 0;
-            GET_DURATION(for (; it.cur != end.cur; it = DSL(cvector, next)(it)) { sink += (vector_data_t)((const ds_sso_t*)it.cur)->len; }, time_vector);
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cvector, next)(it)) { sink += (vector_data_t)(uintptr_t)*it.sd; }, time_vector);
             printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
         }
 
@@ -3204,7 +3137,7 @@ static void test_s_rand(void)
             vector_r_iterator_t    end  = DSL(cvector, rend)(ds_vector_s);
 
             time_vector = 0;
-            GET_DURATION(for (; it.cur != end.cur; it = DSL(cvector, rnext)(it)) { sink += (vector_data_t)((const ds_sso_t*)it.cur)->len; }, time_vector);
+            GET_DURATION(for (; it.cur != end.cur; it = DSL(cvector, rnext)(it)) { sink += (vector_data_t)(uintptr_t)*it.sd; }, time_vector);
             printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
         }
 
@@ -3221,15 +3154,15 @@ static void test_s_rand(void)
             printf("RESULT %s max_size         %s %8zd %6zd ms max_size=%zd empty=%d\n", __func__, DS_NAME, (ssize_t)1, (ssize_t)(time_vector / 1000), max_size, is_empty);
 
             time_vector = 0;
-            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (vector_data_t)((const ds_sso_t*)DSL(cvector, front)(ds_vector_s).d)->len; sink = (vector_data_t)((const ds_sso_t*)DSL(cvector, back)(ds_vector_s).d)->len; }, time_vector);
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (vector_data_t)(uintptr_t)*DSL(cvector, front)(ds_vector_s).sd; sink = (vector_data_t)(uintptr_t)*DSL(cvector, back)(ds_vector_s).sd; }, time_vector);
             printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
 
             time_vector = 0;
-            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (vector_data_t)((const ds_sso_t*)__cvector_at(ds_vector_s, rand() % DSL(cvector, size)(ds_vector_s)).d)->len; }, time_vector);
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { sink = (vector_data_t)(uintptr_t)*__cvector_at(ds_vector_s, rand() % DSL(cvector, size)(ds_vector_s)).sd; }, time_vector);
             printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
 
             time_vector = 0;
-            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { mid = __cvector_it(ds_vector_s, rand() % DSL(cvector, size)(ds_vector_s)); sink += (vector_data_t)((const ds_sso_t*)mid.cur)->len; }, time_vector);
+            GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { mid = __cvector_it(ds_vector_s, rand() % DSL(cvector, size)(ds_vector_s)); sink += (vector_data_t)(uintptr_t)*mid.sd; }, time_vector);
             printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_vector / 1000), (ssize_t)sink);
         }
 
@@ -3412,7 +3345,7 @@ static void test_s_rand(void)
         /* insert_n + insert_range */
         DSL(clist, clear)(ds_list_s);
         {
-            list_t* src = LIST_NEW_STRING();
+            list_t* src = LIST_NEW_STR();
 
             DSL(clist, insert_n)(ds_list_s, DSL(clist, end)(ds_list_s), (list_size_t)TIMES_INSERT / 2, DS_ARG());
             DSL(clist, insert_n)(src,       DSL(clist, end)(src),       (list_size_t)TIMES_INSERT / 1, DS_ARG());
@@ -3434,7 +3367,7 @@ static void test_s_rand(void)
         /* insert_n + assign_range */
         DSL(clist, clear)(ds_list_s);
         {
-            list_t* src = LIST_NEW_STRING();
+            list_t* src = LIST_NEW_STR();
 
             DSL(clist, insert_n)(ds_list_s, DSL(clist, end)(ds_list_s), (list_size_t)TIMES_INSERT / 2, DS_ARG());
             DSL(clist, insert_n)(src,       DSL(clist, end)(src),       (list_size_t)(TIMES_INSERT * 1.2), DS_ARG());
@@ -3553,7 +3486,7 @@ static void test_s_rand(void)
             {
                 list_size_t removed;
 
-                GET_DURATION({ removed = DSL(clist, unique_if)(ds_list_s, list_unique_eq_sso); }, time_list);
+                GET_DURATION({ removed = DSL(clist, unique_if)(ds_list_s, __ds_ops_eq_default_string); }, time_list);
                 printf("RESULT %s unique_if        %s %8zd %6zd ms removed=%zd size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), removed, DSL(clist, size)(ds_list_s));
             }
         }
@@ -3573,7 +3506,7 @@ static void test_s_rand(void)
         /* splice */ /* O(1)，单次 0ms；整条链来回搬 TIMES_INSERT 次，位置不影响 O(1) 代价，统一用 end */
         DSL(clist, clear)(ds_list_s);
         {
-            list_t* src = LIST_NEW_STRING();
+            list_t* src = LIST_NEW_STR();
 
             for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
             for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(src, DS_ARG());
@@ -3594,7 +3527,7 @@ static void test_s_rand(void)
         /* splice_range */
         DSL(clist, clear)(ds_list_s);
         {
-            list_t*     src = LIST_NEW_STRING();
+            list_t*     src = LIST_NEW_STR();
             list_size_t n   = (list_size_t)TIMES_INSERT / 2;
 
             for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
@@ -3617,16 +3550,16 @@ static void test_s_rand(void)
         /* merge */
         DSL(clist, clear)(ds_list_s);
         {
-            list_t* src = LIST_NEW_STRING();
+            list_t* src = LIST_NEW_STR();
 
             for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
             for (int i = 0; i < TIMES_INSERT / 2; ++i) DSL(clist, push_back)(src, DS_ARG());
-            DSL(clist, sort)(ds_list_s, list_lt_sso);
-            DSL(clist, sort)(src, list_lt_sso);
+            DSL(clist, sort)(ds_list_s, list_lt_str);
+            DSL(clist, sort)(src, list_lt_str);
 
             time_list = 0;
-            GET_DURATION({ DSL(clist, merge)(ds_list_s, src, list_lt_sso); }, time_list);
-            printf("RESULT %s merge            %s %8zd %6zd ms sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), list_is_sorted_sso(ds_list_s, list_lt_sso), DSL(clist, size)(ds_list_s));
+            GET_DURATION({ DSL(clist, merge)(ds_list_s, src, list_lt_str); }, time_list);
+            printf("RESULT %s merge            %s %8zd %6zd ms sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT / 2, (ssize_t)(time_list / 1000), list_sorted_str(ds_list_s, true), DSL(clist, size)(ds_list_s));
 
             LIST_DELETE(&src);
         }
@@ -3642,7 +3575,7 @@ static void test_s_rand(void)
             list_iterator_t      end  = DSL(clist, end)(ds_list_s);
 
             time_list = 0;
-            GET_DURATION(for (; it.d != end.d; it = DSL(clist, next)(it)) { sink += (list_data_t)((const ds_sso_t*)it.d)->len; }, time_list);
+            GET_DURATION(for (; it.d != end.d; it = DSL(clist, next)(it)) { sink += (list_data_t)(uintptr_t)*it.sd; }, time_list);
             printf("RESULT %s iterate fwd      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
         }
 
@@ -3652,7 +3585,7 @@ static void test_s_rand(void)
             list_r_iterator_t    end  = DSL(clist, rend)(ds_list_s);
 
             time_list = 0;
-            GET_DURATION(for (; it.d != end.d; it = DSL(clist, rnext)(it)) { sink += (list_data_t)((const ds_sso_t*)it.d)->len; }, time_list);
+            GET_DURATION(for (; it.d != end.d; it = DSL(clist, rnext)(it)) { sink += (list_data_t)(uintptr_t)*it.sd; }, time_list);
             printf("RESULT %s iterate rev      %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
         }
 
@@ -3671,17 +3604,17 @@ static void test_s_rand(void)
 
             time_list = 0;
             GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) {
-                sink = (list_data_t)((const ds_sso_t*)DSL(clist, front)(ds_list_s).d)->len;
-                sink = (list_data_t)((const ds_sso_t*)DSL(clist, back)(ds_list_s).d)->len;
+                sink = (list_data_t)(uintptr_t)*DSL(clist, front)(ds_list_s).sd;
+                sink = (list_data_t)(uintptr_t)*DSL(clist, back)(ds_list_s).sd;
             }, time_list);
             printf("RESULT %s front_back       %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(time_list / 1000), (ssize_t)sink);
 
             time_list = 0;
-            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { sink = (list_data_t)((const ds_sso_t*)__clist_at(ds_list_s, rand() % DSL(clist, size)(ds_list_s)).d)->len; }, time_list);
+            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { sink = (list_data_t)(uintptr_t)*__clist_at(ds_list_s, rand() % DSL(clist, size)(ds_list_s)).sd; }, time_list);
             printf("RESULT %s __at             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INDEX, (ssize_t)(time_list / 1000), (ssize_t)sink);
 
             time_list = 0;
-            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { mid = __clist_it(ds_list_s, rand() % DSL(clist, size)(ds_list_s)); sink += (list_data_t)((const ds_sso_t*)mid.d)->len; }, time_list);
+            GET_DURATION(for (int i = 0; i < TIMES_INDEX; ++i) { mid = __clist_it(ds_list_s, rand() % DSL(clist, size)(ds_list_s)); sink += (list_data_t)(uintptr_t)*mid.sd; }, time_list);
             printf("RESULT %s __it             %s %8zd %6zd ms sink=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INDEX, (ssize_t)(time_list / 1000), (ssize_t)sink);
         }
 
@@ -3691,20 +3624,20 @@ static void test_s_rand(void)
         DSL(clist, clear)(ds_list_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
 
         time_list = 0;
-        GET_DURATION({ DSL(clist, sort)(ds_list_s, list_lt_sso); }, time_list);
+        GET_DURATION({ DSL(clist, sort)(ds_list_s, list_lt_str); }, time_list);
         printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000),
-               list_is_sorted_sso(ds_list_s, list_lt_sso),
+               list_sorted_str(ds_list_s, true),
                DSL(clist, size)(ds_list_s));
 
         srand(SORT_SEED);
         DSL(clist, clear)(ds_list_s); for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
 
         time_list = 0;
-        GET_DURATION({ DSL(clist, sort)(ds_list_s, list_gt_sso); }, time_list);
+        GET_DURATION({ DSL(clist, sort)(ds_list_s, list_gt_str); }, time_list);
         printf("RESULT %s sort             %s %8zd %6zd ms dir=desc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000),
-               list_is_sorted_sso(ds_list_s, list_gt_sso),
+               list_sorted_str(ds_list_s, false),
                DSL(clist, size)(ds_list_s));
 #undef DS_ARG
     }

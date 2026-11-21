@@ -48,10 +48,16 @@ ptrdiff_t __algo_sort_lg(ptrdiff_t n)
     __algo_sort_##name##_final_insert(__first, __last)
 #endif
 
-/* Three default macros provided for external use */
+/* Some default macros provided for external use */
 #define __i_sort_default_move(_dest, _src)  (*(_dest) = *(_src))
-#define __i_sort_default_less(_a, _b)       ((_a) < (_b))
-#define __i_sort_default_greater(_a, _b)    ((_a) > (_b))
+#define __i_sort_default_less(_l, _r)       ((_l) < (_r))
+#define __i_sort_default_greater(_l, _r)    ((_l) > (_r))
+#define __i_sort_sso_move(_d, _s)           __ds_ops_move_same_sso((_d), (_s))
+#define __i_sort_sso_less(_l, _r)           __ds_ops_lt_same_sso((ds_data_t)&(_l), (ds_data_t)&(_r))
+#define __i_sort_sso_greater(_l, _r)        __ds_ops_gt_same_sso((ds_data_t)&(_l), (ds_data_t)&(_r))
+#define __i_sort_chars_move(_d, _s)         __i_sort_default_move((_d), (_s))
+#define __i_sort_chars_less(_l, _r)         __ds_ops_lt_default_string((ds_data_t)(_l), (ds_data_t)(_r))
+#define __i_sort_chars_greater(_l, _r)      __ds_ops_gt_default_string((ds_data_t)(_l), (ds_data_t)(_r))
 
 #define __i_sort_define(name, type, __less, __move, iter, __add, __next, __prev, __dist, __eq, __lt, __get) \
                                                                                                     \
@@ -245,9 +251,11 @@ void __algo_sort_##name##_heap_heapify(iter __first, ptrdiff_t __hole, ptrdiff_t
     const ptrdiff_t __top = __hole;                                                                 \
     ptrdiff_t __child = __hole;                                                                     \
                                                                                                     \
-    /* Top-down: heapify                                                                            \
-     * std heap: only handle the left/right children here; where `__value`                          \
-     * belongs is left to `heap_push`, which performs the reverse (upward) pass */                  \
+    /*                                                                                              \
+     *  Top-down: heapify                                                                           \
+     *  std heap: only handle the left/right children here; where `__value`                         \
+     *  belongs is left to `heap_push`, which performs the reverse (upward) pass                    \
+     */                                                                                             \
     while (__child < (__len - 1) / 2) {                                                             \
         __child = 2 * (__child + 1);                                                                \
         /* `__child` is right now, left > right */                                                  \

@@ -32,9 +32,13 @@ typedef struct sequence_container_value {
         uint8_t*   u8;
         uint16_t*  u16;
         uint32_t*  u32;
+        uint64_t*  u64;
         int8_t*    s8;
         int16_t*   s16;
         int32_t*   s32;
+        int64_t*   s64;
+        float*     f;
+        double*    lf;
     };
 } sequence_container_value_t;
 
@@ -79,6 +83,7 @@ __CLASS_SEQUENCE_CONTAINER_OPS_DECL(sso)
 #define __DS_DATA_CTORS_DEFINED
 #define ds_data(v)       __ds_data(v)
 #define ds_sdata(v)      __ds_sdata(v)
+#define ds_cstdata(v)    (ds_data_t)(v) /* custom type */
 
 #define ds_u8data(v)     __ds_u8data(v)
 #define ds_u16data(v)    __ds_u16data(v)

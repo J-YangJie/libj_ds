@@ -138,14 +138,18 @@ bucket_node_t* __bucket_rb_next(const bucket_t* _this, const bucket_node_t* node
         return NULL;
 #endif /* JDSC_ITERATOR_ERR_NULL */
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
 
     /* Err: node(empty node) doesn't belong to current tree */
     JDSC_ASSERT(!RB_EMPTY_NODE(&node->ds_node.rb_node));
 
-    /* The checking of parameter errors in `rb_next` has been replaced by `RB_EMPTY_NODE`.
-       Therefore, when `rb_next` returns `NULL`, it means there are no next node. */
+    /*
+     *  The checking of parameter errors in `rb_next` has been replaced by `RB_EMPTY_NODE`.
+     *  Therefore, when `rb_next` returns `NULL`, it means there are no next node.
+     */
     t = rb_next(&node->ds_node.rb_node);
     return is_null(t) ? __bucket_end(_this) : bucket_rb_entry(t);
 }
@@ -172,8 +176,10 @@ bucket_node_t* __bucket_rb_prev(const bucket_t* _this, const bucket_node_t* node
     /* Err: node(empty node) doesn't belong to current tree */
     JDSC_ASSERT(!RB_EMPTY_NODE(&node->ds_node.rb_node));
 
-    /* The checking of parameter errors in `rb_prev` has been replaced by `RB_EMPTY_NODE`.
-       Therefore, when `rb_prev` returns `NULL`, it means there are no prev node. */
+    /*
+     *  The checking of parameter errors in `rb_prev` has been replaced by `RB_EMPTY_NODE`.
+     *  Therefore, when `rb_prev` returns `NULL`, it means there are no prev node.
+     */
     t = rb_prev(&node->ds_node.rb_node);
     JDSC_ASSERT(!is_null(t));
 
@@ -221,14 +227,18 @@ bucket_node_t* __bucket_rb_rnext(const bucket_t* _this, const bucket_node_t* nod
         return NULL;
 #endif /* JDSC_ITERATOR_ERR_NULL */
 
-    /* The input parameter is `reverse_iterator`, and there's no need 
-       to check whether it equals `end` */
+    /*
+     *  The input parameter is `reverse_iterator`, and there's no need
+     *  to check whether it equals `end`
+     */
 
     /* Err: node(empty node) doesn't belong to current tree */
     JDSC_ASSERT(!RB_EMPTY_NODE(&node->ds_node.rb_node));
 
-    /* The checking of parameter errors in `rb_prev` has been replaced by `RB_EMPTY_NODE`.
-       Therefore, when `rb_prev` returns `NULL`, it means there are no next node. */
+    /*
+     *  The checking of parameter errors in `rb_prev` has been replaced by `RB_EMPTY_NODE`.
+     *  Therefore, when `rb_prev` returns `NULL`, it means there are no next node.
+     */
     t = rb_prev(&node->ds_node.rb_node);
     return is_null(t) ? __bucket_rend(_this) : bucket_rb_entry(t);
 }
@@ -255,8 +265,10 @@ bucket_node_t* __bucket_rb_rprev(const bucket_t* _this, const bucket_node_t* nod
     /* Err: node(empty node) doesn't belong to current tree */
     JDSC_ASSERT(!RB_EMPTY_NODE(&node->ds_node.rb_node));
 
-    /* The checking of parameter errors in `rb_next` has been replaced by `RB_EMPTY_NODE`.
-       Therefore, when `rb_next` returns `NULL`, it means there are no prev node. */
+    /*
+     *  The checking of parameter errors in `rb_next` has been replaced by `RB_EMPTY_NODE`.
+     *  Therefore, when `rb_next` returns `NULL`, it means there are no prev node.
+     */
     t = rb_next(&node->ds_node.rb_node);
     JDSC_ASSERT(!is_null(t));
 
@@ -331,8 +343,10 @@ bucket_node_t* __bucket_hl_next(const bucket_t* _this, const bucket_node_t* node
         return NULL;
 #endif /* JDSC_ITERATOR_ERR_NULL */
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
 
     t = node->ds_node.hl_node.next;
     return is_null(t) ? __bucket_end(_this) : bucket_hl_entry(t);
@@ -413,8 +427,10 @@ bucket_node_t* __bucket_hl_rnext(const bucket_t* _this, const bucket_node_t* nod
         return NULL;
 #endif /* JDSC_ITERATOR_ERR_NULL */
 
-    /* The input parameter is `reverse_iterator`, and there's no need 
-       to check whether it equals `end` */
+    /*
+     *  The input parameter is `reverse_iterator`, and there's no need
+     *  to check whether it equals `end`
+     */
 
     t = node->ds_node.hl_node.pprev;
 
@@ -1018,8 +1034,10 @@ bucket_node_t* bucket_rb_erase(bucket_t* _this, const class_bucket_ops_t* ops, b
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(RB_EMPTY_ROOT(&_this->ds.rb) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
@@ -1055,8 +1073,10 @@ bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket_ops_t* ops, b
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(hlist_empty(&_this->ds.hl) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
@@ -1166,8 +1186,10 @@ bucket_node_t* bucket_rb_pop(bucket_t* _this, bucket_node_t* pos)
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(RB_EMPTY_ROOT(&_this->ds.rb) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
@@ -1188,8 +1210,10 @@ bucket_node_t* bucket_hl_pop(bucket_t* _this, bucket_node_t* pos)
     if (unlikely(is_null(_this) || is_null(pos)))
         return NULL;
 
-    /* The input parameter is `iterator`, and there's no need 
-       to check whether it equals `rend` */
+    /*
+     *  The input parameter is `iterator`, and there's no need
+     *  to check whether it equals `rend`
+     */
     if (unlikely(hlist_empty(&_this->ds.hl) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 

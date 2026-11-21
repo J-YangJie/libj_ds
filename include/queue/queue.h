@@ -85,20 +85,20 @@ const class_queue_t* class_queue_ins(void);
 #define QUEUE_DELETE(_pptr)                       do { __queue_delete((_pptr)); } while (0)
 
 /*
-    _type includes:
-    1. uint8_t/uint16_t/uint32_t/uint64_t
-    2. int8_t/int16_t/int32_t/int64_t
-    3. uintptr_t/intptr_t/size_t/ssize_t
-    4. float/double/ds_sso_t(string optimization)
-
-    _BASE_NAME includes:
-    1. DEQUE
-    2. LIST
-
-    QUEUE_NEW_T(_type, _BASE_NAME) like std::queue<_type>
-    Such as: queue_t* demo = QUEUE_NEW_T(ds_sso_t, DEQUE);
-    Such as: queue_t* demo = QUEUE_NEW_T(int16_t, LIST);
-    Such as: queue_t* demo = QUEUE_NEW_T(float, DEQUE);
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  _BASE_NAME includes:
+ *  1. DEQUE
+ *  2. LIST
+ *
+ *  QUEUE_NEW_T(_type, _BASE_NAME) like std::queue<_type>
+ *  Such as: queue_t* demo = QUEUE_NEW_T(ds_sso_t, DEQUE);
+ *  Such as: queue_t* demo = QUEUE_NEW_T(int16_t, LIST);
+ *  Such as: queue_t* demo = QUEUE_NEW_T(float, DEQUE);
  */
 #define QUEUE_NEW_T(_type, _BASE_NAME)            _QUEUE_NEW_T(_type, _BASE_NAME)
 

@@ -23,6 +23,14 @@
 #include <_memory.h>
 #include <linux/_compiler.h>
 
+/*
+ *  Default numeric key/value operations
+ *
+ *  Key and value ops tables for the built-in numeric types.
+ *  The 8-byte types are boxed on 32-bit builds so that they fit in
+ *  a pointer-sized key slot.
+ */
+
 #ifndef JDSC_64BIT
 
 static bool __ds_ops_lt_default_int64_t(ds_key_t left, ds_key_t right)   { return __ds_token_to_s64(left)     < __ds_token_to_s64(right); }
@@ -116,7 +124,12 @@ __CLASS_ASSOCIATIVE_CONTAINER_KV_OPS(double,    __ds_ops_lt_default_double,    d
 
 
 
-/* Greater */
+/*
+ *  Greater numeric key operations
+ *
+ *  Key ops tables whose `__lt` callback implements `left > right`,
+ *  for containers that need descending key order.
+ */
 
 #define __DS_OPS_DEFINE_GT(_t, _tok) \
 static bool __ds_ops_gt_default_##_t(ds_key_t left, ds_key_t right) \
@@ -179,7 +192,11 @@ __CLASS_ASSOCIATIVE_CONTAINER_KEY_OPS_GREATER(double,    __ds_ops_gt_default_dou
 
 
 
-/* String */
+/*
+ *  String key/value operations
+ *
+ *  Key and value ops tables backed by the default string callbacks.
+ */
 
 #include <operations/ds_ops_string.h>
 

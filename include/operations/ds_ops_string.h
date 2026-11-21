@@ -21,6 +21,7 @@
 #define __J_DS_OPS_STRING_H
 
 #include <_types.h>
+#include <_compiler.h>
 
 /* hash */
 ds_hash_t __ds_ops_hash_default_string(ds_key_t key);               /* String type: don't judge the validity of `key`(otherwise there will be ambiguity), 
@@ -47,6 +48,8 @@ bool ds_ops_copy_data_default_string(ds_data_t in, ds_data_t* out); /* String ty
 void ds_ops_free_data_default_string(ds_data_t* data);              /* String type: release the `data` and set `data` to `NULL` */
 
 /* value or data */
-bool __ds_ops_gt_default(ds_data_t left, ds_data_t right);          /* Numeric type: return true if [ `left` > `right` ] */
+HEADER_STATIC_INLINE bool __ds_ops_eq_default(ds_data_t left, ds_data_t right) { return left == right; }  /* Numeric type: return true if [ `left` == `right` ] */
+HEADER_STATIC_INLINE bool __ds_ops_lt_default(ds_data_t left, ds_data_t right) { return left <  right; }  /* Numeric type: return true if [ `left` <  `right` ] */
+HEADER_STATIC_INLINE bool __ds_ops_gt_default(ds_data_t left, ds_data_t right) { return left >  right; }  /* Numeric type: return true if [ `left` >  `right` ] */
 
 #endif /* __J_DS_OPS_STRING_H */
