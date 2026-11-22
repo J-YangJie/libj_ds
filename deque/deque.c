@@ -143,18 +143,24 @@ void __i_deque_slot_move_n_forward(const i_deque_t* _this, deque_iterator_t dest
     const class_deque_ops_t* ops = _this->ops;
     void (*__move)(deque_data_t, deque_data_t) = is_null(ops) ? NULL : ops->__move;
 
+    if (unlikely(n <= 0))
+        return ;
+
+    /* Peel the last move so no iterator advance follows it. */
     if (is_null(__move)) {
-        for (deque_size_t i = 0; i < n; ++i) {
+        for (deque_size_t i = 1; i < n; ++i) {
             __i_deque_slot_memmove(_this, dest.cur, src.cur);
             dest = __i_deque_next(dest);
             src  = __i_deque_next(src);
         }
+        __i_deque_slot_memmove(_this, dest.cur, src.cur);
     } else if (dest.cur != src.cur) {
-        for (deque_size_t i = 0; i < n; ++i) {
+        for (deque_size_t i = 1; i < n; ++i) {
             __move((deque_data_t)dest.cur, (deque_data_t)src.cur);
             dest = __i_deque_next(dest);
             src  = __i_deque_next(src);
         }
+        __move((deque_data_t)dest.cur, (deque_data_t)src.cur);
     }
 }
 
@@ -171,18 +177,21 @@ void __i_deque_slot_move_n_backward(const i_deque_t* _this, deque_iterator_t des
     src  = __i_deque_advance(src,  n - 1);
     __move = is_null(ops) ? NULL : ops->__move;
 
+    /* Peel the last move so no iterator advance follows it. */
     if (is_null(__move)) {
-        for (deque_size_t i = 0; i < n; ++i) {
+        for (deque_size_t i = 1; i < n; ++i) {
             __i_deque_slot_memmove(_this, dest.cur, src.cur);
             dest = __i_deque_prev(dest);
             src  = __i_deque_prev(src);
         }
+        __i_deque_slot_memmove(_this, dest.cur, src.cur);
     } else if (dest.cur != src.cur) {
-        for (deque_size_t i = 0; i < n; ++i) {
+        for (deque_size_t i = 1; i < n; ++i) {
             __move((deque_data_t)dest.cur, (deque_data_t)src.cur);
             dest = __i_deque_prev(dest);
             src  = __i_deque_prev(src);
         }
+        __move((deque_data_t)dest.cur, (deque_data_t)src.cur);
     }
 }
 
@@ -242,20 +251,21 @@ void __i_deque_shrink_to_fit(i_deque_t* _this)
     deque_bcount_t n      = off_e - off_b + 1;
     uint8_t**      bkt_n;
 
-    if (unlikely(_this->bkt_count == n))
+    if (unlikely(_this->bkt_count == n + 2 && _this->begin.bkt == _this->bkt + 1))
         return ;
 
-    bkt_n = (uint8_t**)p_calloc((size_t)n, sizeof(uint8_t*));
+    bkt_n = (uint8_t**)p_calloc((size_t)(n + 2), sizeof(uint8_t*));
     if (is_null(bkt_n))
         return ;
 
-    memcpy(bkt_n, _this->begin.bkt, (size_t)n * sizeof(uint8_t*));
+    /* Keep one guard slot on each side of the live range. */
+    memcpy(bkt_n + 1, _this->begin.bkt, (size_t)n * sizeof(uint8_t*));
     p_free(_this->bkt);
 
     _this->bkt = bkt_n;
-    _this->bkt_count = n;
-    _this->begin.bkt = _this->bkt;
-    _this->end.bkt   = _this->bkt + n - 1;
+    _this->bkt_count = n + 2;
+    _this->begin.bkt = _this->bkt + 1;
+    _this->end.bkt   = _this->bkt + n;
 }
 
 JDSC_INLINE
@@ -385,6 +395,8 @@ deque_iterator_t __i_deque_insert_run(i_deque_t* _this, deque_iterator_t pos, de
     deque_size_t pushed;
     deque_size_t fn = __i_deque_iterator_distance(_this->begin, pos);
     deque_size_t bn = __i_deque_iterator_distance(pos, _this->end);
+    deque_data_t src = data;
+    bool staged = false;
 
     if (unlikely(fn < 0 || bn < 0))
         return i_deque_null_iterator();
@@ -394,21 +406,45 @@ deque_iterator_t __i_deque_insert_run(i_deque_t* _this, deque_iterator_t pos, de
             if (!__i_deque_push_front_null(_this))
                 goto err;
         }
-
-        __i_deque_slot_move_n_forward(_this, _this->begin, __i_deque_advance(_this->begin, n), fn);
-        ret = __i_deque_advance(_this->begin, fn);
     } else {
         for (pushed = 0; pushed < n; ++pushed) {
             if (!__i_deque_push_back_null(_this))
                 goto err;
         }
+    }
 
+    /*
+     *  `data` may be an address that belongs to this container. The shift
+     *  below moves it, so stage one deep copy in `swap` before the shift.
+     */
+    if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) && fn > 0 && bn > 0) {
+        if (!__i_deque_slot_write(_this, _this->swap, data))
+            goto err;
+
+        src = _this->sso ? __ds_ops_char_addr_sso((deque_data_t)(uintptr_t)_this->swap)
+                         : (deque_data_t)(uintptr_t)_this->swap;
+        staged = true;
+    }
+
+    if (fn < bn) {
+        __i_deque_slot_move_n_forward(_this, _this->begin, __i_deque_advance(_this->begin, n), fn);
+        ret = __i_deque_advance(_this->begin, fn);
+    } else {
         ret = __i_deque_advance(_this->begin, fn);
         __i_deque_slot_move_n_backward(_this, __i_deque_advance(ret, n), ret, bn);
     }
 
-    if (!__i_deque_slot_write_n(_this, ret, n, data))
-        goto err_slot;
+    if (!staged) {
+        if (!__i_deque_slot_write_n(_this, ret, n, data))
+            goto err_slot;
+    } else {
+        /* The staged copy provides the value for the remaining copies. */
+        if (!__i_deque_slot_write_n(_this, ret, n - 1, src))
+            goto err_slot;
+
+        __i_deque_slot_move(_this, __i_deque_advance(ret, n - 1).cur, _this->swap);
+        staged = false;
+    }
 
     return ret;
 
@@ -419,6 +455,9 @@ err_slot:
         __i_deque_slot_move_n_forward(_this, ret, __i_deque_advance(ret, n), bn);
 
 err:
+    if (staged && !is_null(_this->ops) && !is_null(_this->ops->copy_data) && !is_null(_this->ops->free_data))
+        _this->ops->free_data((deque_data_t*)_this->swap);
+
     if (fn < bn) {
         while (pushed-- > 0)
             __i_deque_pop_front_without_free_data(_this);

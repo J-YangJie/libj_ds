@@ -7,3 +7,4 @@ performance_*
 !performance_*.sh
 stress_fast
 stress_slow
+stress_adapter

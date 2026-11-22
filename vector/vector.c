@@ -296,7 +296,7 @@ JDSC_INLINE JDSC_LOGIC_FRAGMENT /* Because of `n` and `data` */
 vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data)
 {
     const vector_step_t step = _this->step;
-    ptrdiff_t off;
+    ptrdiff_t off, alias = -1;
     vector_size_t move, avail;
 
     if (unlikely(pos < _this->begin || pos > _this->end))
@@ -306,6 +306,17 @@ vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_
     move  = (vector_size_t)__i_vector_ptr_diff(_this->end, pos, step);
     avail = (vector_size_t)__i_vector_ptr_diff(_this->end_of_storage, _this->end, step);
 
+    /*
+     *  `data` may be an address that belongs to this container. Record its
+     *  byte offset before the move so it can be rebased afterwards.
+     */
+    if (_this->dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) {
+        const uintptr_t addr = (uintptr_t)data;
+
+        if (addr >= (uintptr_t)_this->begin && addr < (uintptr_t)_this->end)
+            alias = (ptrdiff_t)(addr - (uintptr_t)_this->begin);
+    }
+
     if (n > avail) {
         if (!__i_vector_reserve(_this, __i_vector_check_len(_this, n)))
             return i_vector_null_iterator();
@@ -314,6 +325,15 @@ vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_
 
     __i_vector_slot_move_n(_this, __i_vector_ptr_add(pos, n, step), pos, move);
     _this->end = __i_vector_ptr_add(_this->end, n, step);
+
+    /* Rebase the recorded source address after the move. */
+    if (unlikely(alias >= 0)) {
+        if (alias >= off * (ptrdiff_t)step)
+            alias += (ptrdiff_t)n * (ptrdiff_t)step;
+
+        data = (vector_data_t)(uintptr_t)(_this->begin + alias);
+    }
+
     if (!__i_vector_slot_write_n(_this, pos, n, data))
         goto err;
     return __i_vector_make_iterator(step, pos);

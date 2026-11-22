@@ -423,7 +423,7 @@ clean :
 	@echo "$@"
 
 cleanall : clean
-	@rm -f $(DLIB_NAME_WITHVER) $(DLIB_NAME) $(SLIB_NAME) $(PERFORMANCE_BINS) $(PERFORMANCE_STL_BINS) $(DEMO_BINS) stress/*.o stress_*
+	@rm -f $(DLIB_NAME_WITHVER) $(DLIB_NAME) $(SLIB_NAME) $(PERFORMANCE_BINS) $(PERFORMANCE_STL_BINS) $(DEMO_BINS) stress/*.o stress_fast stress_slow stress_adapter
 	@echo "$@"
 
 DCFLAGS += -shared -Wl,-soname,$(DLIB_NAME_WITHVER)
@@ -460,5 +460,14 @@ stress_stack : stress/test_stack.o
 
 stress_queue : stress/test_queue.o
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
+
+# Permanent test system. The build and all container modules live in tests/.
+.PHONY: test check
+
+test:
+	@$(MAKE) -C tests test
+
+check:
+	@$(MAKE) -C tests check
 
 
