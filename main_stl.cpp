@@ -1680,10 +1680,6 @@ static void test_i_rand(void)
 
 
         /* insert mid + erase mid */ /* only TIMES_INSERT / 5 times */
-        /*
-         *  和 main.c 的 list 块一致：std::list 的 it(n) 同样是 O(n)，所以中点只定位一次、
-         *  循环里复用（list 的 insert 不让别的迭代器失效，erase 返回下一个）。
-         */
         ds_list_i.clear();
         for (int i = 0; i < TIMES_INSERT; ++i) ds_list_i.push_back(rand() % TIMES_FIND);
         {
@@ -1802,7 +1798,7 @@ static void test_i_rand(void)
         /* replace_it + replace_index */
         ds_list_i.clear();
         {
-            const int TIMES_INDEX = TIMES_FIND_V_L / 20; /* O(n) 下标定位，10M 规模下 100 次要 30s+ */
+            const int TIMES_INDEX = TIMES_FIND_V_L / 20;
 
             for (int i = 0; i < TIMES_INSERT; ++i) ds_list_i.push_back(rand() % TIMES_FIND);
 
@@ -1895,7 +1891,7 @@ static void test_i_rand(void)
         }
 
 
-        /* splice */ /* O(1)，单次 0ms；整条链来回搬 TIMES_INSERT 次，位置不影响 O(1) 代价，统一用 end */
+        /* splice */
         ds_list_i.clear();
         {
             list<ds_data_t> src;
@@ -1978,7 +1974,7 @@ static void test_i_rand(void)
 
         /* max_size + empty + front/back + at + it */
         {
-            const int    TIMES_INDEX = TIMES_FIND_V_L / 20; /* at/it 是 O(n) 定位，10M 规模下 100 次要 30s+ */
+            const int    TIMES_INDEX = TIMES_FIND_V_L / 20;
             volatile ds_data_t sink     = 0;
             ds_size_t          max_size = 0;
             bool               is_empty = false;
@@ -2002,7 +1998,6 @@ static void test_i_rand(void)
         }
 
 
-        /* sort: 升序 —— std::list 的成员 sort（归并、只改链），对应 main.c 的 clist_sort(l, LIST_SORT_ASC) */
         srand(SORT_SEED);
         ds_list_i.clear(); for (int i = 0; i < TIMES_INSERT; ++i) ds_list_i.push_back((ds_data_t)(rand()));
 
@@ -2011,7 +2006,6 @@ static void test_i_rand(void)
         printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000), (int)is_sorted(ds_list_i.begin(), ds_list_i.end()), ds_list_i.size());
 
-        /* sort: 降序 —— 对应 main.c 的 clist_sort(l, LIST_SORT_DESC) */
         srand(SORT_SEED);
         ds_list_i.clear(); for (int i = 0; i < TIMES_INSERT; ++i) ds_list_i.push_back((ds_data_t)(rand()));
 
@@ -3250,7 +3244,6 @@ static void test_s_rand(void)
 
 
         /* insert mid + erase mid */ /* only TIMES_INSERT / 5 times */
-        /* 同 main.c 的 list 块：中点只定位一次，循环里复用。 */
         ds_list_s.clear();
         for (int i = 0; i < TIMES_INSERT; ++i) ds_list_s.push_back(DS_ARG());
         {
@@ -3371,7 +3364,7 @@ static void test_s_rand(void)
         /* replace_it + replace_index */
         ds_list_s.clear();
         {
-            const int TIMES_INDEX = TIMES_FIND_V_L / 20; /* O(n) 下标定位，10M 规模下 100 次要 30s+ */
+            const int TIMES_INDEX = TIMES_FIND_V_L / 20;
 
             for (int i = 0; i < TIMES_INSERT; ++i) ds_list_s.push_back(DS_ARG());
 
@@ -3467,7 +3460,7 @@ static void test_s_rand(void)
         }
 
 
-        /* splice */ /* O(1)，单次 0ms；整条链来回搬 TIMES_INSERT 次，位置不影响 O(1) 代价，统一用 end */
+        /* splice */
         ds_list_s.clear();
         {
             list<string> src;
@@ -3550,7 +3543,7 @@ static void test_s_rand(void)
 
         /* max_size + empty + front/back + at + it */
         {
-            const int          TIMES_INDEX = TIMES_FIND_V_L / 20; /* at/it 是 O(n) 定位，10M 规模下 100 次要 30s+ */
+            const int          TIMES_INDEX = TIMES_FIND_V_L / 20;
             volatile ds_data_t sink     = 0;
             ds_size_t          max_size = 0;
             bool               is_empty = false;
@@ -3574,7 +3567,6 @@ static void test_s_rand(void)
         }
 
 
-        /* sort: 升序 —— std::list 的成员 sort（归并、只改链），对应 main.c 的 clist_sort(l, list_sso_lt) */
         srand(SORT_SEED);
         ds_list_s.clear(); for (int i = 0; i < TIMES_INSERT; ++i) ds_list_s.push_back(DS_ARG());
 
@@ -3583,7 +3575,6 @@ static void test_s_rand(void)
         printf("RESULT %s sort             %s %8zd %6zd ms dir=asc sorted=%d size=%zd\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT,
                (ssize_t)(time_list / 1000), (int)is_sorted(ds_list_s.begin(), ds_list_s.end()), ds_list_s.size());
 
-        /* sort: 降序 —— 对应 main.c 的 clist_sort(l, list_sso_gt) */
         srand(SORT_SEED);
         ds_list_s.clear(); for (int i = 0; i < TIMES_INSERT; ++i) ds_list_s.push_back(DS_ARG());
 

@@ -38,7 +38,7 @@ typedef struct i_list {
     list_step_t      step;
     list_align_t     align;
     list_pad_t       pad;
-    struct list_head head; /* Err：It cannot be the last one, otherwise the address is invalid! */
+    struct list_head head; /* Err: It cannot be the last one, otherwise the address is invalid! */
     uint8_t*         swap;
     list_size_t      size;
     bool             sso;

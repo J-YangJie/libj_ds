@@ -18,7 +18,7 @@
 
 1. **Object Oriented**
 2. **Have the concept of iterator**
-3. **Be able to interface with the memory pool(malloc、calloc、realloc)**
+3. **Be able to interface with the memory pool(malloc, calloc, realloc)**
 
 
 ## 3. How to use

@@ -160,10 +160,6 @@
  *  and adapter that supports both forms uses `char*` strings instead.
  */
 #ifdef TEST_STR_SSO
-#define seq_move_str(_d, _s)       __ds_ops_move_same_sso((_d), (_s))
-#define seq_lt_str(_a, _b)         __ds_ops_lt_same_sso((ds_data_t)&(_a), (ds_data_t)&(_b))
-#define seq_gt_str(_a, _b)         __ds_ops_gt_same_sso((ds_data_t)&(_a), (ds_data_t)&(_b))
-#define seq_str_t                  ds_sso_t
 #define VECTOR_NEW_STR()           VECTOR_NEW_SSO()
 #define DEQUE_NEW_STR()            DEQUE_NEW_SSO()
 #define LIST_NEW_STR()             LIST_NEW_SSO()
@@ -171,10 +167,6 @@
 #define QUEUE_NEW_STR_T(_BASE)     QUEUE_NEW_SSO_T(_BASE)
 #define PQUEUE_NEW_STR_T(_BASE)    PRIORITY_QUEUE_NEW_SSO_T(_BASE)
 #else
-#define seq_move_str(_d, _s)       __i_sort_default_move((_d), (_s))
-#define seq_lt_str(_a, _b)         __ds_ops_lt_default_string((ds_data_t)(_a), (ds_data_t)(_b))
-#define seq_gt_str(_a, _b)         __ds_ops_gt_default_string((ds_data_t)(_a), (ds_data_t)(_b))
-#define seq_str_t                  char*
 #define VECTOR_NEW_STR()           VECTOR_NEW_CHAR()
 #define DEQUE_NEW_STR()            DEQUE_NEW_CHAR()
 #define LIST_NEW_STR()             LIST_NEW_CHAR()
@@ -242,15 +234,22 @@
                             (void)time_stack; (void)time_queue; (void)time_pqueue; } while (0)
 
 
-deque_sort_define(sort_dq_int,    deque_data_t,  __i_sort_default_less)
-deque_sort_define(sort_dq_ides,   deque_data_t,  __i_sort_default_greater)
-deque_sort_define_move(sort_dq_str,   seq_str_t, seq_lt_str, seq_move_str)
-deque_sort_define_move(sort_dq_sdes,  seq_str_t, seq_gt_str, seq_move_str)
+deque_sort_define_less(sort_dq_int,    deque_data_t)
+deque_sort_define_greater(sort_dq_ides, deque_data_t)
+vector_sort_define_less(sort_vt_int,   vector_data_t)
+vector_sort_define_greater(sort_vt_ides, vector_data_t)
 
-vector_sort_define(sort_vt_int,   vector_data_t, __i_sort_default_less)
-vector_sort_define(sort_vt_ides,  vector_data_t, __i_sort_default_greater)
-vector_sort_define_move(sort_vt_str,  seq_str_t, seq_lt_str, seq_move_str)
-vector_sort_define_move(sort_vt_sdes, seq_str_t, seq_gt_str, seq_move_str)
+#ifdef TEST_STR_SSO
+deque_sort_define_sso_less(sort_dq_str)
+deque_sort_define_sso_greater(sort_dq_sdes)
+vector_sort_define_sso_less(sort_vt_str)
+vector_sort_define_sso_greater(sort_vt_sdes)
+#else
+deque_sort_define_chars_less(sort_dq_str)
+deque_sort_define_chars_greater(sort_dq_sdes)
+vector_sort_define_chars_less(sort_vt_str)
+vector_sort_define_chars_greater(sort_vt_sdes)
+#endif
 
 #ifdef TEST_LIST
 
@@ -265,9 +264,9 @@ static bool list_remove_if_char_odd(list_data_t data)
 }
 
 #ifdef TEST_STR_SSO
-#define list_lt_str __list_lt_sso
-#define list_gt_str __list_gt_sso
-#define list_sorted_str(_this, ascending) clist_sorted_sso((_this), (ascending))
+#define list_lt_str __list_lt_string
+#define list_gt_str __list_gt_string
+#define list_sorted_str(_this, ascending) clist_sorted_string((_this), (ascending))
 #else
 #define list_lt_str __list_lt_chars
 #define list_gt_str __list_gt_chars
@@ -1838,7 +1837,7 @@ static void test_i_rand(void)
         /* replace_it + replace_index */
         DSL(clist, clear)(ds_list_i);
         {
-            const int TIMES_INDEX = TIMES_FIND_V_L / 20; /* O(n) 下标定位，10M 规模下 100 次要 30s+ */
+            const int TIMES_INDEX = TIMES_FIND_V_L / 20;
 
             for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_i, rand() % TIMES_FIND);
 
@@ -1925,7 +1924,7 @@ static void test_i_rand(void)
         }
 
 
-        /* splice */ /* O(1)，单次 0ms；整条链来回搬 TIMES_INSERT 次，位置不影响 O(1) 代价，统一用 end */
+        /* splice */
         DSL(clist, clear)(ds_list_i);
         {
             list_t* src = LIST_NEW();
@@ -2014,7 +2013,7 @@ static void test_i_rand(void)
 
         /* max_size + empty + front/back + at + it */
         {
-            const int            TIMES_INDEX = TIMES_FIND_V_L / 20; /* at/it 是 O(n) 定位，10M 规模下 100 次要 30s+ */
+            const int            TIMES_INDEX = TIMES_FIND_V_L / 20;
             volatile list_data_t sink     = 0;
             list_size_t          max_size = 0;
             bool                 is_empty = false;
@@ -3413,7 +3412,7 @@ static void test_s_rand(void)
         /* replace_it + replace_index */
         DSL(clist, clear)(ds_list_s);
         {
-            const int TIMES_INDEX = TIMES_FIND_V_L / 20; /* O(n) 下标定位，10M 规模下 100 次要 30s+ */
+            const int TIMES_INDEX = TIMES_FIND_V_L / 20;
 
             for (int i = 0; i < TIMES_INSERT; ++i) DSL(clist, push_back)(ds_list_s, DS_ARG());
 
@@ -3503,7 +3502,7 @@ static void test_s_rand(void)
         }
 
 
-        /* splice */ /* O(1)，单次 0ms；整条链来回搬 TIMES_INSERT 次，位置不影响 O(1) 代价，统一用 end */
+        /* splice */
         DSL(clist, clear)(ds_list_s);
         {
             list_t* src = LIST_NEW_STR();
@@ -3592,7 +3591,7 @@ static void test_s_rand(void)
 
         /* max_size + empty + front/back + at + it */
         {
-            const int            TIMES_INDEX = TIMES_FIND_V_L / 20; /* at/it 是 O(n) 定位，10M 规模下 100 次要 30s+ */
+            const int            TIMES_INDEX = TIMES_FIND_V_L / 20;
             volatile list_data_t sink     = 0;
             list_size_t          max_size = 0;
             bool                 is_empty = false;
