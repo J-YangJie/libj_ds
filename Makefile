@@ -455,12 +455,6 @@ stress_slow : stress/main_slow.o stress/test_vector.o stress/test_list.o stress/
 stress_adapter : stress/main_adapter.o stress/test_adapter_stack.o stress/test_adapter_queue.o
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 
-stress_stack : stress/test_stack.o
-	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
-
-stress_queue : stress/test_queue.o
-	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
-
 # Permanent test system. The build and all container modules live in tests/.
 .PHONY: test check
 
