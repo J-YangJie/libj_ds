@@ -52,10 +52,5 @@ typedef class_sequence_container_ops_t class_container_adaptor_ops_t;
 #define ds_lfdata(v)     __ds_lfdata(v)
 #endif /* __DS_DATA_CTORS_DEFINED */
 
-HEADER_STATIC_INLINE
-bool __container_adaptor_dtype_swap_compatible(ds_dtype_t left, ds_dtype_t right)
-{
-    return __sequence_container_dtype_swap_compatible(left, right);
-}
 
 #endif /* __J_CONTAINER_ADAPTOR_OPS_H */

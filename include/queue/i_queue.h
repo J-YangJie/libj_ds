@@ -39,7 +39,7 @@ queue_size_t i_queue_size(const i_queue_t* _this)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_size(_this->d);
         case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_size(_this->l);
-        default:                              break;
+        default:                             break;
         }
     }
     return -1;
@@ -51,7 +51,7 @@ bool __i_queue_empty(const i_queue_t* _this)
     switch (_this->id) {
     case __CONTAINER_ADAPTOR_BASE_DEQUE: return __cdeque_empty(_this->d);
     case __CONTAINER_ADAPTOR_BASE_LIST:  return __clist_empty(_this->l);
-    default:                              return false;
+    default:                             return false;
     }
 }
 
@@ -62,7 +62,7 @@ bool i_queue_push(i_queue_t* _this, queue_data_t data)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_push_back(_this->d, data);
         case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_push_back(_this->l, data);
-        default:                              break;
+        default:                             break;
         }
     }
     return false;
@@ -74,7 +74,7 @@ queue_value_t __i_queue_back(const i_queue_t* _this)
     switch (_this->id) {
     case __CONTAINER_ADAPTOR_BASE_DEQUE: return __cdeque_back(_this->d);
     case __CONTAINER_ADAPTOR_BASE_LIST:  return __clist_back(_this->l);
-    default:                              return (queue_value_t){ .u8 = NULL };
+    default:                             return (queue_value_t){ .u8 = NULL };
     }
 }
 
@@ -85,7 +85,7 @@ queue_value_t i_queue_back(const i_queue_t* _this)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_back(_this->d);
         case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_back(_this->l);
-        default:                              break;
+        default:                             break;
         }
     }
     return (queue_value_t){ .u8 = NULL };
@@ -97,7 +97,7 @@ queue_value_t __i_queue_front(const i_queue_t* _this)
     switch (_this->id) {
     case __CONTAINER_ADAPTOR_BASE_DEQUE: return __cdeque_front(_this->d);
     case __CONTAINER_ADAPTOR_BASE_LIST:  return __clist_front(_this->l);
-    default:                              return (queue_value_t){ .u8 = NULL };
+    default:                             return (queue_value_t){ .u8 = NULL };
     }
 }
 
@@ -108,7 +108,7 @@ queue_value_t i_queue_front(const i_queue_t* _this)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_front(_this->d);
         case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_front(_this->l);
-        default:                              break;
+        default:                             break;
         }
     }
     return (queue_value_t){ .u8 = NULL };
@@ -121,7 +121,7 @@ void i_queue_pop(i_queue_t* _this)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_DEQUE: cdeque_pop_front(_this->d); break;
         case __CONTAINER_ADAPTOR_BASE_LIST:  clist_pop_front(_this->l);  break;
-        default:                              break;
+        default:                             break;
         }
     }
 }
@@ -163,7 +163,7 @@ queue_size_t i_queue_clear(i_queue_t* _this)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_DEQUE: return cdeque_clear(_this->d);
         case __CONTAINER_ADAPTOR_BASE_LIST:  return clist_clear(_this->l);
-        default:                              break;
+        default:                             break;
         }
     }
     return -1;

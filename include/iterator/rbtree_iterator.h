@@ -264,7 +264,7 @@ T##_node_t* _##T##_next(const T##_t* _this, const T##_node_t* node) \
     return __##T##_next(_this, node); \
 } \
 \
-static JDSC_INLINE_FORCE_POLICY \
+static JDSC_INLINE_FORCE \
 T##_node_t* __##T##_prev(const T##_t* _this, const T##_node_t* node) \
 { \
     rbtree_const_iterator_t it = __rbtree_is_end(node) ? (rbtree_const_iterator_t)node : &node->node; \
@@ -317,7 +317,7 @@ T##_node_t* _##T##_rnext(const T##_t* _this, const T##_node_t* node) \
     return __##T##_rnext(_this, node); \
 } \
 \
-static JDSC_INLINE_FORCE_POLICY \
+static JDSC_INLINE_FORCE \
 T##_node_t* __##T##_rprev(const T##_t* _this, const T##_node_t* node) \
 { \
     rbtree_const_iterator_t it = __rbtree_is_rend(node) ? (rbtree_const_iterator_t)node : &node->node; \

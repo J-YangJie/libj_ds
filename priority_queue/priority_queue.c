@@ -28,7 +28,9 @@
 
 #define TAG "[priority_queue]"
 
-/* Common */
+/*
+ * Common macro
+ */
 #define __i_priority_queue_fix_sso(p)  __ds_ops_fix_sso((priority_queue_data_t)(p))
 
 #define __i_pq_tok_u8(p)   (*(p)) /* __ds_token_from_u8(*(const uint8_t*)(p))   */
@@ -178,12 +180,16 @@ void __i_priority_queue_pop_##name(i_priority_queue_t* _this)           \
 
 
 
-/* Vector */
+/*
+ * About vector
+ */
 #define __i_pq_vec_prep       i_vector_t* __v = _this->v;
 
 
 
-/* Vector Number */
+/*
+ * Vector Number
+ */
 #define __i_pq_vec_at_u8(i)   ((uint8_t*)__v->begin + (i))
 #define __i_pq_vec_at_u16(i)  ((uint16_t*)__v->begin + (i))
 #define __i_pq_vec_at_u32(i)  ((uint32_t*)__v->begin + (i))
@@ -208,7 +214,9 @@ __i_priority_queue_define_heap(vector_f64, double,   __i_pq_vec_prep, __i_pq_vec
 
 
 
-/* Vector SSO */
+/*
+ * Vector SSO
+ */
 static
 void __i_priority_queue_rise_vector_sso(i_priority_queue_t* _this, priority_queue_size_t index)
 {
@@ -311,7 +319,9 @@ void __i_priority_queue_pop_vector_sso(i_priority_queue_t* _this)
 
 
 
-/* Vector Struct/Union */
+/*
+ * Vector Struct/Union
+ */
 static
 void __i_priority_queue_rise_vector_addr(i_priority_queue_t* _this, priority_queue_size_t index)
 {
@@ -467,7 +477,9 @@ void __i_priority_queue_pop_vector_addr(i_priority_queue_t* _this)
 
 
 
-/* Deque */
+/*
+ * About deque
+ */
 #define __i_pq_deq_prep                                                \
     i_deque_t* __d = _this->d;                                         \
     const deque_size_t __mask = (deque_size_t)__d->bkt_size - 1;       \
@@ -482,7 +494,9 @@ void __i_priority_queue_pop_vector_addr(i_priority_queue_t* _this)
 
 
 
-/* Deque Number */
+/*
+ * Deque Number
+ */
 static JDSC_INLINE
 uint8_t* __i_priority_queue_deque_slot_addr_pow2(const i_deque_t* deque, deque_size_t i, deque_size_t mask, int bkt_shift, int elem_shift)
 {
@@ -531,7 +545,9 @@ __i_priority_queue_define_heap(deque_f64, double,   __i_pq_deq_prep, __i_pq_deq_
 
 
 
-/* Deque SSO 64BIT */
+/*
+ * Deque SSO 64BIT
+ */
 #define __i_pq_deq_at_pow2_sso(i)  __i_pq_deq_at_pow2(ds_sso_t, (i), __es)
 
 static
@@ -640,7 +656,9 @@ void __i_priority_queue_pop_deque_sso(i_priority_queue_t* _this)
 
 
 
-/* Deque SSO 32BIT */
+/*
+ * Deque SSO 32BIT
+ */
 static JDSC_INLINE
 uint8_t* __i_priority_queue_deque_slot_addr_fast(const i_deque_t* deque, ptrdiff_t off, deque_size_t i, deque_size_t mask, int bkt_shift, deque_step_t step)
 {
@@ -752,7 +770,9 @@ void __i_priority_queue_pop_deque_sso_generic(i_priority_queue_t* _this)
 
 
 
-/* Deque Struct/Union */
+/*
+ * Deque Struct/Union
+ */
 #define __i_pq_deq_at_fast_stun(i)  __i_priority_queue_deque_slot_addr_fast(__d, __off, (i), __mask, __shift, __step)
 
 static

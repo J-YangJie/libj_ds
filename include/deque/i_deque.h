@@ -494,8 +494,17 @@ deque_value_t i_deque_front(const i_deque_t* _this)
 HEADER_STATIC_INLINE
 bool __i_deque_slot_write(const i_deque_t* _this, void* slot, deque_data_t data)
 {
-    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
-        return _this->ops->copy_data(data, (deque_data_t*)slot);
+    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data)) {
+        deque_data_t tdata = data;
+        ds_sso_t view;
+
+        if (_this->sso) {
+            __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+            tdata = (deque_data_t)&view;
+        }
+
+        return _this->ops->copy_data(tdata, (deque_data_t*)slot);
+    }
 
     switch (_this->step)
     {
@@ -711,7 +720,7 @@ bool i_deque_iter_lt(deque_iterator_t a, deque_iterator_t b)
         __algo_sort_##name((_first), (_last));                                \
     }                                                                         \
     HEADER_STATIC_INLINE bool name##_sorted(deque_iterator_t _first,          \
-                                           deque_iterator_t _last)            \
+                                            deque_iterator_t _last)           \
     {                                                                         \
         return __algo_sort_##name##_sorted((_first), (_last));                \
     }

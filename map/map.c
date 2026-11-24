@@ -555,9 +555,6 @@ map_size_t map_remove(map_t* _this, map_key_t key)
 {
     map_node_t* t;
 
-    if (unlikely(is_null(_this)))
-        return -1;
-
     t = map_find(_this, key);
     if (unlikely(is_null(t)))
         return -1;

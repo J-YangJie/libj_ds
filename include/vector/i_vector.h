@@ -350,8 +350,17 @@ vector_value_t i_vector_front(const i_vector_t* _this)
 HEADER_STATIC_INLINE
 bool __i_vector_slot_write(const i_vector_t* _this, void* slot, vector_data_t data)
 {
-    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
-        return _this->ops->copy_data(data, (vector_data_t*)slot);
+    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data)) {
+        vector_data_t tdata = data;
+        ds_sso_t view;
+
+        if (_this->sso) {
+            __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+            tdata = (vector_data_t)&view;
+        }
+
+        return _this->ops->copy_data(tdata, (vector_data_t*)slot);
+    }
 
     switch (_this->step)
     {
@@ -526,7 +535,7 @@ bool i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data
         __algo_sort_##name((type*)(_first).cur, (type*)(_last).cur);            \
     }                                                                           \
     HEADER_STATIC_INLINE bool name##_sorted(vector_iterator_t _first,           \
-                                           vector_iterator_t _last)             \
+                                            vector_iterator_t _last)            \
     {                                                                           \
         return __algo_sort_##name##_sorted((type*)(_first).cur,                 \
                                                (type*)(_last).cur);             \
@@ -675,8 +684,12 @@ vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
                 return __i_vector_make_iterator(step, p);
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
-            if (__ds_ops_eq_diff_sso(data, (vector_data_t)p))
+            if (__ds_ops_eq_same_sso((ds_data_t)&view, (vector_data_t)p))
                 return __i_vector_make_iterator(step, p);
         }
     } else {
@@ -710,8 +723,12 @@ vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
                 ret++;
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
-            if (__ds_ops_eq_diff_sso(data, (vector_data_t)p))
+            if (__ds_ops_eq_same_sso((ds_data_t)&view, (vector_data_t)p))
                 ret++;
         }
     } else {
@@ -761,8 +778,12 @@ vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
             }
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
-            if (!__ds_ops_eq_diff_sso(data, (vector_data_t)r)) {
+            if (!__ds_ops_eq_same_sso((ds_data_t)&view, (vector_data_t)r)) {
                 if (l != r) {
                     memmove(l, r, sizeof(ds_sso_t));
                     __ds_ops_fix_sso((vector_data_t)l); /* __i_vector_slot_move(_this, l, r); */

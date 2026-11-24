@@ -49,6 +49,16 @@
 #define DSL(_ds, _method) _ds##_##_method
 #endif
 
+/* Only hashmap/unordered tests append bucket statistics to the insert line. */
+#ifdef TEST_HASHMAP
+#define RESULT_BUCKET_FMT   " valid/total=%zd/%zd"
+#define RESULT_BUCKET_ARGS(_h) \
+    , (ssize_t)DSL(chashmap, bucket_valid_count)(_h), (ssize_t)DSL(chashmap, bucket_count)(_h)
+#else
+#define RESULT_BUCKET_FMT   ""
+#define RESULT_BUCKET_ARGS(_h)
+#endif /* TEST_HASHMAP */
+
 //#define TEST_HASHMAP        1
 //#define TEST_MAP            1
 //#define TEST_SET            1
@@ -77,6 +87,15 @@
 #define TEST_PQUEUE 1
 #endif
 
+/*
+ *  Extra sequence-container scenarios (deque/vector/list) that are not
+ *  listed in the README performance tables. Set to 0 to run only the
+ *  README baseline: insert / find / remove / clear.
+ */
+#ifndef PERFORMANCE_SEQUENCE_EXTRA
+#define PERFORMANCE_SEQUENCE_EXTRA 1
+#endif /* PERFORMANCE_SEQUENCE_EXTRA */
+
 #ifndef TIMES_INSERT
 #define TIMES_INSERT   10000000
 #endif /* TIMES_INSERT */
@@ -98,6 +117,10 @@
 #ifndef SORT_SEED
 #define SORT_SEED 12345
 #endif /* SORT_SEED */
+
+#ifndef BENCH_SEED
+#define BENCH_SEED 54321
+#endif /* BENCH_SEED */
 
 #ifndef HASHMAP_CAPACITY_INIT
 #define HASHMAP_CAPACITY_INIT 2 * TIMES_INSERT
@@ -379,7 +402,7 @@ static void test_i_for(void)
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { DSL(cpqueue, push)(ds_pqueue_i, i);          }, time_pqueue);
 #endif
 
-        printf("RESULT %-11s %-16s %s %10zd %6zd ms\n", __func__, "insert", DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
+        printf("RESULT %-11s %-16s %s %10zd %6zd ms" RESULT_BUCKET_FMT "\n", __func__, "insert", DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000) RESULT_BUCKET_ARGS(ds_hashmap_i));
     }
 
     if (1) // if (0)
@@ -668,7 +691,7 @@ static void test_i_rand(void)
     priority_queue_t* ds_pqueue_i   = PQUEUE_TEST_NEW();
 #endif
 
-    srand(time(0));
+    srand(BENCH_SEED);
     printf("%s\n", __func__);
 
     if (1)
@@ -731,7 +754,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %-11s insert           %s %10zd %6zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
+        printf("RESULT %-11s insert           %s %10zd %6zd ms" RESULT_BUCKET_FMT "\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000) RESULT_BUCKET_ARGS(ds_hashmap_i));
     }
 
     if (1) // if (0)
@@ -913,7 +936,7 @@ static void test_i_rand(void)
     }
 
 #ifdef TEST_DEQUE
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         /* count */
         {
@@ -1256,7 +1279,7 @@ static void test_i_rand(void)
 #endif
 
 #ifdef TEST_VECTOR
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
 
 #if 0
@@ -1625,7 +1648,7 @@ static void test_i_rand(void)
 #endif
 
 #ifdef TEST_LIST
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         /* count */
         {
@@ -2206,7 +2229,7 @@ static void test_s_rand(void)
     priority_queue_t* ds_pqueue_s   = PQUEUE_TEST_NEW_STRING();
 #endif
 
-    srand(time(0));
+    srand(BENCH_SEED);
     printf("%s\n", __func__);
     s_pool_init();
 
@@ -2272,7 +2295,7 @@ static void test_s_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %-11s insert           %s %10zd %6zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
+        printf("RESULT %-11s insert           %s %10zd %6zd ms" RESULT_BUCKET_FMT "\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000) RESULT_BUCKET_ARGS(ds_hashmap_s));
     }
 
     if (1) // if (0)
@@ -2464,7 +2487,7 @@ static void test_s_rand(void)
     }
 
 #ifdef TEST_DEQUE
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         char dst[S_STR_LEN_MAX + 1];
         char fixbuf[S_STR_LEN_MAX + 1];
@@ -2817,7 +2840,7 @@ static void test_s_rand(void)
 #endif
 
 #ifdef TEST_VECTOR
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         char dst[S_STR_LEN_MAX + 1];
         char fixbuf[S_STR_LEN_MAX + 1];
@@ -3193,7 +3216,7 @@ static void test_s_rand(void)
 #endif
 
 #ifdef TEST_LIST
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         char dst[S_STR_LEN_MAX + 1];
         char fixbuf[S_STR_LEN_MAX + 1];

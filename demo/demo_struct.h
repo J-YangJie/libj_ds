@@ -72,7 +72,7 @@ bool __demo_struct_node_gt(ds_data_t left, ds_data_t right)
 
     if (nl != nr)
         return nl > nr;
-    return __ds_ops_gt_same_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+    return __ds_ops_gt_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
 }
 
 HEADER_STATIC_INLINE
@@ -85,7 +85,7 @@ bool __demo_struct_node_lt(ds_data_t left, ds_data_t right)
 
     if (nl != nr)
         return nl < nr;
-    return __ds_ops_lt_same_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+    return __ds_ops_lt_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
 }
 
 HEADER_STATIC_INLINE
@@ -96,7 +96,7 @@ bool __demo_struct_node_eq(ds_data_t left, ds_data_t right)
     const int nl = l->id + *l->p + l->sub_struct->a;
     const int nr = r->id + *r->p + r->sub_struct->a;
 
-    return nl == nr && __ds_ops_eq_same_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+    return nl == nr && __ds_ops_eq_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
 }
 
 HEADER_STATIC_INLINE
@@ -117,7 +117,7 @@ bool demo_struct_node_deep_copy(ds_data_t in, ds_data_t* out)
 
     *dest->sub_struct = *src->sub_struct;
 
-    if (!ds_ops_copy_data_same_sso((ds_data_t)&src->name1, (ds_data_t*)&dest->name1))
+    if (!ds_ops_copy_data_default_sso((ds_data_t)&src->name1, (ds_data_t*)&dest->name1))
         goto free_sub_struct;
 
     if (!ds_ops_copy_data_default_string((ds_data_t)src->name2, (ds_data_t*)&dest->name2))
@@ -149,7 +149,7 @@ void __demo_struct_node_move(ds_data_t dest, ds_data_t src)
     demo_struct_t* s = (demo_struct_t*)src;
 
     *d = *s;
-    __ds_ops_move_same_sso(&d->name1, &s->name1);
+    __ds_ops_move_default_sso(&d->name1, &s->name1);
     d->p = &d->c;
 }
 
@@ -188,7 +188,7 @@ bool __demo_struct_heap_gt(ds_data_t left, ds_data_t right)
 
     if (nl != nr)
         return nl > nr;
-    return __ds_ops_gt_same_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+    return __ds_ops_gt_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
 }
 
 HEADER_STATIC_INLINE
@@ -201,7 +201,7 @@ bool __demo_struct_heap_lt(ds_data_t left, ds_data_t right)
 
     if (nl != nr)
         return nl < nr;
-    return __ds_ops_lt_same_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+    return __ds_ops_lt_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
 }
 
 HEADER_STATIC_INLINE
@@ -212,7 +212,7 @@ bool __demo_struct_heap_eq(ds_data_t left, ds_data_t right)
     const int nl = l->id + *l->p + l->sub_struct->a;
     const int nr = r->id + *r->p + r->sub_struct->a;
 
-    return nl == nr && __ds_ops_eq_same_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
+    return nl == nr && __ds_ops_eq_default_sso((ds_data_t)&l->name1, (ds_data_t)&r->name1);
 }
 
 HEADER_STATIC_INLINE
@@ -245,7 +245,7 @@ bool demo_struct_heap_deep_copy(ds_data_t in, ds_data_t* out)
 
     *dest->sub_struct = *src->sub_struct;
 
-    if (!ds_ops_copy_data_same_sso((ds_data_t)&src->name1, (ds_data_t*)&dest->name1))
+    if (!ds_ops_copy_data_default_sso((ds_data_t)&src->name1, (ds_data_t*)&dest->name1))
         goto free_sub_struct;
 
     if (!ds_ops_copy_data_default_string((ds_data_t)src->name2, (ds_data_t*)&dest->name2))
@@ -288,6 +288,8 @@ void demo_struct_heap_free(ds_data_t* data)
 HEADER_STATIC_INLINE
 bool __demo_struct_constructor(demo_struct_t* s, int id, char* name1, char* name2)
 {
+    ds_sso_t sso;
+
     memset(s, 0, sizeof(*s));
 
     s->sub_struct = (demo_sub_struct_t*)malloc(sizeof(*s->sub_struct));
@@ -297,8 +299,12 @@ bool __demo_struct_constructor(demo_struct_t* s, int id, char* name1, char* name
     s->sub_struct->a = id;
 
     s->id = id;
-    if (!ds_ops_copy_data_diff_sso((ds_data_t)name1, (ds_data_t*)&s->name1))
+
+    if (!__ds_ops_sso_constructor(&sso, name1))
         goto free_sub_struct;
+
+    if (!ds_ops_copy_data_default_sso((ds_data_t)&sso, (ds_data_t*)&s->name1))
+        goto des_sso;
 
     if (!ds_ops_copy_data_default_string((ds_data_t)name2, (ds_data_t*)&s->name2))
         goto free_sso;
@@ -313,6 +319,8 @@ bool __demo_struct_constructor(demo_struct_t* s, int id, char* name1, char* name
 
 free_sso:
     ds_ops_free_data_default_sso((ds_data_t*)&s->name1);
+des_sso:
+    __ds_ops_sso_destructor(&sso);
 free_sub_struct:
     free(s->sub_struct);
     return false;

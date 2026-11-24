@@ -106,7 +106,6 @@ __CLASS_ASSOCIATIVE_CONTAINER_KEY_OPS_GREATER_DECL(chars)
 #define g_class_associative_container_key_ops_chars()              class_associative_container_key_ops_chars_ins()
 #define g_class_associative_container_key_ops_string()             g_class_associative_container_key_ops_chars()
 
-/* Descending key order. */
 #define g_class_associative_container_key_ops_uint8_t_greater()    class_associative_container_key_ops_uint8_t_greater_ins()
 #define g_class_associative_container_key_ops_uint16_t_greater()   class_associative_container_key_ops_uint16_t_greater_ins()
 #define g_class_associative_container_key_ops_uint32_t_greater()   class_associative_container_key_ops_uint32_t_greater_ins()

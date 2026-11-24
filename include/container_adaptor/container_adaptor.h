@@ -28,4 +28,10 @@ typedef enum container_adaptor_base {
     __CONTAINER_ADAPTOR_BASE_LIST,
 } container_adaptor_base_t;
 
+HEADER_STATIC_INLINE
+bool __container_adaptor_dtype_swap_compatible(ds_dtype_t left, ds_dtype_t right)
+{
+    return __sequence_container_dtype_swap_compatible(left, right);
+}
+
 #endif /* __J_CONTAINER_ADAPTOR_H */

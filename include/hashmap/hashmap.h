@@ -184,9 +184,9 @@ const class_hashmap_t* class_hashmap_ins(void);
                              g_class_hashmap_value_ops_##_vtype(), \
                              _bucket_count_init, _bucket_count_max, _load_factor, NULL)
 
-#define HASHMAP_NEW_KV_4(_ktype, _vtype, _bucket_count_init, _bucket_count_max, _load_factor) \
+#define HASHMAP_NEW_KV_4(_ktype, _vtype, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
         HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
                              g_class_hashmap_value_ops_##_vtype(), \
-                             _bucket_count_init, _bucket_count_max, _load_factor, _load_factor)
+                             _bucket_count_init, _bucket_count_max, _load_factor, _config)
 
 #endif /* __J_HASH_MAP_H */

@@ -138,27 +138,12 @@ bool ds_ops_valid_data_default_string(ds_data_t data)
     return false;
 }
 
-static JDSC_INLINE
-int smart_strcmp(const char *s1, size_t len1, const char *s2, size_t len2) {
-    size_t mlen = len1 < len2 ? len1 : len2;
-    int ret = memcmp(s1, s2, mlen);
-
-    if (0 != ret) {
-        return ret;
-    } else {
-        if (len1 == len2)
-            return 0;
-        return len1 < len2 ? -1 : 1;
-    }
-}
-
 JDSC_INLINE
 bool __ds_ops_lt_default_string(ds_data_t left, ds_data_t right)
 {
     char* l = (char*)left;
     char* r = (char*)right;
     return strcmp(l, r) < 0; /* TODO: security */
-    // return smart_strcmp(l, strlen(l), r, strlen(r)) < 0;
 }
 
 JDSC_INLINE
@@ -167,7 +152,6 @@ bool __ds_ops_gt_default_string(ds_data_t left, ds_data_t right)
     char* l = (char*)left;
     char* r = (char*)right;
     return strcmp(l, r) > 0; /* TODO: security */
-    // return smart_strcmp(l, strlen(l), r, strlen(r)) > 0;
 }
 
 JDSC_INLINE
@@ -175,9 +159,6 @@ bool __ds_ops_eq_default_string(ds_data_t left, ds_data_t right)
 {
     char* l = (char*)left;
     char* r = (char*)right;
-    // size_t llen = strlen(l); (void)llen;
-    // size_t rlen = strlen(r); (void)rlen;
-    // return llen != rlen ? false : 0 == memcmp(l, r, llen);
     return 0 == strcmp(l, r); /* TODO: security */
 }
 

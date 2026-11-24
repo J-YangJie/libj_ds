@@ -1,6 +1,7 @@
 /*
   List Demos
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,9 +18,8 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <string.h>
-
 #include <list/list.h>
+#include <string.h>
 #include <_log.h>
 #include <operations/ds_ops_string.h>
 #include "demo_struct.h"

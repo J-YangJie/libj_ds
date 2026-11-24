@@ -20,8 +20,8 @@
 #ifndef __J_DS_OPS_SSO_H
 #define __J_DS_OPS_SSO_H
 
-#include <_types.h>
 #include <string.h>
+#include <_types.h>
 #include <_compiler.h>
 
 #define __DS_SSO_LOCAL_CAP 15
@@ -35,29 +35,37 @@ typedef struct ds_sso {
     };
 } ds_sso_t;
 
-/* Common */
+
+/*
+ *  Build a read-only SSO view over a C string.
+ *
+ *  Only `p` and `len` are meaningful; `buf`/`cap` are intentionally left untouched.
+ *  The view must not be stored, moved or freed, and `s` must outlive it.
+ *  Validating the input is the caller's job (usually via `valid_data`).
+ */
 HEADER_STATIC_INLINE
-bool ds_ops_valid_data_default_sso(ds_data_t data)
+bool __ds_ops_sso_constructor(ds_sso_t* _this, const char* s)
 {
-    const char* s = (char*)data;
-    return s && 0 != s[0];
+    _this->p   = (char*)s;
+    _this->len = strlen(s);
+    return true; /* Never return false */
 }
 
-void ds_ops_free_data_default_sso(ds_data_t* data);
-
-/* `l/left` and `r/right` have different meaning, `l/left` means char*, `r/right` means ds_sso_t* */
 HEADER_STATIC_INLINE
-bool __ds_ops_eq_diff_sso(ds_data_t left, ds_data_t right)
+void __ds_ops_sso_destructor(ds_sso_t* _this)
 {
-    const char*     l = (const char*)left;
-    const ds_sso_t* r = (const ds_sso_t*)right;
-    size_t llen = strlen(l);
-    return llen == r->len && 0 == memcmp(l, r->p, llen);
+    /* Nothing */
 }
 
-bool ds_ops_copy_data_diff_sso(ds_data_t in, ds_data_t* out);
 
-/* `l/left` and `r/right` have the same meaning */
+
+
+
+/*
+ * Same
+ *
+ * `l/left` and `r/right` have the same meaning
+ */
 HEADER_STATIC_INLINE
 int __ds_ops_cmp_same_sso(const ds_sso_t* l, const ds_sso_t* r)
 {
@@ -70,7 +78,11 @@ int __ds_ops_cmp_same_sso(const ds_sso_t* l, const ds_sso_t* r)
 HEADER_STATIC_INLINE
 bool __ds_ops_eq_same_sso(ds_data_t left, ds_data_t right)
 {
-    return 0 == __ds_ops_cmp_same_sso((const ds_sso_t*)left, (const ds_sso_t*)right);
+    const ds_sso_t* l = (const ds_sso_t*)left;
+    const ds_sso_t* r = (const ds_sso_t*)right;
+
+    /* Length first: only equal lengths need the memcmp. */
+    return l->len == r->len && 0 == memcmp(l->p, r->p, l->len);
 }
 
 HEADER_STATIC_INLINE
@@ -105,6 +117,60 @@ void __ds_ops_move_same_sso(ds_sso_t* dest, const ds_sso_t* src)
 
 
 
+/*
+ * Default interfaces
+ *
+ * Exposed as the public SSO callbacks: each one forwards to its same-side
+ * implementation, so callers never deal with `char*` vs. `ds_sso_t`.
+ */
+HEADER_STATIC_INLINE
+bool ds_ops_valid_data_default_sso(ds_data_t data)
+{
+    const char* s = (char*)data;
+    return s && 0 != s[0];
+}
+
+HEADER_STATIC_INLINE
+bool __ds_ops_eq_default_sso(ds_data_t left, ds_data_t right)
+{
+    return __ds_ops_eq_same_sso(left, right);
+}
+
+HEADER_STATIC_INLINE
+bool __ds_ops_lt_default_sso(ds_data_t left, ds_data_t right)
+{
+    return __ds_ops_lt_same_sso(left, right);
+}
+
+HEADER_STATIC_INLINE
+bool __ds_ops_gt_default_sso(ds_data_t left, ds_data_t right)
+{
+    return __ds_ops_gt_same_sso(left, right);
+}
+
+HEADER_STATIC_INLINE
+bool ds_ops_copy_data_default_sso(ds_data_t in, ds_data_t* out)
+{
+    return ds_ops_copy_data_same_sso(in, out);
+}
+
+void ds_ops_free_data_default_sso(ds_data_t* data);
+
+HEADER_STATIC_INLINE
+void __ds_ops_move_default_sso(ds_sso_t* dest, const ds_sso_t* src)
+{
+    return __ds_ops_move_same_sso(dest, src);
+}
+
+
+
+
+
+/*
+ * Internal helpers
+ *
+ * Used by the containers themselves; not part of the public callback set.
+ */
 HEADER_STATIC_INLINE
 void __ds_ops_fix_sso(ds_data_t data)
 {

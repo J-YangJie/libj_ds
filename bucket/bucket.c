@@ -1080,7 +1080,9 @@ bucket_node_t* bucket_hl_erase(bucket_t* _this, const class_bucket_ops_t* ops, b
     if (unlikely(hlist_empty(&_this->ds.hl) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
-    t = __bucket_hl_next(_this, pos); /* Never return `NULL` */
+    t = __bucket_hl_next(_this, pos);
+    if (unlikely(is_null(t)))
+        return NULL;
 
     ___bucket_hl_erase(_this, pos);
 
@@ -1112,9 +1114,6 @@ bucket_size_t bucket_remove(bucket_t* _this, const class_bucket_ops_t* ops, buck
 {
     bucket_node_t* t;
 
-    if (unlikely(is_null(_this)))
-        return -1;
-
     t = bucket_find(_this, ops, type, key);
     if (unlikely(is_null(t)))
         return -1;
@@ -1145,9 +1144,6 @@ static JDSC_INLINE_POLICY
 bucket_size_t bucket_remove_has_checked_valid(bucket_t* _this, const class_bucket_ops_t* ops, bucket_ds_t type, bucket_key_t key)
 {
     bucket_node_t* t;
-
-    if (unlikely(is_null(_this)))
-        return -1;
 
     t = bucket_find_has_checked_valid(_this, ops, type, key);
     if (unlikely(is_null(t)))
@@ -1217,7 +1213,9 @@ bucket_node_t* bucket_hl_pop(bucket_t* _this, bucket_node_t* pos)
     if (unlikely(hlist_empty(&_this->ds.hl) || __bucket_end(_this) == pos)/* || __bucket_rend(_this) == pos*/)
         return NULL;
 
-    t = __bucket_hl_next(_this, pos); /* Never return `NULL` */
+    t = __bucket_hl_next(_this, pos);
+    if (unlikely(is_null(t)))
+        return NULL;
 
     ___bucket_hl_erase(_this, pos);
 

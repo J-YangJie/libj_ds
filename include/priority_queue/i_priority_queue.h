@@ -41,7 +41,7 @@ priority_queue_size_t i_priority_queue_size(const i_priority_queue_t* _this)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_VECTOR: return cvector_size(_this->v);
         case __CONTAINER_ADAPTOR_BASE_DEQUE:  return cdeque_size(_this->d);
-        default:                               break;
+        default:                              break;
         }
     }
     return -1;
@@ -53,7 +53,7 @@ bool __i_priority_queue_empty(const i_priority_queue_t* _this)
     switch (_this->id) {
     case __CONTAINER_ADAPTOR_BASE_VECTOR: return __cvector_empty(_this->v);
     case __CONTAINER_ADAPTOR_BASE_DEQUE:  return __cdeque_empty(_this->d);
-    default:                               return false;
+    default:                              return false;
     }
 }
 
@@ -66,7 +66,7 @@ priority_queue_value_t __i_priority_queue_top(const i_priority_queue_t* _this)
     switch (_this->id) {
     case __CONTAINER_ADAPTOR_BASE_VECTOR: return __cvector_front(_this->v);
     case __CONTAINER_ADAPTOR_BASE_DEQUE:  return __cdeque_front(_this->d);
-    default:                               return (priority_queue_value_t){ .u8 = NULL };
+    default:                              return (priority_queue_value_t){ .u8 = NULL };
     }
 }
 
@@ -125,7 +125,7 @@ priority_queue_size_t i_priority_queue_clear(i_priority_queue_t* _this)
         switch (_this->id) {
         case __CONTAINER_ADAPTOR_BASE_VECTOR: return cvector_clear(_this->v);
         case __CONTAINER_ADAPTOR_BASE_DEQUE:  return cdeque_clear(_this->d);
-        default:                               break;
+        default:                              break;
         }
     }
     return -1;

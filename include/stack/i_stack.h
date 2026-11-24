@@ -42,7 +42,7 @@ stack_size_t i_stack_size(const i_stack_t* _this)
         case __CONTAINER_ADAPTOR_BASE_VECTOR: return cvector_size(_this->v);
         case __CONTAINER_ADAPTOR_BASE_DEQUE:  return cdeque_size(_this->d);
         case __CONTAINER_ADAPTOR_BASE_LIST:   return clist_size(_this->l);
-        default:                               break;
+        default:                              break;
         }
     }
     return -1;
@@ -55,7 +55,7 @@ bool __i_stack_empty(const i_stack_t* _this)
     case __CONTAINER_ADAPTOR_BASE_VECTOR: return __cvector_empty(_this->v);
     case __CONTAINER_ADAPTOR_BASE_DEQUE:  return __cdeque_empty(_this->d);
     case __CONTAINER_ADAPTOR_BASE_LIST:   return __clist_empty(_this->l);
-    default:                               return false;
+    default:                              return false;
     }
 }
 
@@ -67,7 +67,7 @@ bool i_stack_push(i_stack_t* _this, stack_data_t data)
         case __CONTAINER_ADAPTOR_BASE_VECTOR: return cvector_push_back(_this->v, data);
         case __CONTAINER_ADAPTOR_BASE_DEQUE:  return cdeque_push_back(_this->d, data);
         case __CONTAINER_ADAPTOR_BASE_LIST:   return clist_push_back(_this->l, data);
-        default:                               break;
+        default:                              break;
         }
     }
     return false;
@@ -80,7 +80,7 @@ stack_value_t __i_stack_top(const i_stack_t* _this)
     case __CONTAINER_ADAPTOR_BASE_VECTOR: return __cvector_back(_this->v);
     case __CONTAINER_ADAPTOR_BASE_DEQUE:  return __cdeque_back(_this->d);
     case __CONTAINER_ADAPTOR_BASE_LIST:   return __clist_back(_this->l);
-    default:                               return (stack_value_t){ .u8 = NULL };
+    default:                              return (stack_value_t){ .u8 = NULL };
     }
 }
 
@@ -92,7 +92,7 @@ stack_value_t i_stack_top(const i_stack_t* _this)
         case __CONTAINER_ADAPTOR_BASE_VECTOR: return cvector_back(_this->v);
         case __CONTAINER_ADAPTOR_BASE_DEQUE:  return cdeque_back(_this->d);
         case __CONTAINER_ADAPTOR_BASE_LIST:   return clist_back(_this->l);
-        default:                               break;
+        default:                              break;
         }
     }
     return (stack_value_t){ .u8 = NULL };
@@ -106,7 +106,7 @@ void i_stack_pop(i_stack_t* _this)
         case __CONTAINER_ADAPTOR_BASE_VECTOR: cvector_pop_back(_this->v); break;
         case __CONTAINER_ADAPTOR_BASE_DEQUE:  cdeque_pop_back(_this->d);  break;
         case __CONTAINER_ADAPTOR_BASE_LIST:   clist_pop_back(_this->l);   break;
-        default:                               break;
+        default:                              break;
         }
     }
 }
@@ -155,7 +155,7 @@ stack_size_t i_stack_clear(i_stack_t* _this)
         case __CONTAINER_ADAPTOR_BASE_VECTOR: return cvector_clear(_this->v);
         case __CONTAINER_ADAPTOR_BASE_DEQUE:  return cdeque_clear(_this->d);
         case __CONTAINER_ADAPTOR_BASE_LIST:   return clist_clear(_this->l);
-        default:                               break;
+        default:                              break;
         }
     }
     return -1;

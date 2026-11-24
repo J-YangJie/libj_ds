@@ -1,7 +1,6 @@
 /*
   Multimap Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
-  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -24,7 +23,9 @@
 #include <iterator/iterator.h>
 #include <associative_container/associative_container.h>
 
-typedef class_associative_container_ops_t class_multimap_ops_t;
+typedef class_associative_container_key_ops_t   class_multimap_key_ops_t;
+typedef class_associative_container_value_ops_t class_multimap_value_ops_t;
+typedef class_associative_container_ops_t       class_multimap_ops_t;
 
 typedef struct multimap_iterator_kv {
     union {
@@ -101,7 +102,7 @@ typedef struct class_multimap {
     multimap_iterator_t (*find)(const multimap_t* _this, multimap_key_t key);
     multimap_iterator_t (*lower_bound)(const multimap_t* _this, multimap_key_t key);              /* >= key */
     multimap_iterator_t (*upper_bound)(const multimap_t* _this, multimap_key_t key);              /*  > key */
-    multimap_iterator_t (*insert)(multimap_t* _this, multimap_key_t key, multimap_value_t value); /* if input key doesn't match -> insert | if input key match -> return NULL */
+    multimap_iterator_t (*insert)(multimap_t* _this, multimap_key_t key, multimap_value_t value); /* if input key doesn't match -> insert | if input key match -> insert */
     multimap_iterator_t (*erase)(multimap_t* _this, multimap_iterator_t iterator);
     multimap_size_t (*remove)(multimap_t* _this, multimap_key_t key);
     multimap_size_t (*remove_if)(multimap_t* _this, remove_if_condition_kv cond);

@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stdint.h>     /* uintptr_t, SIZE_MAX */
+#include <stdint.h>     /* uintptr_t */
 #include <string.h>     /* memcpy */
 #include <sys/types.h>
 #include <_compiler_inter.h>

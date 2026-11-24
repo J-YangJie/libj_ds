@@ -18,9 +18,8 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <string.h>
-
 #include <priority_queue/priority_queue.h>
+#include <string.h>
 #include <_log.h>
 #include <operations/ds_ops_string.h>
 #include "demo_struct.h"

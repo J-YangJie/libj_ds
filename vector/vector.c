@@ -37,8 +37,16 @@ bool __i_vector_slot_write_n(const i_vector_t* _this, uint8_t* pos, vector_size_
     vector_size_t suc = 0;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->copy_data)) {
+        vector_data_t tdata = data;
+        ds_sso_t view;
+
+        if (_this->sso) {
+            __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+            tdata = (vector_data_t)&view;
+        }
+
         while (n-- > 0) {
-            if (_this->ops->copy_data(data, (vector_data_t*)pos))
+            if (_this->ops->copy_data(tdata, (vector_data_t*)pos))
                 suc++;
             else
                 goto err;

@@ -74,6 +74,15 @@ typedef ssize_t  ds_size_t;
 #define TEST_PQUEUE 1
 #endif
 
+/*
+ *  Extra sequence-container scenarios (deque/vector/list) that are not
+ *  listed in the README performance tables. Set to 0 to run only the
+ *  README baseline: insert / find / remove / clear.
+ */
+#ifndef PERFORMANCE_SEQUENCE_EXTRA
+#define PERFORMANCE_SEQUENCE_EXTRA 1
+#endif /* PERFORMANCE_SEQUENCE_EXTRA */
+
 #ifndef TIMES_INSERT
 #define TIMES_INSERT   10000000
 #endif /* TIMES_INSERT */
@@ -95,6 +104,10 @@ typedef ssize_t  ds_size_t;
 #ifndef SORT_SEED
 #define SORT_SEED 12345
 #endif /* SORT_SEED */
+
+#ifndef BENCH_SEED
+#define BENCH_SEED 54321
+#endif /* BENCH_SEED */
 
 #ifndef HASHMAP_CAPACITY_INIT
 #define HASHMAP_CAPACITY_INIT 2 * TIMES_INSERT
@@ -197,10 +210,28 @@ typedef ssize_t  ds_size_t;
 #endif
 
 #define TOUCH_TIMERS() do { (void)time_hashmap; (void)time_map; (void)time_set; \
-                            (void)time_multimap; (void)time_multiset; (void)time_list; \
-                            (void)time_vector; (void)time_stack; \
-                            (void)time_queue; (void)time_pqueue; \
-                            (void)time_deque; } while (0)
+                            (void)time_multimap; (void)time_multiset; \
+                            (void)time_list; (void)time_vector; (void)time_deque; \
+                            (void)time_stack; (void)time_queue; (void)time_pqueue; } while (0)
+
+#ifdef TEST_HASHMAP
+template <class Map>
+static size_t count_valid_buckets(const Map& m)
+{
+    size_t valid = 0;
+    for (size_t b = 0; b < m.bucket_count(); ++b)
+        if (m.begin(b) != m.end(b))
+            ++valid;
+    return valid;
+}
+
+#define RESULT_BUCKET_FMT   " valid/total=%zd/%zd"
+#define RESULT_BUCKET_ARGS(_m) \
+    , (ssize_t)count_valid_buckets(_m), (ssize_t)(_m).bucket_count()
+#else
+#define RESULT_BUCKET_FMT   ""
+#define RESULT_BUCKET_ARGS(_m)
+#endif /* TEST_HASHMAP */
 
 
 static void test_i_for(void)
@@ -285,7 +316,7 @@ static void test_i_for(void)
         GET_DURATION(for (int i = 0; i < TIMES_INSERT; ++i) { ds_pqueue_i.push(i);          }, time_pqueue);
 #endif
 
-        printf("RESULT %-11s %-16s %s %10zd %6zd ms\n", __func__, "insert", DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
+        printf("RESULT %-11s %-16s %s %10zd %6zd ms" RESULT_BUCKET_FMT "\n", __func__, "insert", DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000) RESULT_BUCKET_ARGS(ds_hashmap_i));
     }
 
     if (1) // if (0)
@@ -629,7 +660,7 @@ static void test_i_rand(void)
     PQ_TEST_TYPE(ds_data_t) ds_pqueue_i;
 #endif
 
-    srand(time(0));
+    srand(BENCH_SEED);
     printf("%s\n", __func__);
 
     if (1)
@@ -692,7 +723,7 @@ static void test_i_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %-11s insert           %s %10zd %6zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
+        printf("RESULT %-11s insert           %s %10zd %6zd ms" RESULT_BUCKET_FMT "\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000) RESULT_BUCKET_ARGS(ds_hashmap_i));
     }
 
     if (1) // if (0)
@@ -883,7 +914,7 @@ static void test_i_rand(void)
     }
 
 #ifdef TEST_DEQUE
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         /* count */
         {
@@ -1224,7 +1255,7 @@ static void test_i_rand(void)
 #endif
 
 #ifdef TEST_VECTOR
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
 
 #if 0
@@ -1586,7 +1617,7 @@ static void test_i_rand(void)
 #endif
 
 #ifdef TEST_LIST
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         /* count */
         {
@@ -2150,7 +2181,7 @@ static void test_s_rand(void)
     PQ_TEST_TYPE(string) ds_pqueue_s;
 #endif
 
-    srand(time(0));
+    srand(BENCH_SEED);
     printf("%s\n", __func__);
 
     s_pool_init();
@@ -2218,7 +2249,7 @@ static void test_s_rand(void)
         }, time_pqueue);
 #endif
 
-        printf("RESULT %-11s insert           %s %10zd %6zd ms\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000));
+        printf("RESULT %-11s insert           %s %10zd %6zd ms" RESULT_BUCKET_FMT "\n", __func__, DS_NAME, (ssize_t)TIMES_INSERT, (ssize_t)(TIME_DS / 1000) RESULT_BUCKET_ARGS(ds_hashmap_s));
     }
 
     if (1) // if (0)
@@ -2419,7 +2450,7 @@ static void test_s_rand(void)
     }
 
 #ifdef TEST_DEQUE
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         string dst;
         string fixbuf;
@@ -2772,7 +2803,7 @@ static void test_s_rand(void)
 #endif
 
 #ifdef TEST_VECTOR
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         string dst;
         string fixbuf;
@@ -3143,7 +3174,7 @@ static void test_s_rand(void)
 #endif
 
 #ifdef TEST_LIST
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         string dst;
         string fixbuf;

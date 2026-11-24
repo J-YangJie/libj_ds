@@ -605,9 +605,6 @@ multimap_size_t multimap_remove(multimap_t* _this, multimap_key_t key)
     multimap_size_t ret = 0;
     multimap_node_t* t;
 
-    if (unlikely(is_null(_this)))
-        return -1;
-
     t = multimap_find(_this, key);
     if (unlikely(is_null(t)))
         return -1;

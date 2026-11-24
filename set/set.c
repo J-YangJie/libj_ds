@@ -360,9 +360,6 @@ set_size_t set_remove(set_t* _this, set_key_t key)
 {
     set_node_t* t;
 
-    if (unlikely(is_null(_this)))
-        return -1;
-
     t = set_find(_this, key);
     if (unlikely(is_null(t)))
         return -1;

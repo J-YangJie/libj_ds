@@ -1,7 +1,6 @@
 /*
   Multiset Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
-  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -80,7 +79,7 @@ typedef struct class_multiset {
     multiset_iterator_t (*find)(const multiset_t* _this, multiset_key_t key);
     multiset_iterator_t (*lower_bound)(const multiset_t* _this, multiset_key_t key); /* >= key */
     multiset_iterator_t (*upper_bound)(const multiset_t* _this, multiset_key_t key); /*  > key */
-    multiset_iterator_t (*insert)(multiset_t* _this, multiset_key_t key);            /* if input key doesn't match -> insert | if input key match -> return NULL */
+    multiset_iterator_t (*insert)(multiset_t* _this, multiset_key_t key);            /* if input key doesn't match -> insert | if input key match -> insert */
     multiset_iterator_t (*erase)(multiset_t* _this, multiset_iterator_t iterator);
     multiset_size_t (*remove)(multiset_t* _this, multiset_key_t key);
     multiset_size_t (*remove_if)(multiset_t* _this, remove_if_condition_k cond);

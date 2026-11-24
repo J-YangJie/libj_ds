@@ -395,9 +395,6 @@ multiset_size_t multiset_remove(multiset_t* _this, multiset_key_t key)
     multiset_size_t ret = 0;
     multiset_node_t* t;
 
-    if (unlikely(is_null(_this)))
-        return -1;
-
     t = multiset_find(_this, key);
     if (unlikely(is_null(t)))
         return -1;

@@ -57,8 +57,8 @@ typedef i_list_t list_t;
  */
 HEADER_STATIC_INLINE bool __list_lt_default(list_data_t left, list_data_t right) { return left < right; }
 HEADER_STATIC_INLINE bool __list_gt_default(list_data_t left, list_data_t right) { return left > right; }
-#define __list_lt_sso     __ds_ops_lt_same_sso
-#define __list_gt_sso     __ds_ops_gt_same_sso
+#define __list_lt_sso     __ds_ops_lt_default_sso
+#define __list_gt_sso     __ds_ops_gt_default_sso
 #define __list_lt_chars   __ds_ops_lt_default_string
 #define __list_gt_chars   __ds_ops_gt_default_string
 #define __list_lt_string  __list_lt_sso
