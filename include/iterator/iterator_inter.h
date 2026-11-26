@@ -1,5 +1,5 @@
 /*
-  Default Implementations Of Set Custom Operation Interfaces
+  Iterator
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
@@ -17,17 +17,11 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <set/set_ops.h>
+#ifndef __J_ITERATOR_INTER_H
+#define __J_ITERATOR_INTER_H
 
-#include <operations/ds_ops_string.h>
+#include <_compiler_inter.h>
+static JDSC_INLINE_FORCE void* const iterator_end(void)  { return (void*)JDSC_ITERATOR_END;  }
+static JDSC_INLINE_FORCE void* const iterator_rend(void) { return (void*)JDSC_ITERATOR_REND; }
 
-/* __always_inline */ inline const class_set_ops_t* class_set_ops_string_ins(void)
-{
-    static const class_set_ops_t ins = {
-        .valid_key = ds_ops_valid_data_default_string,
-        .__lt      = __ds_ops_lt_default_string,
-        .copy_key  = ds_ops_copy_data_default_string,
-        .free_key  = ds_ops_free_data_default_string,
-    };
-    return &ins;
-}
+#endif /* __J_ITERATOR_INTER_H */

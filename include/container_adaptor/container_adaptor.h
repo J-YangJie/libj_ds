@@ -1,6 +1,6 @@
 /*
-  Default Implementations Of List Custom Operation Interfaces
-  Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Container Adaptors Common Defines
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,17 +17,21 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <list/list_ops.h>
+#ifndef __J_CONTAINER_ADAPTOR_H
+#define __J_CONTAINER_ADAPTOR_H
 
-#include <operations/ds_ops_string.h>
+#include <container_adaptor/container_adaptor_ops.h>
 
-/* __always_inline */ inline const class_list_ops_t* class_list_ops_string_ins(void)
+typedef enum container_adaptor_base {
+    __CONTAINER_ADAPTOR_BASE_VECTOR = 1,
+    __CONTAINER_ADAPTOR_BASE_DEQUE,
+    __CONTAINER_ADAPTOR_BASE_LIST,
+} container_adaptor_base_t;
+
+HEADER_STATIC_INLINE
+bool __container_adaptor_dtype_swap_compatible(ds_dtype_t left, ds_dtype_t right)
 {
-    static const class_list_ops_t ins = {
-        .valid_data = ds_ops_valid_data_default_string,
-        .__eq       = __ds_ops_eq_default_string,
-        .copy_data  = ds_ops_copy_data_default_string,
-        .free_data  = ds_ops_free_data_default_string,
-    };
-    return &ins;
+    return __sequence_container_dtype_swap_compatible(left, right);
 }
+
+#endif /* __J_CONTAINER_ADAPTOR_H */

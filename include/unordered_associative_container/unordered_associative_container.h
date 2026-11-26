@@ -1,6 +1,6 @@
 /*
-  Default Implementations Of Vector Custom Operation Interfaces
-  Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Unordered Associative Containers Common Defines
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -17,17 +17,9 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <vector/vector_ops.h>
+#ifndef __J_UNORDERED_ASSOCIATIVE_CONTAINER_H
+#define __J_UNORDERED_ASSOCIATIVE_CONTAINER_H
 
-#include <operations/ds_ops_string.h>
+#include <unordered_associative_container/unordered_associative_container_ops.h>
 
-/* __always_inline */ inline const class_vector_ops_t* class_vector_ops_string_ins(void)
-{
-    static const class_vector_ops_t ins = {
-        .valid_data = ds_ops_valid_data_default_string,
-        .__eq       = __ds_ops_eq_default_string,
-        .copy_data  = ds_ops_copy_data_default_string,
-        .free_data  = ds_ops_free_data_default_string,
-    };
-    return &ins;
-}
+#endif /* __J_UNORDERED_ASSOCIATIVE_CONTAINER_H */

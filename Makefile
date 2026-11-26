@@ -1,11 +1,17 @@
 
-DLIB_VERSION = 1.1.0
+DLIB_VERSION = 1.2.0
 DLIB_NAME := libj_ds.so
 SLIB_NAME := libj_ds.a
 
 
-WITH_LIST=y
+WITH_ALIGNMEM=n
+WITH_32BIT=n
+
 WITH_VECTOR=y
+WITH_DEQUE=y
+WITH_LIST=y
+WITH_STACK=y
+WITH_QUEUE=y
 WITH_PRIORITY_QUEUE=y
 WITH_HASHMAP=y
 WITH_MAP=y
@@ -16,6 +22,22 @@ WITH_PERFORMANCE=y
 WITH_PERFORMANCE_STL=n
 WITH_DEMO=y
 
+ifeq ($(WITH_STACK), y)
+WITH_VECTOR=y
+WITH_DEQUE=y
+WITH_LIST=y
+endif
+
+ifeq ($(WITH_QUEUE), y)
+WITH_DEQUE=y
+WITH_LIST=y
+endif
+
+ifeq ($(WITH_PRIORITY_QUEUE), y)
+WITH_VECTOR=y
+WITH_DEQUE=y
+endif
+
 
 CC  = $(CROSS_COMPILE)gcc
 CXX = $(CROSS_COMPILE)g++
@@ -23,14 +45,34 @@ AR  = $(CROSS_COMPILE)ar
 
 OBJS = \
 	operations/ds_ops_string.o
-#	iterator/iterator.o
 
-ifeq ($(WITH_LIST), y)
-OBJS += list/list.o list/list_ops.o
+ifneq ($(findstring y, $(WITH_HASHMAP)$(WITH_MAP)$(WITH_MULTIMAP)$(WITH_SET)$(WITH_MULTISET)),)
+OBJS += associative_container/associative_container_ops.o
+endif
+
+ifneq ($(findstring y, $(WITH_DEQUE)$(WITH_VECTOR)$(WITH_LIST)$(WITH_STACK)$(WITH_QUEUE)$(WITH_PRIORITY_QUEUE)),)
+OBJS += sequence_container/operations/ds_ops_sso.o
+OBJS += sequence_container/sequence_container_ops.o
 endif
 
 ifeq ($(WITH_VECTOR), y)
-OBJS += vector/vector.o vector/vector_ops.o
+OBJS += vector/vector.o
+endif
+
+ifeq ($(WITH_DEQUE), y)
+OBJS += deque/deque.o
+endif
+
+ifeq ($(WITH_LIST), y)
+OBJS += list/list.o
+endif
+
+ifeq ($(WITH_STACK), y)
+OBJS += stack/stack.o
+endif
+
+ifeq ($(WITH_QUEUE), y)
+OBJS += queue/queue.o
 endif
 
 ifeq ($(WITH_PRIORITY_QUEUE), y)
@@ -38,7 +80,7 @@ OBJS += priority_queue/priority_queue.o priority_queue/priority_queue_ops.o
 endif
 
 ifeq ($(WITH_HASHMAP), y)
-OBJS += hashmap/hashmap.o
+OBJS += hashmap/hashmap.o hashmap/hashmap_ops.o
 endif
 
 ifeq ($(WITH_MAP), y)
@@ -50,32 +92,49 @@ OBJS += multimap/multimap.o
 endif
 
 ifeq ($(WITH_SET), y)
-OBJS += set/set.o set/set_ops.o
+OBJS += set/set.o
 endif
 
 ifeq ($(WITH_MULTISET), y)
-OBJS += multiset/multiset.o multiset/multiset_ops.o
+OBJS += multiset/multiset.o
 endif
 
 ifneq ($(findstring y, $(WITH_HASHMAP)$(WITH_MAP)$(WITH_MULTIMAP)$(WITH_SET)$(WITH_MULTISET)),)
 OBJS += linux/rbtree.o
 endif
 
-ifneq ($(findstring y, $(WITH_VECTOR)$(WITH_LIST)),)
+ifneq ($(findstring y, $(WITH_VECTOR)$(WITH_DEQUE)),)
 OBJS += sort/sort.o
 endif
 
 CFLAGS += -Iinclude
 CFLAGS += -std=gnu99 -Wall -fmessage-length=0 -fPIC -fno-common
 CFLAGS += -O2
+# CFLAGS += -DJDSC_DEBUG
+# CFLAGS += -DJDSC_MEMPOOL
 # CFLAGS += -g3
 CFLAGS += -Werror
+ifeq ($(WITH_ALIGNMEM), y)
+CFLAGS += -DJDSC_ALIGNMEM=1
+else
+CFLAGS += -DJDSC_ALIGNMEM=0
+endif
 
 CXXFLAGS += -std=c++11
 CXXFLAGS += -Wall -fmessage-length=0 -fPIC -fno-common
 CXXFLAGS += -O2
 # CXXFLAGS += -g3
 CXXFLAGS += -Werror
+ifeq ($(WITH_ALIGNMEM), y)
+CXXFLAGS += -DJDSC_ALIGNMEM=1
+else
+CXXFLAGS += -DJDSC_ALIGNMEM=0
+endif
+
+ifeq ($(WITH_32BIT),y)
+CFLAGS   += -m32
+CXXFLAGS += -m32
+endif
 
 # Dynamic library name with version
 DLIB_NAME_WITHVER := $(DLIB_NAME).$(DLIB_VERSION)
@@ -87,11 +146,24 @@ ifeq ($(WITH_PERFORMANCE), y)
 ifeq ($(WITH_VECTOR), y)
 PERFORMANCE_BINS += performance_vector
 endif
+ifeq ($(WITH_DEQUE), y)
+PERFORMANCE_BINS += performance_deque
+endif
 ifeq ($(WITH_LIST), y)
 PERFORMANCE_BINS += performance_list
 endif
+ifeq ($(WITH_STACK), y)
+PERFORMANCE_BINS += performance_stack_vector
+PERFORMANCE_BINS += performance_stack_deque
+PERFORMANCE_BINS += performance_stack_list
+endif
+ifeq ($(WITH_QUEUE), y)
+PERFORMANCE_BINS += performance_queue_deque
+PERFORMANCE_BINS += performance_queue_list
+endif
 ifeq ($(WITH_PRIORITY_QUEUE), y)
-PERFORMANCE_BINS += performance_pqueue
+PERFORMANCE_BINS += performance_pqueue_vector
+PERFORMANCE_BINS += performance_pqueue_deque
 endif
 ifeq ($(WITH_HASHMAP), y)
 PERFORMANCE_BINS += performance_hashmap
@@ -115,11 +187,24 @@ ifeq ($(WITH_PERFORMANCE_STL), y)
 ifeq ($(WITH_VECTOR), y)
 PERFORMANCE_STL_BINS += performance_stl_vector
 endif
+ifeq ($(WITH_DEQUE), y)
+PERFORMANCE_STL_BINS += performance_stl_deque
+endif
 ifeq ($(WITH_LIST), y)
 PERFORMANCE_STL_BINS += performance_stl_list
 endif
+ifeq ($(WITH_STACK), y)
+PERFORMANCE_STL_BINS += performance_stl_stack_vector
+PERFORMANCE_STL_BINS += performance_stl_stack_deque
+PERFORMANCE_STL_BINS += performance_stl_stack_list
+endif
+ifeq ($(WITH_QUEUE), y)
+PERFORMANCE_STL_BINS += performance_stl_queue_deque
+PERFORMANCE_STL_BINS += performance_stl_queue_list
+endif
 ifeq ($(WITH_PRIORITY_QUEUE), y)
-PERFORMANCE_STL_BINS += performance_stl_pqueue
+PERFORMANCE_STL_BINS += performance_stl_pqueue_vector
+PERFORMANCE_STL_BINS += performance_stl_pqueue_deque
 endif
 ifeq ($(WITH_HASHMAP), y)
 PERFORMANCE_STL_BINS += performance_stl_hashmap
@@ -140,14 +225,23 @@ endif
 endif # WITH_PERFORMANCE_STL
 
 ifeq ($(WITH_DEMO), y)
+ifeq ($(WITH_PRIORITY_QUEUE), y)
+DEMO_BINS += demo/demo_pqueue_bin
+endif
+ifeq ($(WITH_QUEUE), y)
+DEMO_BINS += demo/demo_queue_bin
+endif
+ifeq ($(WITH_STACK), y)
+DEMO_BINS += demo/demo_stack_bin
+endif
 ifeq ($(WITH_VECTOR), y)
 DEMO_BINS += demo/demo_vector_bin
 endif
+ifeq ($(WITH_DEQUE), y)
+DEMO_BINS += demo/demo_deque_bin
+endif
 ifeq ($(WITH_LIST), y)
 DEMO_BINS += demo/demo_list_bin
-endif
-ifeq ($(WITH_PRIORITY_QUEUE), y)
-DEMO_BINS += demo/demo_pqueue_bin
 endif
 ifeq ($(WITH_HASHMAP), y)
 DEMO_BINS += demo/demo_hashmap_bin
@@ -168,7 +262,7 @@ endif # WITH_DEMO
 
 #all: dlib slib performance $(DEMO_BINS)
 all: dlib performance performance_stl $(DEMO_BINS)
-dlib : $(DLIB_NAME_WITHVER)
+dlib : $(DLIB_NAME)
 slib : $(SLIB_NAME)
 
 PERFORMANCE_J_DS_TIMES_INSERT=10000000
@@ -181,44 +275,70 @@ PERFORMANCE_J_DS_DEFINES= \
 		-DTIMES_INSERT=$(PERFORMANCE_J_DS_TIMES_INSERT) \
 		-DTIMES_FIND=$(PERFORMANCE_J_DS_TIMES_FIND) -DTIMES_FIND_V_L=$(PERFORMANCE_J_DS_TIMES_FIND_V_L) \
 		-DTIMES_REMOVE=$(PERFORMANCE_J_DS_TIMES_REMOVE) -DTIMES_REMOVE_V_L=$(PERFORMANCE_J_DS_TIMES_REMOVE_V_L)
+
+PERFORMANCE_STR_LEN_MIN ?= 1
+PERFORMANCE_STR_LEN_MAX ?= 15
+PERFORMANCE_STR_DEFINES = -DS_STR_LEN_MIN=$(PERFORMANCE_STR_LEN_MIN) -DS_STR_LEN_MAX=$(PERFORMANCE_STR_LEN_MAX)
+
+PERFORMANCE_STR_SSO_DEFINES = -DTEST_STR_SSO
 PERFORMANCE_J_DS_HASH_DEFINES= \
 		-DTIMES_INSERT=20000000 \
 		-DTIMES_FIND=100000000 -DTIMES_FIND_V_L=$(PERFORMANCE_J_DS_TIMES_FIND_V_L) \
 		-DTIMES_REMOVE=100000000 -DTIMES_REMOVE_V_L=$(PERFORMANCE_J_DS_TIMES_REMOVE_V_L)
 
 performance_jds_vector.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_VECTOR
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_VECTOR $(PERFORMANCE_STR_SSO_DEFINES)
+
+performance_jds_deque.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_list.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_LIST
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_LIST $(PERFORMANCE_STR_SSO_DEFINES)
 
-performance_jds_pqueue.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_PQUEUE
+performance_jds_stack_vector.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_VECTOR $(PERFORMANCE_STR_SSO_DEFINES)
+
+performance_jds_stack_deque.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_DEQUE $(PERFORMANCE_STR_SSO_DEFINES)
+
+performance_jds_stack_list.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_LIST $(PERFORMANCE_STR_SSO_DEFINES)
+
+performance_jds_queue_deque.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_DEQUE $(PERFORMANCE_STR_SSO_DEFINES)
+
+performance_jds_queue_list.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_LIST $(PERFORMANCE_STR_SSO_DEFINES)
+
+performance_jds_pqueue_vector.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_VECTOR $(PERFORMANCE_STR_SSO_DEFINES)
+
+performance_jds_pqueue_deque.o : main.c
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_DEQUE $(PERFORMANCE_STR_SSO_DEFINES)
 
 performance_jds_hashmap.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_HASH_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=0
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_HASH_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=0
 
 performance_jds_hashmap_reserve.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_HASH_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=$(PERFORMANCE_J_DS_HASHMAP_CAPACITY_INIT)
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_HASH_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=$(PERFORMANCE_J_DS_HASHMAP_CAPACITY_INIT)
 
 performance_jds_map.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_MAP
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_MAP
 
 performance_jds_multimap.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_MULTIMAP
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_MULTIMAP
 
 performance_jds_set.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_SET
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_SET
 
 performance_jds_multiset.o : main.c
-	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) -DTEST_MULTISET
+	@$(CC) $(CFLAGS) -c -o $@ $^ $(PERFORMANCE_J_DS_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_MULTISET
 
-performance_% : performance_jds_%.o
+performance_% : performance_jds_%.o | $(DLIB_NAME)
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 	@echo "make $@"
 
-performance_dlib :
-	$(shell rm -f $(DLIB_NAME); ln -s $(DLIB_NAME_WITHVER) $(DLIB_NAME) > /dev/null 2>&1 || cp $(DLIB_NAME_WITHVER) $(DLIB_NAME))
+performance_dlib : $(DLIB_NAME)
 
 performance : performance_dlib $(PERFORMANCE_BINS)
 
@@ -238,31 +358,52 @@ PERFORMANCE_STL_HASH_DEFINES= \
 		-DTIMES_REMOVE=100000000 -DTIMES_REMOVE_V_L=$(PERFORMANCE_STL_TIMES_REMOVE_V_L)
 
 performance_stl_vector.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_VECTOR
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_VECTOR
+
+performance_stl_deque.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_DEQUE
 
 performance_stl_list.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_LIST
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_LIST
 
-performance_stl_pqueue.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_PQUEUE
+performance_stl_stack_vector.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_VECTOR
+
+performance_stl_stack_deque.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_DEQUE
+
+performance_stl_stack_list.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_STACK_LIST
+
+performance_stl_queue_deque.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_DEQUE
+
+performance_stl_queue_list.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_QUEUE_LIST
+
+performance_stl_pqueue_vector.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_VECTOR
+
+performance_stl_pqueue_deque.o : main_stl.cpp
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_PQUEUE_DEQUE
 
 performance_stl_hashmap.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_HASH_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=0
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_HASH_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=0
 
 performance_stl_hashmap_reserve.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_HASH_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=$(PERFORMANCE_STL_HASHMAP_CAPACITY_INIT)
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_HASH_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_HASHMAP -DHASHMAP_CAPACITY_INIT=$(PERFORMANCE_STL_HASHMAP_CAPACITY_INIT)
 
 performance_stl_map.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_MAP
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_MAP
 
 performance_stl_multimap.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_MULTIMAP
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_MULTIMAP
 
 performance_stl_set.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_SET
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_SET
 
 performance_stl_multiset.o : main_stl.cpp
-	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) -DTEST_MULTISET
+	@$(CXX) $(CXXFLAGS) -c -o $@ $^ $(PERFORMANCE_STL_DEFINES) $(PERFORMANCE_STR_DEFINES) -DTEST_MULTISET
 
 performance_stl_% : performance_stl_%.o
 	@$(CXX) -o $@ $^ $(CXXFLAGS)
@@ -270,7 +411,7 @@ performance_stl_% : performance_stl_%.o
 
 performance_stl : $(PERFORMANCE_STL_BINS)
 
-demo/%_bin : demo/%.c
+demo/%_bin : demo/%.c | $(DLIB_NAME)
 	@$(CC) -o $@ $^ $(CFLAGS) -L. -lj_ds
 	@echo "make $@"
 
@@ -279,13 +420,21 @@ clean :
 	@echo "$@"
 
 cleanall : clean
-	@rm -f $(DLIB_NAME_WITHVER) $(DLIB_NAME) $(SLIB_NAME) $(PERFORMANCE_BINS) $(PERFORMANCE_STL_BINS) $(DEMO_BINS) stress/*.o stress_*
+	@rm -f $(DLIB_NAME_WITHVER) $(DLIB_NAME) $(SLIB_NAME) $(PERFORMANCE_BINS) $(PERFORMANCE_STL_BINS) $(DEMO_BINS) stress/*.o stress_fast stress_slow stress_adapter
 	@echo "$@"
 
 DCFLAGS += -shared -Wl,-soname,$(DLIB_NAME_WITHVER)
+ifeq ($(WITH_32BIT),y)
+DCFLAGS += -m32
+endif
 
 $(DLIB_NAME_WITHVER) : $(OBJS)
 	@$(CC) $(DCFLAGS) -o $@ $^
+	@echo "make $@"
+
+$(DLIB_NAME) : $(DLIB_NAME_WITHVER)
+	@rm -f $@
+	@ln -s $< $@ > /dev/null 2>&1 || cp $< $@
 	@echo "make $@"
 
 SCFLAGS += rcs
@@ -293,4 +442,5 @@ SCFLAGS += rcs
 $(SLIB_NAME) : $(OBJS)
 	@$(AR) $(SCFLAGS) $@ $^
 	@echo "make $@"
+
 

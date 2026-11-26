@@ -1,0 +1,230 @@
+/*
+  Deque Interfaces
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
+#ifndef __J_DEQUE_H
+#define __J_DEQUE_H
+
+#include <iterator/iterator.h>
+#include <sequence_container/sequence_container.h>
+
+typedef sequence_container_value_t     deque_value_t;
+typedef class_sequence_container_ops_t class_deque_ops_t;
+
+typedef struct deque_iterator {
+    union {
+        deque_data_t* d;
+        char** sd;
+        ds_sso_t* ssd;
+        uint8_t* cur;
+    };
+    uint8_t*  begin;
+    uint8_t*  end;
+    uint8_t** bkt;
+    deque_step_t step;
+} deque_iterator_t;
+
+typedef struct deque_reverse_iterator {
+    union {
+        deque_data_t* d;
+        char** sd;
+        ds_sso_t* ssd;
+        uint8_t* cur;
+    };
+    uint8_t*  begin;
+    uint8_t*  end;
+    uint8_t** bkt;
+    uint8_t*  begin_cur;
+    deque_step_t step;
+} deque_reverse_iterator_t;
+typedef deque_reverse_iterator_t deque_r_iterator_t;
+
+#include <deque/i_deque.h>
+
+typedef i_deque_t deque_t;
+
+/*
+ * Deque sort define
+ */
+#define deque_sort_define_move(name, type, less, move) \
+    __i_deque_sort_define_move(name, type, less, move)
+
+#define deque_sort_define(name, type, less) \
+    __i_deque_sort_define(name, type, less)
+
+/*
+ * Deque sort define less/greater
+ */
+#define deque_sort_define_less(name, type) \
+        deque_sort_define(name, type, __i_sort_default_less)
+
+#define deque_sort_define_greater(name, type) \
+        deque_sort_define(name, type, __i_sort_default_greater)
+
+/*
+ * Deque sort define sso less/greater
+ */
+#define deque_sort_define_sso_less(name) \
+        deque_sort_define_move(name, ds_sso_t, __i_sort_sso_less, __i_sort_sso_move)
+
+#define deque_sort_define_sso_greater(name) \
+        deque_sort_define_move(name, ds_sso_t, __i_sort_sso_greater, __i_sort_sso_move)
+
+/*
+ * Deque sort define char* less/greater
+ */
+#define deque_sort_define_chars_less(name) \
+        deque_sort_define(name, char*, __i_sort_chars_less)
+
+#define deque_sort_define_chars_greater(name) \
+        deque_sort_define(name, char*, __i_sort_chars_greater)
+
+/*
+ * Deque sort define string less/greater, same as sso
+ */
+#define deque_sort_define_string_less(name) \
+        deque_sort_define_sso_less(name)
+
+#define deque_sort_define_string_greater(name) \
+        deque_sort_define_sso_greater(name)
+
+/* Method 1 */
+HEADER_STATIC_INLINE deque_size_t        cdeque_size(const deque_t* _this)                                                                   { return i_deque_size(_this); }
+HEADER_STATIC_INLINE deque_size_t        cdeque_max_size(const deque_t* _this)                                                               { return i_deque_max_size(_this); }
+HEADER_STATIC_INLINE bool                __cdeque_empty(const deque_t* _this)                                                                { return __i_deque_empty(_this); }
+HEADER_STATIC_INLINE deque_count_t       cdeque_count(const deque_t* _this, deque_data_t data)                                               { return i_deque_count(_this, data); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_end(const deque_t* _this)                                                                    { return i_deque_end(_this); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_begin(const deque_t* _this)                                                                  { return i_deque_begin(_this); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_next(deque_iterator_t iterator)                                                              { return i_deque_next(iterator); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_prev(deque_iterator_t iterator)                                                              { return i_deque_prev(iterator); }
+HEADER_STATIC_INLINE deque_r_iterator_t  cdeque_rend(const deque_t* _this)                                                                   { return i_deque_rend(_this); }
+HEADER_STATIC_INLINE deque_r_iterator_t  cdeque_rbegin(const deque_t* _this)                                                                 { return i_deque_rbegin(_this); }
+HEADER_STATIC_INLINE deque_r_iterator_t  cdeque_rnext(deque_r_iterator_t r_iterator)                                                         { return i_deque_rnext(r_iterator); }
+HEADER_STATIC_INLINE deque_r_iterator_t  cdeque_rprev(deque_r_iterator_t r_iterator)                                                         { return i_deque_rprev(r_iterator); }
+HEADER_STATIC_INLINE deque_iterator_t    __cdeque_it(const deque_t* _this, deque_index_t index)                                              { return __i_deque_iterator(_this, index); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_it(const deque_t* _this, deque_index_t index)                                                { return i_deque_iterator(_this, index); }
+HEADER_STATIC_INLINE deque_value_t       __cdeque_at(const deque_t* _this, deque_index_t index)                                              { return __i_deque_at(_this, index); }
+HEADER_STATIC_INLINE deque_value_t       cdeque_at(const deque_t* _this, deque_index_t index)                                                { return i_deque_at(_this, index); }
+HEADER_STATIC_INLINE deque_value_t       __cdeque_back(const deque_t* _this)                                                                 { return __i_deque_back(_this); }
+HEADER_STATIC_INLINE deque_value_t       cdeque_back(const deque_t* _this)                                                                   { return i_deque_back(_this); }
+HEADER_STATIC_INLINE deque_value_t       __cdeque_front(const deque_t* _this)                                                                { return __i_deque_front(_this); }
+HEADER_STATIC_INLINE deque_value_t       cdeque_front(const deque_t* _this)                                                                  { return i_deque_front(_this); }
+HEADER_STATIC_INLINE bool                __cdeque_replace_it(deque_t* _this, deque_iterator_t iterator, deque_data_t data)                   { return __i_deque_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool                cdeque_replace_it(deque_t* _this, deque_iterator_t iterator, deque_data_t data)                     { return i_deque_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool                __cdeque_replace_index(deque_t* _this, deque_index_t index, deque_data_t data)                      { return __i_deque_replace_index(_this, index, data); }
+HEADER_STATIC_INLINE bool                cdeque_replace_index(deque_t* _this, deque_index_t index, deque_data_t data)                        { return i_deque_replace_index(_this, index, data); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_find(const deque_t* _this, deque_data_t data)                                                { return i_deque_find(_this, data); }
+HEADER_STATIC_INLINE bool                cdeque_push_back(deque_t* _this, deque_data_t data)                                                 { return i_deque_push_back(_this, data); }
+HEADER_STATIC_INLINE bool                cdeque_push_front(deque_t* _this, deque_data_t data)                                                { return i_deque_push_front(_this, data); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_insert(deque_t* _this, deque_iterator_t pos, deque_data_t data)                              { return i_deque_insert(_this, pos, data); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_insert_n(deque_t* _this, deque_iterator_t pos, deque_size_t n, deque_data_t data)            { return i_deque_insert_n(_this, pos, n, data); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_insert_range(deque_t* _this, deque_iterator_t iterator_pos, deque_iterator_t iterator_begin, deque_iterator_t iterator_end) { return i_deque_insert_range(_this, iterator_pos, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_erase(deque_t* _this, deque_iterator_t pos)                                                  { return i_deque_erase(_this, pos); }
+HEADER_STATIC_INLINE deque_iterator_t    cdeque_erase_range(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end)  { return i_deque_erase_range(_this, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE void                cdeque_pop_back(deque_t* _this)                                                                     { i_deque_pop_back(_this); }
+HEADER_STATIC_INLINE void                cdeque_pop_front(deque_t* _this)                                                                    { i_deque_pop_front(_this); }
+HEADER_STATIC_INLINE deque_size_t        cdeque_remove(deque_t* _this, deque_data_t data)                                                    { return i_deque_remove(_this, data); }
+HEADER_STATIC_INLINE deque_size_t        cdeque_remove_if(deque_t* _this, remove_if_condition cond)                                          { return i_deque_remove_if(_this, cond); }
+HEADER_STATIC_INLINE bool                cdeque_assign(deque_t* _this, deque_size_t n, deque_data_t data)                                    { return i_deque_assign(_this, n, data); }
+HEADER_STATIC_INLINE bool                cdeque_assign_range(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end) { return i_deque_assign_range(_this, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE bool                cdeque_resize(deque_t* _this, deque_size_t n, deque_data_t default_data)                            { return i_deque_resize(_this, n, default_data); }
+HEADER_STATIC_INLINE void                cdeque_shrink_to_fit(deque_t* _this)                                                                { i_deque_shrink_to_fit(_this); }
+HEADER_STATIC_INLINE void                cdeque_swap(deque_t* _this, deque_t* other)                                                         { i_deque_swap(_this, other); }
+HEADER_STATIC_INLINE deque_size_t        cdeque_clear(deque_t* _this)                                                                        { return i_deque_clear(_this); }
+
+/* Method 2 */
+typedef struct class_deque {
+    deque_size_t (*size)(const deque_t* _this);
+    deque_size_t (*max_size)(const deque_t* _this);
+    bool (*__empty)(const deque_t* _this);
+    deque_count_t (*count)(const deque_t* _this, deque_data_t data);
+    deque_iterator_t (*end)(const deque_t* _this);
+    deque_iterator_t (*begin)(const deque_t* _this);
+    deque_iterator_t (*next)(deque_iterator_t iterator);
+    deque_iterator_t (*prev)(deque_iterator_t iterator);
+    deque_r_iterator_t (*rend)(const deque_t* _this);
+    deque_r_iterator_t (*rbegin)(const deque_t* _this);
+    deque_r_iterator_t (*rnext)(deque_r_iterator_t r_iterator);
+    deque_r_iterator_t (*rprev)(deque_r_iterator_t r_iterator);
+    deque_iterator_t (*__it)(const deque_t* _this, deque_index_t index);                                   /* return iterator by n(index), without checking parameters */
+    deque_iterator_t (*it)(const deque_t* _this, deque_index_t index);                                     /* return iterator by n(index) */
+    deque_value_t (*__at)(const deque_t* _this, deque_index_t index);                                      /* STL: ds[index], without checking parameters */
+    deque_value_t (*at)(const deque_t* _this, deque_index_t index);                                        /* STL: ds->at(index) */
+    deque_value_t (*__back)(const deque_t* _this);
+    deque_value_t (*back)(const deque_t* _this);
+    deque_value_t (*__front)(const deque_t* _this);
+    deque_value_t (*front)(const deque_t* _this);
+    bool (*__replace_it)(deque_t* _this, deque_iterator_t iterator, deque_data_t data);                    /* *iterator = data, without checking parameters */
+    bool (*replace_it)(deque_t* _this, deque_iterator_t iterator, deque_data_t data);                      /* *iterator = data */
+    bool (*__replace_index)(deque_t* _this, deque_index_t index, deque_data_t data);                       /* ds[index] = data, without checking parameters */
+    bool (*replace_index)(deque_t* _this, deque_index_t index, deque_data_t data);                         /* ds[index] = data */
+    deque_iterator_t (*find)(const deque_t* _this, deque_data_t data);
+    bool (*push_back)(deque_t* _this, deque_data_t data);
+    bool (*push_front)(deque_t* _this, deque_data_t data);
+    deque_iterator_t (*insert)(deque_t* _this, deque_iterator_t iterator, deque_data_t data);              /* Insert data before `iterator` */
+    deque_iterator_t (*insert_n)(deque_t* _this, deque_iterator_t iterator, deque_size_t n, deque_data_t data);
+    deque_iterator_t (*insert_range)(deque_t* _this, deque_iterator_t iterator_pos, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);  /* Source range must have the same element layout/ops; ranges from _this are undefined. */
+    deque_iterator_t (*erase)(deque_t* _this, deque_iterator_t iterator);
+    deque_iterator_t (*erase_range)(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);  /* [iterator_begin, iterator_end) */
+    void (*pop_back)(deque_t* _this);
+    void (*pop_front)(deque_t* _this);
+    deque_size_t (*remove)(deque_t* _this, deque_data_t data);
+    deque_size_t (*remove_if)(deque_t* _this, remove_if_condition cond);
+    bool (*assign)(deque_t* _this, deque_size_t n, deque_data_t data);
+    bool (*assign_range)(deque_t* _this, deque_iterator_t iterator_begin, deque_iterator_t iterator_end);  /* Source range must have the same element layout/ops; ranges from _this are undefined. */
+    bool (*resize)(deque_t* _this, deque_size_t n, deque_data_t default_data);
+    void (*shrink_to_fit)(deque_t* _this);
+    void (*swap)(deque_t* _this, deque_t* other);
+    deque_size_t (*clear)(deque_t* _this);
+} class_deque_t;
+
+deque_t* __deque_new(const class_deque_ops_t* ops,
+                     /* sequence_container_data_type_t */ deque_dtype_t data_type,
+                     deque_step_t step, deque_align_t align);
+void     __deque_delete(deque_t** _this);
+const class_deque_t* class_deque_ins(void);
+#define g_class_deque()               class_deque_ins()
+#define cdeque                        g_class_deque()
+#define g_class_deque_ops_chars()     g_class_sequence_container_ops_chars()
+#define g_class_deque_ops_sso()       g_class_sequence_container_ops_sso()
+#define DEQUE_NEW_COMPLATE(_ops, _type_id, _type)  __deque_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type))
+#define DEQUE_NEW_OPS_T(_ops, _type)  DEQUE_NEW_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type)
+#define DEQUE_NEW()                   DEQUE_NEW_OPS_T(NULL,   intptr_t)
+#define DEQUE_NEW_OPS(_ops)           DEQUE_NEW_OPS_T((_ops), intptr_t)
+#define DEQUE_DELETE(_pptr)           do { __deque_delete((_pptr)); } while(0)
+
+/*
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  DEQUE_NEW_T(_type) like std::deque<_type>
+ *  Such as: deque_t* demo = DEQUE_NEW_T(ds_sso_t);
+ *  Such as: deque_t* demo = DEQUE_NEW_T(int16_t);
+ *  Such as: deque_t* demo = DEQUE_NEW_T(float);
+ */
+#define DEQUE_NEW_T(_type)            DEQUE_NEW_OPS_T(g_class_sequence_container_ops_##_type(), _type)
+
+/* About string */
+#define DEQUE_NEW_CHAR()              DEQUE_NEW_OPS_T(g_class_deque_ops_chars(), intptr_t)
+#define DEQUE_NEW_SSO()               DEQUE_NEW_T(ds_sso_t)
+#define DEQUE_NEW_STRING()            DEQUE_NEW_SSO()
+
+#endif /* __J_DEQUE_H */

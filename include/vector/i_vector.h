@@ -1,0 +1,979 @@
+/*
+  Vector Inline Implementations
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
+#ifndef __J_I_VECTOR_H
+#define __J_I_VECTOR_H
+
+#include <stddef.h> /* ptrdiff_t */
+#include <_compiler.h>
+
+#ifndef is_null
+#define is_null(X) (!(X))
+#endif /* is_null */
+
+typedef struct i_vector {
+    const class_vector_ops_t* ops;
+    vector_dtype_t dtype;
+    vector_step_t  step;
+    vector_align_t align;
+    vector_size_t  capacity_init;
+    uint8_t*       rend;
+    uint8_t*       begin;
+    uint8_t*       end;
+    uint8_t*       end_of_storage;
+    bool           sso;
+} i_vector_t;
+
+HEADER_STATIC_INLINE
+uint8_t* ___i_vector_ptr_add(const uint8_t* p, ptrdiff_t n, vector_step_t step)
+{
+    return (uint8_t*)p + (ptrdiff_t)step * n;
+}
+
+HEADER_STATIC_INLINE
+uint8_t* ___i_vector_ptr_sub(const uint8_t* p, ptrdiff_t n, vector_step_t step)
+{
+    return ___i_vector_ptr_add(p, -n, step);
+}
+
+HEADER_STATIC_INLINE
+ptrdiff_t ___i_vector_ptr_diff(const uint8_t* p1, const uint8_t* p2, vector_step_t step)
+{
+    return (ptrdiff_t)((p1 - p2) / (ptrdiff_t)step);
+}
+
+#define __i_vector_ptr_add(_p, _n, _step)     ___i_vector_ptr_add((_p), (ptrdiff_t)(_n), (_step))
+#define __i_vector_ptr_sub(_p, _n, _step)     ___i_vector_ptr_sub((_p), (ptrdiff_t)(_n), (_step))
+#define __i_vector_ptr_diff(_p1, _p2, _step)  ___i_vector_ptr_diff((_p1), (_p2), (_step))
+
+HEADER_STATIC_INLINE
+bool i_vector_is_null_iterator(vector_iterator_t it)
+{
+    return is_null(it.cur);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_null_iterator(void)
+{
+    vector_iterator_t it;
+    it.cur = NULL;
+    return it;
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t i_vector_null_r_iterator(void)
+{
+    vector_r_iterator_t rit;
+    rit.cur = NULL;
+    return rit;
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t __i_vector_make_iterator(vector_step_t step, uint8_t* cur)
+{
+    vector_iterator_t it;
+    it.cur  = cur;
+    it.step = step;
+    return it;
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t __i_vector_make_r_iterator(vector_step_t step, uint8_t* cur)
+{
+    vector_r_iterator_t rit;
+    rit.cur  = cur;
+    rit.step = step;
+    return rit;
+}
+
+
+
+
+
+HEADER_STATIC_INLINE
+vector_size_t __i_vector_size(const i_vector_t* _this)
+{
+    return (vector_size_t)__i_vector_ptr_diff(_this->end, _this->begin, _this->step);
+}
+
+HEADER_STATIC_INLINE
+vector_size_t i_vector_size(const i_vector_t* _this)
+{
+    return is_null(_this) ? -1 : __i_vector_size(_this);
+}
+
+HEADER_STATIC_INLINE
+bool __i_vector_empty(const i_vector_t* _this)
+{
+    return _this->end == _this->begin;
+}
+
+HEADER_STATIC_INLINE
+vector_size_t __i_vector_capacity(const i_vector_t* _this)
+{
+    return (vector_size_t)__i_vector_ptr_diff(_this->end_of_storage, _this->begin, _this->step);
+}
+
+HEADER_STATIC_INLINE
+vector_size_t i_vector_capacity(const i_vector_t* _this)
+{
+    return is_null(_this) ? -1 : __i_vector_capacity(_this);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t __i_vector_end(const i_vector_t* _this)
+{
+    return __i_vector_make_iterator(_this->step, _this->end);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_end(const i_vector_t* _this)
+{
+    JDSC_ASSERT(!is_null(_this));
+#if JDSC_ITERATOR_ERR_NULL
+    if (is_null(_this))
+        return i_vector_null_iterator();
+#endif /* JDSC_ITERATOR_ERR_NULL */
+    return __i_vector_end(_this);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t __i_vector_begin(const i_vector_t* _this)
+{
+    return __i_vector_make_iterator(_this->step, _this->begin);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_begin(const i_vector_t* _this)
+{
+    JDSC_ASSERT(!is_null(_this));
+#if JDSC_ITERATOR_ERR_NULL
+    if (is_null(_this))
+        return i_vector_null_iterator();
+#endif /* JDSC_ITERATOR_ERR_NULL */
+    return __i_vector_begin(_this);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t __i_vector_next(vector_iterator_t it)
+{
+    JDSC_ASSERT(!is_null(it.cur));
+#if JDSC_ITERATOR_ERR_NULL
+    if (is_null(it.cur))
+        return i_vector_null_iterator();
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
+    it.cur = __i_vector_ptr_add(it.cur, 1, it.step);
+    return it;
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_next(vector_iterator_t it)
+{
+    return __i_vector_next(it);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t __i_vector_prev(vector_iterator_t it)
+{
+    JDSC_ASSERT(!is_null(it.cur));
+#if JDSC_ITERATOR_ERR_NULL
+    if (is_null(it.cur))
+        return i_vector_null_iterator();
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
+    it.cur = __i_vector_ptr_sub(it.cur, 1, it.step);
+    return it;
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_prev(vector_iterator_t it)
+{
+    return __i_vector_prev(it);
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t __i_vector_rend(const i_vector_t* _this)
+{
+    return __i_vector_make_r_iterator(_this->step, _this->rend);
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t i_vector_rend(const i_vector_t* _this)
+{
+    JDSC_ASSERT(!is_null(_this));
+#if JDSC_ITERATOR_ERR_NULL
+    if (is_null(_this))
+        return i_vector_null_r_iterator();
+#endif /* JDSC_ITERATOR_ERR_NULL */
+    return __i_vector_rend(_this);
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t __i_vector_rbegin(const i_vector_t* _this)
+{
+    return __i_vector_make_r_iterator(_this->step, 
+                __i_vector_ptr_sub(_this->end, 1, _this->step));
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t i_vector_rbegin(const i_vector_t* _this)
+{
+    JDSC_ASSERT(!is_null(_this));
+#if JDSC_ITERATOR_ERR_NULL
+    if (is_null(_this))
+        return i_vector_null_r_iterator();
+#endif /* JDSC_ITERATOR_ERR_NULL */
+    return __i_vector_rbegin(_this);
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t __i_vector_rnext(vector_r_iterator_t rit)
+{
+    JDSC_ASSERT(!is_null(rit.cur));
+#if JDSC_ITERATOR_ERR_NULL
+    if (is_null(rit.cur))
+        return i_vector_null_r_iterator();
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
+    rit.cur = __i_vector_ptr_sub(rit.cur, 1, rit.step);
+    return rit;
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t i_vector_rnext(vector_r_iterator_t rit)
+{
+    return __i_vector_rnext(rit);
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t __i_vector_rprev(vector_r_iterator_t rit)
+{
+    JDSC_ASSERT(!is_null(rit.cur));
+#if JDSC_ITERATOR_ERR_NULL
+    if (is_null(rit.cur))
+        return i_vector_null_r_iterator();
+#endif /* JDSC_ITERATOR_ERR_NULL */
+
+    rit.cur = __i_vector_ptr_add(rit.cur, 1, rit.step);
+    return rit;
+}
+
+HEADER_STATIC_INLINE
+vector_r_iterator_t i_vector_rprev(vector_r_iterator_t rit)
+{
+    return __i_vector_rprev(rit);
+}
+
+
+
+
+
+HEADER_STATIC_INLINE
+vector_iterator_t __i_vector_iterator(const i_vector_t* _this, vector_index_t index)
+{
+    return __i_vector_make_iterator(_this->step, __i_vector_ptr_add(_this->begin, index, _this->step));
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_iterator(const i_vector_t* _this, vector_index_t index)
+{
+    if (!is_null(_this) && index < __i_vector_size(_this))
+        return __i_vector_iterator(_this, index);
+    return i_vector_null_iterator();
+}
+
+HEADER_STATIC_INLINE
+vector_value_t __i_vector_at(const i_vector_t* _this, vector_index_t index)
+{
+    return (vector_value_t){ .u8 = __i_vector_iterator(_this, index).cur, };
+}
+
+HEADER_STATIC_INLINE
+vector_value_t i_vector_at(const i_vector_t* _this, vector_index_t index)
+{
+    if (!is_null(_this) && index < __i_vector_size(_this))
+        return __i_vector_at(_this, index);
+    return (vector_value_t){ .u8 = NULL, };
+}
+
+HEADER_STATIC_INLINE
+vector_value_t __i_vector_back(const i_vector_t* _this)
+{
+    JDSC_ASSERT(!__i_vector_empty(_this));
+    return (vector_value_t){ .u8 = __i_vector_ptr_sub(_this->end, 1, _this->step), };
+}
+
+HEADER_STATIC_INLINE
+vector_value_t i_vector_back(const i_vector_t* _this)
+{
+    if (!is_null(_this))
+        return __i_vector_back(_this);
+    return (vector_value_t){ .u8 = NULL, };
+}
+
+HEADER_STATIC_INLINE
+vector_value_t __i_vector_front(const i_vector_t* _this)
+{
+    JDSC_ASSERT(!__i_vector_empty(_this));
+    return (vector_value_t){ .u8 = _this->begin, };
+}
+
+HEADER_STATIC_INLINE
+vector_value_t i_vector_front(const i_vector_t* _this)
+{
+    if (!is_null(_this))
+        return __i_vector_front(_this);
+    return (vector_value_t){ .u8 = NULL, };
+}
+
+
+
+
+
+HEADER_STATIC_INLINE
+bool __i_vector_slot_write(const i_vector_t* _this, void* slot, vector_data_t data)
+{
+    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
+        return _this->ops->copy_data(data, (vector_data_t*)slot);
+
+    switch (_this->step)
+    {
+    case 1: *(uint8_t*)slot  = (uint8_t)data;  break;
+    case 2: *(uint16_t*)slot = (uint16_t)data; break;
+    case 4: *(uint32_t*)slot = (uint32_t)data; break;
+    case 8: __ds_token_store_8(slot, data);    break;
+    default: return false;
+    }
+    return true;
+}
+
+HEADER_STATIC_INLINE
+vector_data_t __i_vector_slot_read(const i_vector_t* _this, const void* slot)
+{
+    const vector_dtype_t dtype = _this->dtype;
+
+    if (dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) {
+        return (vector_data_t)(uintptr_t)slot;
+    } else if (dtype & SEQ_CNTR_DTYPE_MASK_SINT) {
+        switch (_this->step)
+        {
+        case 1: return (int8_t)*(const int8_t*)slot;
+        case 2: return (int16_t)*(const int16_t*)slot;
+        case 4: return (int32_t)*(const int32_t*)slot;
+        case 8: return __ds_token_load_8(slot);
+        default: return (vector_data_t)(uintptr_t)slot;
+        }
+    } else if (dtype & (SEQ_CNTR_DTYPE_MASK_UINT | SEQ_CNTR_DTYPE_MASK_FLOAT)) {
+        switch (_this->step)
+        {
+        case 1: return (uint8_t)*(const uint8_t*)slot;
+        case 2: return (uint16_t)*(const uint16_t*)slot;
+        case 4: return (uint32_t)*(const uint32_t*)slot;
+        case 8: return __ds_token_load_8(slot);
+        default: return (vector_data_t)(uintptr_t)slot;
+        }
+    } else {
+        return (vector_data_t)(uintptr_t)slot;
+    }
+}
+
+HEADER_STATIC_INLINE
+bool __i_vector_slot_equal(vector_step_t step, vector_data_t data, const void* slot)
+{
+    switch (step) {
+    case 1: return (uint8_t)data  == *(const uint8_t*)slot;
+    case 2: return (uint16_t)data == *(const uint16_t*)slot;
+    case 4: return (uint32_t)data == *(const uint32_t*)slot;
+    case 8: return __ds_token_equal_8(data, slot);
+    default: return false;
+    }
+}
+
+HEADER_STATIC_INLINE
+void __i_vector_slot_move(const i_vector_t* _this, void* dest, const void* src)
+{
+    if (dest != src) {
+        if (is_null(_this->ops) || is_null(_this->ops->__move)) {
+            switch (_this->step) {
+            case 1:  memmove(dest, src, 1);  return ;
+            case 2:  memmove(dest, src, 2);  return ;
+            case 4:  memmove(dest, src, 4);  return ;
+            case 8:  memmove(dest, src, 8);  return ;
+            case 16: memmove(dest, src, 16); return ;
+            case 24: memmove(dest, src, 24);
+#ifdef JDSC_32BIT
+                    if (_this->sso) __ds_ops_fix_sso((vector_data_t)dest);
+#endif /* JDSC_32BIT */
+                return ;
+            case 32: memmove(dest, src, 32);
+#ifdef JDSC_64BIT
+                    if (_this->sso) __ds_ops_fix_sso((vector_data_t)dest);
+#endif /* JDSC_64BIT */
+                return ;
+            default: memmove(dest, src, _this->step); return ;
+            }
+        } else {
+            _this->ops->__move((vector_data_t)dest, (vector_data_t)src);
+        }
+    }
+}
+
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of `slot` */
+bool __i_vector_replace(i_vector_t* _this, uint8_t* slot, vector_data_t data)
+{
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return false;
+
+    if (_this->sso) {
+        if (data == __ds_ops_char_addr_sso((vector_data_t)slot))
+            return true;
+    } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) && data == (vector_data_t)slot) {
+        return true;
+    } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data)
+               && !is_null(_this->ops->free_data) && data == __i_vector_slot_read(_this, slot)) {
+        return true;
+    }
+
+    if (is_null(_this->ops) || is_null(_this->ops->copy_data)) {
+        if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+            _this->ops->free_data((vector_data_t*)slot);
+
+        __i_vector_slot_write(_this, slot, data);
+        return true;
+    }
+
+    if (!__i_vector_slot_write(_this, _this->rend, data))
+        return false;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+        _this->ops->free_data((vector_data_t*)slot);
+
+    __i_vector_slot_move(_this, slot, _this->rend);
+
+    return true;
+}
+
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
+bool __i_vector_replace_it(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
+{
+    return __i_vector_replace(_this, pos.cur, data);
+}
+
+HEADER_STATIC_INLINE
+bool i_vector_replace_it(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
+{
+    if (!is_null(_this) && !i_vector_is_null_iterator(pos) && pos.cur >= _this->begin && pos.cur < _this->end)
+        return __i_vector_replace_it(_this, pos, data);
+    return false;
+}
+
+HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of performance */
+bool __i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data_t data)
+{
+    return __i_vector_replace(_this, __i_vector_ptr_add(_this->begin, index, _this->step), data);
+}
+
+HEADER_STATIC_INLINE
+bool i_vector_replace_index(i_vector_t* _this, vector_index_t index, vector_data_t data)
+{
+    if (!is_null(_this) && index < (vector_index_t)__i_vector_size(_this))
+        return __i_vector_replace_index(_this, index, data);
+    return false;
+}
+
+
+
+
+
+#include <sort/sort_macro.h>
+
+#define __i_vector_sort_get(type, it)  (*(type*)(it))
+#define __i_vector_sort_add(it, n)     ((it) + (n))
+#define __i_vector_sort_next(it)       ((it) + 1)
+#define __i_vector_sort_prev(it)       ((it) - 1)
+#define __i_vector_sort_dist(a, b)     ((b) - (a))
+#define __i_vector_sort_eq(a, b)       ((a) == (b))
+#define __i_vector_sort_lt(a, b)       ((a) < (b))
+
+#define __i_vector_sort_define_move(name, type, less, move)                     \
+    typedef type* __i_##name##_vector_iter;                                     \
+    __i_sort_define(name, type, less, move,                                     \
+                    __i_##name##_vector_iter,                                   \
+                    __i_vector_sort_add, __i_vector_sort_next,                  \
+                    __i_vector_sort_prev, __i_vector_sort_dist,                 \
+                    __i_vector_sort_eq, __i_vector_sort_lt,                     \
+                    __i_vector_sort_get)                                        \
+    HEADER_STATIC_INLINE void name(vector_iterator_t _first,                    \
+                                   vector_iterator_t _last)                     \
+    {                                                                           \
+        __algo_sort_##name((type*)(_first).cur, (type*)(_last).cur);            \
+    }                                                                           \
+    HEADER_STATIC_INLINE bool name##_sorted(vector_iterator_t _first,           \
+                                            vector_iterator_t _last)            \
+    {                                                                           \
+        return __algo_sort_##name##_sorted((type*)(_first).cur,                 \
+                                               (type*)(_last).cur);             \
+    }
+
+#define __i_vector_sort_define(name, type, less)                                \
+    __i_vector_sort_define_move(name, type, less, __i_sort_default_move)
+
+
+
+
+
+vector_size_t __i_vector_max_size(const i_vector_t* _this);
+vector_iterator_t __i_vector_insert_run(i_vector_t* _this, uint8_t* pos, vector_size_t n, vector_data_t data);
+vector_iterator_t __i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data);
+vector_iterator_t __i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data);
+vector_iterator_t i_vector_insert_n(i_vector_t* _this, vector_iterator_t pos, vector_size_t n, vector_data_t data);
+vector_iterator_t __i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);
+vector_iterator_t i_vector_insert_range(i_vector_t* _this, vector_iterator_t pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);
+vector_iterator_t __i_vector_erase(i_vector_t* _this, uint8_t* pos);
+vector_iterator_t __i_vector_erase_range(i_vector_t* _this, uint8_t* begin, uint8_t* end);
+bool __i_vector_assign_grow_fill(i_vector_t* _this, vector_size_t n, vector_data_t data);
+bool __i_vector_assign_grow_range(i_vector_t* _this, vector_size_t n, const uint8_t* src);
+bool __i_vector_reserve(i_vector_t* _this, vector_size_t n);
+void __i_vector_shrink_to_fit(i_vector_t* _this);
+
+HEADER_STATIC_INLINE
+vector_size_t i_vector_max_size(const i_vector_t* _this)
+{
+    return !is_null(_this) ? __i_vector_max_size(_this) : -1;
+}
+
+HEADER_STATIC_INLINE
+bool __i_vector_push_back(i_vector_t* _this, vector_data_t data)
+{
+    uint8_t* slot;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return false;
+
+    slot = _this->end;
+    if (_this->end_of_storage != slot) {
+        if (!__i_vector_slot_write(_this, slot, data))
+            return false;
+        _this->end = slot + _this->step;
+        return true;
+    }
+
+    return !i_vector_is_null_iterator(__i_vector_insert_run(_this, slot, 1, data));
+}
+
+HEADER_STATIC_INLINE
+bool i_vector_push_back(i_vector_t* _this, vector_data_t data)
+{
+    if (!is_null(_this))
+        return __i_vector_push_back(_this, data);
+    return false;
+}
+
+HEADER_STATIC_INLINE
+void __i_vector_pop_back(i_vector_t* _this)
+{
+    uint8_t* slot;
+
+    JDSC_ASSERT(!__i_vector_empty(_this));
+
+    _this->end = slot = _this->end - _this->step;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+        _this->ops->free_data((vector_data_t*)slot);
+}
+
+HEADER_STATIC_INLINE
+void i_vector_pop_back(i_vector_t* _this)
+{
+    if (!is_null(_this))
+        __i_vector_pop_back(_this);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_insert(i_vector_t* _this, vector_iterator_t pos, vector_data_t data)
+{
+    if (is_null(_this) || i_vector_is_null_iterator(pos))
+        return i_vector_null_iterator();
+
+    if (_this->end == pos.cur) {
+        if (__i_vector_push_back(_this, data))
+            return __i_vector_make_iterator(_this->step, __i_vector_ptr_sub(_this->end, 1, _this->step));
+        return i_vector_null_iterator();
+    }
+    return __i_vector_insert(_this, pos, data);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_erase(i_vector_t* _this, vector_iterator_t pos)
+{
+    if (is_null(_this) || i_vector_is_null_iterator(pos) 
+        || _this->end == pos.cur || __i_vector_empty(_this))
+        return i_vector_null_iterator();
+
+    if (__i_vector_ptr_sub(_this->end, 1, _this->step) == pos.cur) {
+        __i_vector_pop_back(_this);
+        return __i_vector_end(_this);
+    }
+    return __i_vector_erase(_this, pos.cur);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_erase_range(i_vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
+{
+    if (is_null(_this)
+        || i_vector_is_null_iterator(iterator_begin)
+        || i_vector_is_null_iterator(iterator_end))
+        return i_vector_null_iterator();
+
+    if (_this->end == iterator_end.cur) {
+        if (iterator_begin.cur <= iterator_end.cur && iterator_begin.cur >= _this->begin) {
+            while (iterator_begin.cur != _this->end)
+                __i_vector_pop_back(_this);
+            return __i_vector_end(_this);
+        } else {
+            return i_vector_null_iterator();
+        }
+    }
+    return __i_vector_erase_range(_this, iterator_begin.cur, iterator_end.cur);
+}
+
+HEADER_STATIC_INLINE
+vector_iterator_t i_vector_find(const i_vector_t* _this, vector_data_t data)
+{
+    uint8_t* p;
+
+    if (is_null(_this))
+        return i_vector_null_iterator();
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return i_vector_null_iterator();
+
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
+
+    const vector_step_t step = _this->step;
+
+    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
+            if (__i_vector_slot_equal(step, data, p))
+                return __i_vector_make_iterator(step, p);
+        }
+    } else if (_this->sso) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
+            if (__ds_ops_eq_diff_sso(data, (vector_data_t)p))
+                return __i_vector_make_iterator(step, p);
+        }
+    } else {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
+            if (_this->ops->__eq(data, __i_vector_slot_read(_this, p)))
+                return __i_vector_make_iterator(step, p);
+        }
+    }
+    return __i_vector_make_iterator(step, _this->end);
+}
+
+HEADER_STATIC_INLINE
+vector_count_t i_vector_count(const i_vector_t* _this, vector_data_t data)
+{
+    vector_count_t ret = 0;
+    uint8_t* p;
+
+    if (is_null(_this))
+        return -1;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
+        return -1;
+
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
+
+    const vector_step_t step = _this->step;
+
+    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
+            if (__i_vector_slot_equal(step, data, p))
+                ret++;
+        }
+    } else if (_this->sso) {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
+            if (__ds_ops_eq_diff_sso(data, (vector_data_t)p))
+                ret++;
+        }
+    } else {
+        for (p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step)) {
+            if (_this->ops->__eq(data, __i_vector_slot_read(_this, p)))
+                ret++;
+        }
+    }
+    return ret;
+}
+
+HEADER_STATIC_INLINE
+vector_size_t i_vector_remove(i_vector_t* _this, vector_data_t data)
+{
+    vector_size_t ret = 0;
+    uint8_t* l, * r, * end;
+
+    if (is_null(_this)
+        || (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
+        return -1;
+
+    JDSC_ASSERT(!((_this->dtype & SEQ_CNTR_DTYPE_MASK_STUN) && (is_null(_this->ops) || is_null(_this->ops->__eq))));
+
+    const vector_step_t step = _this->step;
+    l = r = _this->begin;
+    end = _this->end;
+
+    if (is_null(_this->ops) || is_null(_this->ops->__eq)) {
+        if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
+            for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+                if (!__i_vector_slot_equal(step, data, r)) {
+                    __i_vector_slot_move(_this, l, r);
+                    l = __i_vector_ptr_add(l, 1, step);
+                } else {
+                    ret++;
+                }
+            }
+        } else {
+            for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+                if (!__i_vector_slot_equal(step, data, r)) {
+                    __i_vector_slot_move(_this, l, r);
+                    l = __i_vector_ptr_add(l, 1, step);
+                } else {
+                    _this->ops->free_data((vector_data_t*)r);
+                    ret++;
+                }
+            }
+        }
+    } else if (_this->sso) {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+            if (!__ds_ops_eq_diff_sso(data, (vector_data_t)r)) {
+                if (l != r) {
+                    memmove(l, r, sizeof(ds_sso_t));
+                    __ds_ops_fix_sso((vector_data_t)l); /* __i_vector_slot_move(_this, l, r); */
+                }
+                l = __i_vector_ptr_add(l, 1, step);
+            } else {
+                /* if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) */
+                    _this->ops->free_data((vector_data_t*)r);
+                ret++;
+            }
+        }
+    } else {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+            if (!_this->ops->__eq(data, __i_vector_slot_read(_this, r))) {
+                __i_vector_slot_move(_this, l, r);
+                l = __i_vector_ptr_add(l, 1, step);
+            } else {
+                if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
+                    _this->ops->free_data((vector_data_t*)r);
+                ret++;
+            }
+        }
+    }
+
+    _this->end = l;
+    return ret;
+}
+
+HEADER_STATIC_INLINE
+vector_size_t i_vector_remove_if(i_vector_t* _this, remove_if_condition cond)
+{
+    vector_size_t ret = 0;
+    uint8_t* l, * r, * end;
+
+    if (is_null(_this) || is_null(cond))
+        return -1;
+
+    const vector_step_t step = _this->step;
+    l = r = _this->begin;
+    end = _this->end;
+
+    if (is_null(_this->ops) || is_null(_this->ops->free_data)) {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+            if (!cond(__i_vector_slot_read(_this, r))) {
+                __i_vector_slot_move(_this, l, r);
+                l = __i_vector_ptr_add(l, 1, step);
+            } else {
+                ret++;
+            }
+        }
+    } else if (_this->sso) {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+            if (!cond(__ds_ops_char_addr_sso((vector_data_t)r))) {
+                __i_vector_slot_move(_this, l, r);
+                l = __i_vector_ptr_add(l, 1, step);
+            } else {
+                _this->ops->free_data((vector_data_t*)r);
+                ret++;
+            }
+        }
+    } else {
+        for (; end != r; r = __i_vector_ptr_add(r, 1, step)) {
+            if (!cond(__i_vector_slot_read(_this, r))) {
+                __i_vector_slot_move(_this, l, r);
+                l = __i_vector_ptr_add(l, 1, step);
+            } else {
+                _this->ops->free_data((vector_data_t*)r);
+                ret++;
+            }
+        }
+    }
+
+    _this->end = l;
+    return ret;
+}
+
+HEADER_STATIC_INLINE vector_size_t i_vector_clear(i_vector_t* _this);
+/*
+ *  Unlike STL's in-place assign: this keeps rollback on copy failure and
+ *  trades a little performance for it.
+ */
+HEADER_STATIC_INLINE
+bool i_vector_assign(i_vector_t* _this, vector_size_t n, vector_data_t data)
+{
+    vector_iterator_t it;
+    vector_size_t avail;
+
+    if (is_null(_this) || n < 0)
+        return false;
+
+    if (0 == n) {
+        i_vector_clear(_this);
+        return true;
+    }
+
+    avail = __i_vector_capacity(_this) - __i_vector_size(_this);
+    if (n > avail)
+        return __i_vector_assign_grow_fill(_this, n, data);
+
+    it = __i_vector_insert_n(_this, __i_vector_end(_this), n, data);
+    if (i_vector_is_null_iterator(it))
+        return false;
+
+    __i_vector_erase_range(_this, __i_vector_begin(_this).cur, it.cur);
+    return true;
+}
+
+/* Same rollback-over-efficiency strategy as i_vector_assign(); see above. */
+HEADER_STATIC_INLINE
+bool i_vector_assign_range(i_vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)
+{
+    vector_iterator_t it;
+    vector_size_t n, avail;
+
+    if (is_null(_this) || i_vector_is_null_iterator(iterator_begin) || i_vector_is_null_iterator(iterator_end))
+        return false;
+
+    n = (vector_size_t)__i_vector_ptr_diff(iterator_end.cur, iterator_begin.cur, _this->step);
+    if (n < 0)
+        return false;
+
+    if (0 == n) {
+        i_vector_clear(_this);
+        return true;
+    }
+
+    avail = __i_vector_capacity(_this) - __i_vector_size(_this);
+    if (n > avail)
+        return __i_vector_assign_grow_range(_this, n, iterator_begin.cur);
+
+    it = __i_vector_insert_range(_this, __i_vector_end(_this), iterator_begin, iterator_end);
+    if (i_vector_is_null_iterator(it))
+        return false;
+
+    __i_vector_erase_range(_this, __i_vector_begin(_this).cur, it.cur);
+    return true;
+}
+
+HEADER_STATIC_INLINE
+bool i_vector_resize(i_vector_t* _this, vector_size_t n, vector_data_t default_data)
+{
+    vector_size_t size;
+
+    if (is_null(_this) || n < 0)
+        return false;
+
+    size = __i_vector_size(_this);
+    if (n == size)
+        return true;
+
+    /* Take the fast path instead of the `__i_vector_erase_range` interface */
+    if (n < size)
+        return !i_vector_is_null_iterator(i_vector_erase_range(_this, __i_vector_iterator(_this, n), __i_vector_end(_this)));
+    return !i_vector_is_null_iterator(__i_vector_insert_n(_this, __i_vector_end(_this), n - size, default_data));
+}
+
+HEADER_STATIC_INLINE
+bool i_vector_reserve(i_vector_t* _this, vector_size_t n)
+{
+    if (!is_null(_this))
+        return __i_vector_reserve(_this, n);
+    return false;
+}
+
+HEADER_STATIC_INLINE
+void i_vector_shrink_to_fit(i_vector_t* _this)
+{
+    if (!is_null(_this))
+        return __i_vector_shrink_to_fit(_this);
+}
+
+HEADER_STATIC_INLINE
+void i_vector_swap(i_vector_t* _this, i_vector_t* other)
+{
+    uint8_t* t;
+
+    if (is_null(_this) || is_null(other) || _this == other)
+        return ;
+
+    JDSC_ASSERT(   _this->ops   == other->ops /* Include sso */
+                && __sequence_container_dtype_swap_compatible(_this->dtype, other->dtype)
+                && _this->step  == other->step
+                && _this->align == other->align);
+
+    t = _this->rend;           _this->rend           = other->rend;           other->rend           = t;
+    t = _this->begin;          _this->begin          = other->begin;          other->begin          = t;
+    t = _this->end;            _this->end            = other->end;            other->end            = t;
+    t = _this->end_of_storage; _this->end_of_storage = other->end_of_storage; other->end_of_storage = t;
+}
+
+HEADER_STATIC_INLINE
+vector_size_t i_vector_clear(i_vector_t* _this)
+{
+    vector_size_t ret;
+
+    if (is_null(_this))
+        return -1;
+
+    ret = __i_vector_size(_this);
+    if (ret <= 0)
+        return ret;
+
+    if (!is_null(_this->ops) && !is_null(_this->ops->free_data)) {
+        const vector_step_t step = _this->step;
+
+        for (uint8_t* p = _this->begin; _this->end != p; p = __i_vector_ptr_add(p, 1, step))
+            _this->ops->free_data((vector_data_t*)p);
+    }
+
+    _this->end = _this->begin;
+    return ret;
+}
+
+#endif /* __J_I_VECTOR_H */

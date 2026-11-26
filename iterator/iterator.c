@@ -17,8 +17,9 @@
   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-#include <iterator/iterator.h>
+#include <iterator/iterator_inter.h>
 
+#if 0
 void* const iterator_end(void)
 {
     return (void*)1;
@@ -28,3 +29,4 @@ void* const iterator_rend(void)
 {
     return (void*)2;
 }
+#endif
