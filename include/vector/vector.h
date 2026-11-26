@@ -1,6 +1,7 @@
 /*
   Vector Interfaces
   Copyright (C) 2021  YangJie <yangjie98765@yeah.net>
+  Copyright (C) 2026  YangJie <yangjie98765@yeah.net>
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -20,96 +21,204 @@
 #ifndef __J_VECTOR_H
 #define __J_VECTOR_H
 
-#include <vector/vector_ops.h>
+#include <iterator/iterator.h>
+#include <sequence_container/sequence_container.h>
+
+typedef sequence_container_value_t     vector_value_t;
+typedef class_sequence_container_ops_t class_vector_ops_t;
 
 typedef struct vector_iterator {
     union {
-        vector_data_t data;
-        char* sdata;
+        vector_data_t* d;
+        char** sd;
+        ds_sso_t* ssd;
+        uint8_t* cur;
     };
+    vector_step_t step;
 } vector_iterator_t;
 
 typedef struct vector_reverse_iterator {
     union {
-        vector_data_t data;
-        char* sdata;
+        vector_data_t* d;
+        char** sd;
+        ds_sso_t* ssd;
+        uint8_t* cur;
     };
+    vector_step_t step;
 } vector_reverse_iterator_t;
 typedef vector_reverse_iterator_t vector_r_iterator_t;
 
-typedef struct vector vector_t;
+#include <vector/i_vector.h>
+
+typedef i_vector_t vector_t;
+
+/*
+ * Vector sort define
+ */
+#define vector_sort_define_move(name, type, less, move) \
+    __i_vector_sort_define_move(name, type, less, move)
+
+#define vector_sort_define(name, type, less) \
+    __i_vector_sort_define(name, type, less)
+
+/*
+ * Vector sort define less/greater
+ */
+#define vector_sort_define_less(name, type) \
+        vector_sort_define(name, type, __i_sort_default_less)
+
+#define vector_sort_define_greater(name, type) \
+        vector_sort_define(name, type, __i_sort_default_greater)
+
+/*
+ * Vector sort define sso less/greater
+ */
+#define vector_sort_define_sso_less(name) \
+        vector_sort_define_move(name, ds_sso_t, __i_sort_sso_less, __i_sort_sso_move)
+
+#define vector_sort_define_sso_greater(name) \
+        vector_sort_define_move(name, ds_sso_t, __i_sort_sso_greater, __i_sort_sso_move)
+
+/*
+ * Vector sort define char* less/greater
+ */
+#define vector_sort_define_chars_less(name) \
+        vector_sort_define(name, char*, __i_sort_chars_less)
+
+#define vector_sort_define_chars_greater(name) \
+        vector_sort_define(name, char*, __i_sort_chars_greater)
+
+/*
+ * Vector sort define string less/greater, same as sso
+ */
+#define vector_sort_define_string_less(name) \
+        vector_sort_define_sso_less(name)
+
+#define vector_sort_define_string_greater(name) \
+        vector_sort_define_sso_greater(name)
 
 /* Method 1 */
-vector_size_t        cvector_size(const vector_t* _this);
-vector_size_t        cvector_capacity(const vector_t* _this);
-vector_count_t       cvector_count(const vector_t* _this, vector_data_t data);
-vector_iterator_t*   cvector_end(const vector_t* _this);
-vector_iterator_t*   cvector_begin(const vector_t* _this);
-vector_iterator_t*   cvector_next(const vector_t* _this, const vector_iterator_t* iterator);
-vector_iterator_t*   cvector_prev(const vector_t* _this, const vector_iterator_t* iterator);
-vector_r_iterator_t* cvector_rend(const vector_t* _this);
-vector_r_iterator_t* cvector_rbegin(const vector_t* _this);
-vector_r_iterator_t* cvector_rnext(const vector_t* _this, const vector_r_iterator_t* r_iterator);
-vector_r_iterator_t* cvector_rprev(const vector_t* _this, const vector_r_iterator_t* r_iterator);
-vector_iterator_t*   cvector_at(const vector_t* _this, vector_size_t n);
-vector_data_t        cvector_first(const vector_t* _this, vector_data_t default_data);
-vector_data_t        cvector_last(const vector_t* _this, vector_data_t default_data);
-vector_iterator_t*   cvector_find(const vector_t* _this, vector_data_t data);
-vector_iterator_t*   cvector_push_back(vector_t* _this, vector_data_t data);
-vector_iterator_t*   cvector_push_front(vector_t* _this, vector_data_t data);
-vector_iterator_t*   cvector_insert(vector_t* _this, vector_iterator_t* iterator, vector_data_t data);
-vector_iterator_t*   cvector_erase(vector_t* _this, vector_iterator_t* iterator);
-vector_iterator_t*   cvector_erase_range(vector_t* _this, vector_iterator_t* iterator_begin, vector_iterator_t* iterator_end);
-void                 cvector_pop_back(vector_t* _this);
-void                 cvector_pop_front(vector_t* _this);
-vector_size_t        cvector_remove(vector_t* _this, vector_data_t data);
-vector_size_t        cvector_remove_if(vector_t* _this, remove_if_condition cond);
-bool                 cvector_reserve(vector_t* _this, vector_size_t n);
-bool                 cvector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data);
-void                 cvector_sort(vector_t* _this, __cmp __cmp);
-vector_size_t        cvector_clear(vector_t* _this);
+HEADER_STATIC_INLINE vector_size_t        cvector_size(const vector_t* _this)                                                                     { return i_vector_size(_this); }
+HEADER_STATIC_INLINE vector_size_t        cvector_max_size(const vector_t* _this)                                                                 { return i_vector_max_size(_this); }
+HEADER_STATIC_INLINE vector_size_t        cvector_capacity(const vector_t* _this)                                                                 { return i_vector_capacity(_this); }
+HEADER_STATIC_INLINE bool                 __cvector_empty(const vector_t* _this)                                                                  { return __i_vector_empty(_this); }
+HEADER_STATIC_INLINE vector_count_t       cvector_count(const vector_t* _this, vector_data_t data)                                                { return i_vector_count(_this, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_end(const vector_t* _this)                                                                      { return i_vector_end(_this); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_begin(const vector_t* _this)                                                                    { return i_vector_begin(_this); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_next(vector_iterator_t iterator)                                                                { return i_vector_next(iterator); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_prev(vector_iterator_t iterator)                                                                { return i_vector_prev(iterator); }
+HEADER_STATIC_INLINE vector_r_iterator_t  cvector_rend(const vector_t* _this)                                                                     { return i_vector_rend(_this); }
+HEADER_STATIC_INLINE vector_r_iterator_t  cvector_rbegin(const vector_t* _this)                                                                   { return i_vector_rbegin(_this); }
+HEADER_STATIC_INLINE vector_r_iterator_t  cvector_rnext(vector_r_iterator_t r_iterator)                                                           { return i_vector_rnext(r_iterator); }
+HEADER_STATIC_INLINE vector_r_iterator_t  cvector_rprev(vector_r_iterator_t r_iterator)                                                           { return i_vector_rprev(r_iterator); }
+HEADER_STATIC_INLINE vector_iterator_t    __cvector_it(const vector_t* _this, vector_index_t index)                                               { return __i_vector_iterator(_this, index); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_it(const vector_t* _this, vector_index_t index)                                                 { return i_vector_iterator(_this, index); }
+HEADER_STATIC_INLINE vector_value_t       __cvector_at(const vector_t* _this, vector_index_t index)                                               { return __i_vector_at(_this, index); }
+HEADER_STATIC_INLINE vector_value_t       cvector_at(const vector_t* _this, vector_index_t index)                                                 { return i_vector_at(_this, index); }
+HEADER_STATIC_INLINE vector_value_t       __cvector_back(const vector_t* _this)                                                                   { return __i_vector_back(_this); }
+HEADER_STATIC_INLINE vector_value_t       cvector_back(const vector_t* _this)                                                                     { return i_vector_back(_this); }
+HEADER_STATIC_INLINE vector_value_t       __cvector_front(const vector_t* _this)                                                                  { return __i_vector_front(_this); }
+HEADER_STATIC_INLINE vector_value_t       cvector_front(const vector_t* _this)                                                                    { return i_vector_front(_this); }
+HEADER_STATIC_INLINE bool                 __cvector_replace_it(vector_t* _this, vector_iterator_t iterator, vector_data_t data)                   { return __i_vector_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool                 cvector_replace_it(vector_t* _this, vector_iterator_t iterator, vector_data_t data)                     { return i_vector_replace_it(_this, iterator, data); }
+HEADER_STATIC_INLINE bool                 __cvector_replace_index(vector_t* _this, vector_index_t index, vector_data_t data)                      { return __i_vector_replace_index(_this, index, data); }
+HEADER_STATIC_INLINE bool                 cvector_replace_index(vector_t* _this, vector_index_t index, vector_data_t data)                        { return i_vector_replace_index(_this, index, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_find(const vector_t* _this, vector_data_t data)                                                 { return i_vector_find(_this, data); }
+HEADER_STATIC_INLINE bool                 cvector_push_back(vector_t* _this, vector_data_t data)                                                  { return i_vector_push_back(_this, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_insert(vector_t* _this, vector_iterator_t iterator, vector_data_t data)                         { return i_vector_insert(_this, iterator, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_insert_n(vector_t* _this, vector_iterator_t iterator, vector_size_t n, vector_data_t data)      { return i_vector_insert_n(_this, iterator, n, data); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_insert_range(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_insert_range(_this, iterator_pos, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_erase(vector_t* _this, vector_iterator_t iterator)                                              { return i_vector_erase(_this, iterator); }
+HEADER_STATIC_INLINE vector_iterator_t    cvector_erase_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end)  { return i_vector_erase_range(_this, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE void                 cvector_pop_back(vector_t* _this)                                                                       { i_vector_pop_back(_this); }
+HEADER_STATIC_INLINE vector_size_t        cvector_remove(vector_t* _this, vector_data_t data)                                                     { return i_vector_remove(_this, data); }
+HEADER_STATIC_INLINE vector_size_t        cvector_remove_if(vector_t* _this, remove_if_condition cond)                                            { return i_vector_remove_if(_this, cond); }
+HEADER_STATIC_INLINE bool                 cvector_assign(vector_t* _this, vector_size_t n, vector_data_t data)                                    { return i_vector_assign(_this, n, data); }
+HEADER_STATIC_INLINE bool                 cvector_assign_range(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end) { return i_vector_assign_range(_this, iterator_begin, iterator_end); }
+HEADER_STATIC_INLINE bool                 cvector_resize(vector_t* _this, vector_size_t n, vector_data_t default_data)                            { return i_vector_resize(_this, n, default_data); }
+HEADER_STATIC_INLINE bool                 cvector_reserve(vector_t* _this, vector_size_t n)                                                       { return i_vector_reserve(_this, n); }
+HEADER_STATIC_INLINE void                 cvector_shrink_to_fit(vector_t* _this)                                                                  { i_vector_shrink_to_fit(_this); }
+HEADER_STATIC_INLINE void                 cvector_swap(vector_t* _this, vector_t* other)                                                          { i_vector_swap(_this, other); }
+HEADER_STATIC_INLINE vector_size_t        cvector_clear(vector_t* _this)                                                                          { return i_vector_clear(_this); }
 
 /* Method 2 */
 typedef struct class_vector {
     vector_size_t (*size)(const vector_t* _this);
+    vector_size_t (*max_size)(const vector_t* _this);
     vector_size_t (*capacity)(const vector_t* _this);
+    bool (*__empty)(const vector_t* _this);
     vector_count_t (*count)(const vector_t* _this, vector_data_t data);
-    vector_iterator_t* (*end)(const vector_t* _this);
-    vector_iterator_t* (*begin)(const vector_t* _this);
-    vector_iterator_t* (*next)(const vector_t* _this, const vector_iterator_t* iterator);
-    vector_iterator_t* (*prev)(const vector_t* _this, const vector_iterator_t* iterator);
-    vector_r_iterator_t* (*rend)(const vector_t* _this);
-    vector_r_iterator_t* (*rbegin)(const vector_t* _this);
-    vector_r_iterator_t* (*rnext)(const vector_t* _this, const vector_r_iterator_t* r_iterator);
-    vector_r_iterator_t* (*rprev)(const vector_t* _this, const vector_r_iterator_t* r_iterator);
-    vector_iterator_t* (*at)(const vector_t* _this, vector_size_t n);
-    vector_data_t (*first)(const vector_t* _this, vector_data_t default_data);
-    vector_data_t (*last)(const vector_t* _this, vector_data_t default_data);
-    vector_iterator_t* (*find)(const vector_t* _this, vector_data_t data);
-    vector_iterator_t* (*push_back)(vector_t* _this, vector_data_t data);
-    vector_iterator_t* (*push_front)(vector_t* _this, vector_data_t data);
-    vector_iterator_t* (*insert)(vector_t* _this, vector_iterator_t* iterator, vector_data_t data);                         /* insert data before `iterator` */
-    vector_iterator_t* (*erase)(vector_t* _this, vector_iterator_t* iterator);
-    vector_iterator_t* (*erase_range)(vector_t* _this, vector_iterator_t* iterator_begin, vector_iterator_t* iterator_end); /* [iterator_begin, iterator_end) */
+    vector_iterator_t (*end)(const vector_t* _this);
+    vector_iterator_t (*begin)(const vector_t* _this);
+    vector_iterator_t (*next)(vector_iterator_t iterator);
+    vector_iterator_t (*prev)(vector_iterator_t iterator);
+    vector_r_iterator_t (*rend)(const vector_t* _this);
+    vector_r_iterator_t (*rbegin)(const vector_t* _this);
+    vector_r_iterator_t (*rnext)(vector_r_iterator_t r_iterator);
+    vector_r_iterator_t (*rprev)(vector_r_iterator_t r_iterator);
+    vector_iterator_t (*__it)(const vector_t* _this, vector_index_t index);                                   /* return iterator by n(index), without checking parameters */
+    vector_iterator_t (*it)(const vector_t* _this, vector_index_t index);                                     /* return iterator by n(index) */
+    vector_value_t (*__at)(const vector_t* _this, vector_index_t index);                                      /* STL: ds[index], without checking parameters */
+    vector_value_t (*at)(const vector_t* _this, vector_index_t index);                                        /* STL: ds->at(index) */
+    vector_value_t (*__back)(const vector_t* _this);
+    vector_value_t (*back)(const vector_t* _this);
+    vector_value_t (*__front)(const vector_t* _this);
+    vector_value_t (*front)(const vector_t* _this);
+    bool (*__replace_it)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);                    /* *iterator = data, without checking parameters */
+    bool (*replace_it)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);                      /* *iterator = data */
+    bool (*__replace_index)(vector_t* _this, vector_index_t index, vector_data_t data);                       /* ds[index] = data, without checking parameters */
+    bool (*replace_index)(vector_t* _this, vector_index_t index, vector_data_t data);                         /* ds[index] = data */
+    vector_iterator_t (*find)(const vector_t* _this, vector_data_t data);
+    bool (*push_back)(vector_t* _this, vector_data_t data);
+    vector_iterator_t (*insert)(vector_t* _this, vector_iterator_t iterator, vector_data_t data);             /* Insert data before `iterator` */
+    vector_iterator_t (*insert_n)(vector_t* _this, vector_iterator_t iterator, vector_size_t n, vector_data_t data);
+    vector_iterator_t (*insert_range)(vector_t* _this, vector_iterator_t iterator_pos, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);  /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
+    vector_iterator_t (*erase)(vector_t* _this, vector_iterator_t iterator);
+    vector_iterator_t (*erase_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);  /* [iterator_begin, iterator_end) */
     void (*pop_back)(vector_t* _this);
-    void (*pop_front)(vector_t* _this);
     vector_size_t (*remove)(vector_t* _this, vector_data_t data);
     vector_size_t (*remove_if)(vector_t* _this, remove_if_condition cond);
-    bool (*reserve)(vector_t* _this, vector_size_t n);
+    bool (*assign)(vector_t* _this, vector_size_t n, vector_data_t data);
+    bool (*assign_range)(vector_t* _this, vector_iterator_t iterator_begin, vector_iterator_t iterator_end);  /* Source range must have the same element layout/ops; copy keeps source ownership. Ranges from _this are undefined. */
     bool (*resize)(vector_t* _this, vector_size_t n, vector_data_t default_data);
-    void (*sort)(vector_t* _this, __cmp __cmp); /* When `__lt` is in ascending order, `__gt` is in descending order.
-                                                   Just compare the magnitudes when `class_vector_ops_t->__lt` is null. */
+    bool (*reserve)(vector_t* _this, vector_size_t n);
+    void (*shrink_to_fit)(vector_t* _this);
+    void (*swap)(vector_t* _this, vector_t* other);
     vector_size_t (*clear)(vector_t* _this);
 } class_vector_t;
 
-vector_t* __vector_new(const class_vector_ops_t* ops);
+vector_t* __vector_new(const class_vector_ops_t* ops,
+                       /* sequence_container_data_type_t */ vector_dtype_t data_type,
+                       vector_step_t step, vector_align_t align, vector_size_t capacity_init);
 void      __vector_delete(vector_t** _this);
 const class_vector_t* class_vector_ins(void);
-#define g_class_vector()      class_vector_ins()
-#define cvector               g_class_vector()
-#define VECTOR_NEW()          __vector_new(NULL)
-#define VECTOR_NEW_OPS(_ops)  __vector_new((_ops))
-#define VECTOR_NEW_STRING()   __vector_new(g_class_vector_ops_string())
-#define VECTOR_DELETE(_pptr)  do { __vector_delete((_pptr)); } while(0)
+#define g_class_vector()               class_vector_ins()
+#define cvector                        g_class_vector()
+#define g_class_vector_ops_chars()     g_class_sequence_container_ops_chars()
+#define g_class_vector_ops_sso()       g_class_sequence_container_ops_sso()
+#define VECTOR_NEW_COMPLATE(_ops, _type_id, _type, _capacity_init)  __vector_new((_ops), (_type_id), sizeof(_type), JDSC_ALIGNOF(_type), (_capacity_init))
+#define VECTOR_NEW_OPS_T(_ops, _type)  VECTOR_NEW_COMPLATE((_ops), (__SEQUENCE_CONTAINER_DTYPE_##_type), _type, 0)
+#define VECTOR_NEW()                   VECTOR_NEW_OPS_T(NULL,   intptr_t)
+#define VECTOR_NEW_OPS(_ops)           VECTOR_NEW_OPS_T((_ops), intptr_t)
+#define VECTOR_DELETE(_pptr)           do { __vector_delete((_pptr)); } while (0)
+
+/*
+ *  _type includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/ds_sso_t(string optimization)
+ *
+ *  VECTOR_NEW_T(_type) like std::vector<_type>
+ *  Such as: vector_t* demo = VECTOR_NEW_T(ds_sso_t);
+ *  Such as: vector_t* demo = VECTOR_NEW_T(int16_t);
+ *  Such as: vector_t* demo = VECTOR_NEW_T(float);
+ */
+#define VECTOR_NEW_T(_type)            VECTOR_NEW_OPS_T(g_class_sequence_container_ops_##_type(), _type)
+
+/* About string */
+#define VECTOR_NEW_CHAR()              VECTOR_NEW_OPS_T(g_class_vector_ops_chars(), intptr_t)
+#define VECTOR_NEW_SSO()               VECTOR_NEW_T(ds_sso_t)
+#define VECTOR_NEW_STRING()            VECTOR_NEW_SSO()
 
 #endif /* __J_VECTOR_H */

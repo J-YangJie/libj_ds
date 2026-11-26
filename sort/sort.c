@@ -191,11 +191,13 @@ static ds_size_t __sort_quick_s_unguarded_partition(ds_data_t* a, ds_size_t l, d
 
 static ds_size_t __sort_quick_s_unguarded_partition_pivot(ds_data_t* a, ds_size_t l, ds_size_t r, __cmp __cmp)
 {
-    /* m = l + 2(min), otherwise 
-        -> such as [ l=97, r=100, m=98 ( 97=3, 98=5, 99=2 ) ] 
-        -> [ move_m_to_first( r=3, x=5, y=5, z=2 ) ] 
-        -> [ 97=5, 98=3, 99=2 ] 
-        -> [ unguarded_partition -> while (a[98] < a[97]), while (a[99] < a[97]), while a[100]... -> fault ] */
+    /*
+     *  m = l + 2(min), otherwise
+     *  -> such as [ l=97, r=100, m=98 ( 97=3, 98=5, 99=2 ) ]
+     *  -> [ move_m_to_first( r=3, x=5, y=5, z=2 ) ]
+     *  -> [ 97=5, 98=3, 99=2 ]
+     *  -> [ unguarded_partition -> while (a[98] < a[97]), while (a[99] < a[97]), while a[100]... -> fault ]
+     */
     ds_size_t m = l + (r - l) / 2;
     __sort_quick_s_move_median_to_first(a, l, l + 1, m, r - 1, __cmp);
     return __sort_quick_s_unguarded_partition(a, l + 1, r, l, __cmp); /* in unguarded_partition, [ --r ] before while */
@@ -369,11 +371,13 @@ static ds_size_t __sort_quick_s_unguarded_partition_num(ds_data_t* a, ds_size_t 
 
 static ds_size_t __sort_quick_s_unguarded_partition_pivot_num(ds_data_t* a, ds_size_t l, ds_size_t r)
 {
-    /* m = l + 2(min), otherwise 
-        -> such as [ l=97, r=100, m=98 ( 97=3, 98=5, 99=2 ) ] 
-        -> [ move_m_to_first( r=3, x=5, y=5, z=2 ) ] 
-        -> [ 97=5, 98=3, 99=2 ] 
-        -> [ unguarded_partition -> while (a[98] < a[97]), while (a[99] < a[97]), while a[100]... -> fault ] */
+    /*
+     *  m = l + 2(min), otherwise
+     *  -> such as [ l=97, r=100, m=98 ( 97=3, 98=5, 99=2 ) ]
+     *  -> [ move_m_to_first( r=3, x=5, y=5, z=2 ) ]
+     *  -> [ 97=5, 98=3, 99=2 ]
+     *  -> [ unguarded_partition -> while (a[98] < a[97]), while (a[99] < a[97]), while a[100]... -> fault ]
+     */
     ds_size_t m = l + (r - l) / 2;
     __sort_quick_s_move_median_to_first_num(a, l, l + 1, m, r - 1);
     return __sort_quick_s_unguarded_partition_num(a, l + 1, r, l); /* in unguarded_partition, [ --r ] before while */

@@ -27,25 +27,50 @@
 /* common */
 typedef uintptr_t  ds_uintptr_t;
 typedef intptr_t   ds_data_t;
-typedef intptr_t   ds_hash_t;
+typedef uintptr_t  ds_hash_t;
 typedef ds_data_t  ds_key_t;
 typedef ds_data_t  ds_value_t;
 typedef ssize_t    ds_size_t;
 typedef ssize_t    ds_count_t;
+typedef size_t     ds_dtype_t; /* sequence container */
+typedef size_t     ds_step_t;  /* sequence container */
+typedef size_t     ds_align_t; /* sequence container */
+typedef size_t     ds_index_t; /* sequence container */
 typedef bool (*remove_if_condition)(ds_data_t data);
 typedef bool (*remove_if_condition_k)(ds_key_t key);
 typedef bool (*remove_if_condition_kv)(ds_key_t key, ds_value_t value);
 typedef bool (*__cmp)(ds_data_t left, ds_data_t right);
 
 /* list */
+typedef ds_dtype_t list_dtype_t;
+typedef ds_step_t  list_step_t;
+typedef ds_align_t list_align_t;
+typedef size_t     list_pad_t;
+typedef ds_index_t list_index_t;
 typedef ds_data_t  list_data_t;
 typedef ds_size_t  list_size_t;
 typedef ds_count_t list_count_t;
+typedef bool (*unique_if_condition)(list_data_t left, list_data_t right);
+typedef bool (*__list_lt_t)(list_data_t left, list_data_t right); /* Return true if [ `left` < `right` ] */
 
 /* vector */
+typedef ds_dtype_t vector_dtype_t;
+typedef ds_step_t  vector_step_t;
+typedef ds_align_t vector_align_t;
+typedef ds_index_t vector_index_t;
 typedef ds_data_t  vector_data_t;
 typedef ds_size_t  vector_size_t;
 typedef ds_count_t vector_count_t;
+
+/* deque */
+typedef ds_dtype_t deque_dtype_t;
+typedef ds_step_t  deque_step_t;
+typedef ds_align_t deque_align_t;
+typedef ds_index_t deque_index_t;
+typedef ds_data_t  deque_data_t;
+typedef ds_size_t  deque_size_t;
+typedef ds_count_t deque_count_t;
+typedef ds_count_t deque_bcount_t;
 
 /* map */
 typedef ds_key_t   map_key_t;
@@ -86,9 +111,16 @@ typedef ds_size_t  hashmap_size_t;
 typedef ds_count_t hashmap_count_t;
 typedef ds_count_t hashmap_bcount_t;
 
+/* stack */
+typedef ds_data_t  stack_data_t;
+typedef ds_size_t  stack_size_t;
+
+/* queue */
+typedef ds_data_t  queue_data_t;
+typedef ds_size_t  queue_size_t;
+
 /* priority_queue */
 typedef ds_data_t  priority_queue_data_t;
 typedef ds_size_t  priority_queue_size_t;
-typedef ds_count_t priority_queue_count_t;
 
 #endif /* __J_TYPES_H */

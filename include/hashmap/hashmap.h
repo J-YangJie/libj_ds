@@ -20,10 +20,30 @@
 #ifndef __J_HASH_MAP_H
 #define __J_HASH_MAP_H
 
+#include <iterator/iterator.h>
 #include <hashmap/hashmap_ops.h>
+
+typedef struct hashmap_iterator_kv {
+    union {
+        hashmap_key_t key;
+        char* skey;
+    };
+    union {
+        hashmap_value_t value;
+        char* svalue;
+    };
+    hashmap_hash_t hash;
+} hashmap_iterator_kv_t;
 
 typedef struct hashmap_iterator {
     union {
+        hashmap_iterator_kv_t* d;
+    };
+    void* private_data;
+} hashmap_iterator_t;
+
+typedef struct hashmap_reverse_iterator_kv {
+    union {
         hashmap_key_t key;
         char* skey;
     };
@@ -32,18 +52,14 @@ typedef struct hashmap_iterator {
         char* svalue;
     };
     hashmap_hash_t hash;
-} hashmap_iterator_t;
+} hashmap_reverse_iterator_kv_t;
+typedef hashmap_reverse_iterator_kv_t hashmap_r_iterator_kv_t;
 
 typedef struct hashmap_reverse_iterator {
     union {
-        hashmap_key_t key;
-        char* skey;
+        hashmap_reverse_iterator_kv_t* d;
     };
-    union {
-        hashmap_value_t value;
-        char* svalue;
-    };
-    hashmap_hash_t hash;
+    void* private_data;
 } hashmap_reverse_iterator_t;
 typedef hashmap_reverse_iterator_t hashmap_r_iterator_t;
 
@@ -63,18 +79,18 @@ hashmap_size_t        chashmap_size(const hashmap_t* _this);
 hashmap_bcount_t      chashmap_bucket_count(const hashmap_t* _this);
 hashmap_bcount_t      chashmap_bucket_valid_count(const hashmap_t* _this);
 hashmap_count_t       chashmap_count(const hashmap_t* _this, hashmap_key_t key);
-hashmap_iterator_t*   chashmap_end(const hashmap_t* _this);
-hashmap_iterator_t*   chashmap_begin(const hashmap_t* _this);
-hashmap_iterator_t*   chashmap_next(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-hashmap_iterator_t*   chashmap_prev(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-hashmap_r_iterator_t* chashmap_rend(const hashmap_t* _this);
-hashmap_r_iterator_t* chashmap_rbegin(const hashmap_t* _this);
-hashmap_r_iterator_t* chashmap_rnext(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-hashmap_r_iterator_t* chashmap_rprev(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-hashmap_iterator_t*   chashmap_find(const hashmap_t* _this, hashmap_key_t key);
-hashmap_iterator_t*   chashmap_insert(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
-hashmap_iterator_t*   chashmap_insert_replace(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
-hashmap_iterator_t*   chashmap_erase(hashmap_t* _this, hashmap_iterator_t* iterator);
+hashmap_iterator_t    chashmap_end(const hashmap_t* _this);
+hashmap_iterator_t    chashmap_begin(const hashmap_t* _this);
+hashmap_iterator_t    chashmap_next(const hashmap_iterator_t iterator);
+hashmap_iterator_t    chashmap_prev(const hashmap_iterator_t iterator);
+hashmap_r_iterator_t  chashmap_rend(const hashmap_t* _this);
+hashmap_r_iterator_t  chashmap_rbegin(const hashmap_t* _this);
+hashmap_r_iterator_t  chashmap_rnext(const hashmap_r_iterator_t r_iterator);
+hashmap_r_iterator_t  chashmap_rprev(const hashmap_r_iterator_t r_iterator);
+hashmap_iterator_t    chashmap_find(const hashmap_t* _this, hashmap_key_t key);
+hashmap_iterator_t    chashmap_insert(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
+hashmap_iterator_t    chashmap_insert_replace(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);
+hashmap_iterator_t    chashmap_erase(hashmap_t* _this, hashmap_iterator_t iterator);
 hashmap_size_t        chashmap_remove(hashmap_t* _this, hashmap_key_t key);
 hashmap_size_t        chashmap_clear(hashmap_t* _this);
 
@@ -84,18 +100,18 @@ typedef struct class_hashmap {
     hashmap_bcount_t (*bucket_count)(const hashmap_t* _this);
     hashmap_bcount_t (*bucket_valid_count)(const hashmap_t* _this);
     hashmap_count_t (*count)(const hashmap_t* _this, hashmap_key_t key);
-    hashmap_iterator_t* (*end)(const hashmap_t* _this);
-    hashmap_iterator_t* (*begin)(const hashmap_t* _this);
-    hashmap_iterator_t* (*next)(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-    hashmap_iterator_t* (*prev)(const hashmap_t* _this, const hashmap_iterator_t* iterator);
-    hashmap_r_iterator_t* (*rend)(const hashmap_t* _this);
-    hashmap_r_iterator_t* (*rbegin)(const hashmap_t* _this);
-    hashmap_r_iterator_t* (*rnext)(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-    hashmap_r_iterator_t* (*rprev)(const hashmap_t* _this, const hashmap_r_iterator_t* r_iterator);
-    hashmap_iterator_t* (*find)(const hashmap_t* _this, hashmap_key_t key);
-    hashmap_iterator_t* (*insert)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);         /* if input key doesn't match -> insert | if input key match -> return NULL */
-    hashmap_iterator_t* (*insert_replace)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value); /* if input key doesn't match -> insert | if input key match -> replace value (Refer to C++11 a[key] = value) */
-    hashmap_iterator_t* (*erase)(hashmap_t* _this, hashmap_iterator_t* iterator);
+    hashmap_iterator_t (*end)(const hashmap_t* _this);
+    hashmap_iterator_t (*begin)(const hashmap_t* _this);
+    hashmap_iterator_t (*next)(const hashmap_iterator_t iterator);
+    hashmap_iterator_t (*prev)(const hashmap_iterator_t iterator);
+    hashmap_r_iterator_t (*rend)(const hashmap_t* _this);
+    hashmap_r_iterator_t (*rbegin)(const hashmap_t* _this);
+    hashmap_r_iterator_t (*rnext)(const hashmap_r_iterator_t r_iterator);
+    hashmap_r_iterator_t (*rprev)(const hashmap_r_iterator_t r_iterator);
+    hashmap_iterator_t (*find)(const hashmap_t* _this, hashmap_key_t key);
+    hashmap_iterator_t (*insert)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value);         /* if input key doesn't match -> insert | if input key match -> return NULL */
+    hashmap_iterator_t (*insert_replace)(hashmap_t* _this, hashmap_key_t key, hashmap_value_t value); /* if input key doesn't match -> insert | if input key match -> replace value (Refer to C++11 a[key] = value) */
+    hashmap_iterator_t (*erase)(hashmap_t* _this, hashmap_iterator_t iterator);
     hashmap_size_t (*remove)(hashmap_t* _this, hashmap_key_t key);
     hashmap_size_t (*clear)(hashmap_t* _this);
 } class_hashmap_t;
@@ -130,5 +146,47 @@ const class_hashmap_t* class_hashmap_ins(void);
         __hashmap_new((_ops), (_bucket_count_init), (_bucket_count_max), (_load_factor), NULL)
 #define HASHMAP_NEW_OPS_4(_ops, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
         __hashmap_new((_ops), (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
+
+#define HASHMAP_NEW_KV_OPS_4(_ops_key, _ops_value, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
+        __hashmap_new(&(class_hashmap_ops_t[1]){ \
+            class_hashmap_ops_compose((_ops_key), (_ops_value)) \
+        }[0], (_bucket_count_init), (_bucket_count_max), (_load_factor), (_config))
+
+/*
+ *  _ktype/_vtype includes:
+ *  1. uint8_t/uint16_t/uint32_t/uint64_t
+ *  2. int8_t/int16_t/int32_t/int64_t
+ *  3. uintptr_t/intptr_t/size_t/ssize_t
+ *  4. float/double/string
+ *
+ *  HASHMAP_NEW_KV(_ktype, _vtype) like std::unordered_map<_ktype, _vtype>
+ *  Such as: hashmap_t* demo = HASHMAP_NEW_KV(string, double);
+ *  Such as: hashmap_t* demo = HASHMAP_NEW_KV(int16_t, float);
+ *  Such as: hashmap_t* demo = HASHMAP_NEW_KV(float, ssize_t);
+ */
+#define HASHMAP_NEW_KV(_ktype, _vtype) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             0, 0, 0.0f, NULL)
+
+#define HASHMAP_NEW_KV_1(_ktype, _vtype, _bucket_count_init) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             _bucket_count_init, 0, 0.0f, NULL)
+
+#define HASHMAP_NEW_KV_2(_ktype, _vtype, _bucket_count_init, _bucket_count_max) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             _bucket_count_init, _bucket_count_max, 0.0f, NULL)
+
+#define HASHMAP_NEW_KV_3(_ktype, _vtype, _bucket_count_init, _bucket_count_max, _load_factor) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             _bucket_count_init, _bucket_count_max, _load_factor, NULL)
+
+#define HASHMAP_NEW_KV_4(_ktype, _vtype, _bucket_count_init, _bucket_count_max, _load_factor, _config) \
+        HASHMAP_NEW_KV_OPS_4(g_class_hashmap_key_ops_##_ktype(), \
+                             g_class_hashmap_value_ops_##_vtype(), \
+                             _bucket_count_init, _bucket_count_max, _load_factor, _config)
 
 #endif /* __J_HASH_MAP_H */
