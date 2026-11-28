@@ -494,8 +494,17 @@ deque_value_t i_deque_front(const i_deque_t* _this)
 HEADER_STATIC_INLINE
 bool __i_deque_slot_write(const i_deque_t* _this, void* slot, deque_data_t data)
 {
-    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
-        return _this->ops->copy_data(data, (deque_data_t*)slot);
+    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data)) {
+        deque_data_t tdata = data;
+        ds_sso_t view;
+
+        if (_this->sso) {
+            __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+            tdata = (deque_data_t)&view;
+        }
+
+        return _this->ops->copy_data(tdata, (deque_data_t*)slot);
+    }
 
     switch (_this->step)
     {

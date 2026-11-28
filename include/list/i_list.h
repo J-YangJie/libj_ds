@@ -373,10 +373,21 @@ list_value_t i_dlist_front(const i_list_t* _this)
 
 
 HEADER_STATIC_INLINE
+list_data_t __i_dlist_make_sso_view(const i_list_t* _this, list_data_t data, ds_sso_t* view)
+{
+    if (_this->sso) {
+        __ds_ops_sso_constructor(view, (const char*)data); /* Never return false */
+        return (list_data_t)view;
+    }
+    return data;
+}
+
+HEADER_STATIC_INLINE
 bool __i_dlist_slot_write(const i_list_t* _this, void* slot, list_data_t data)
 {
-    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data))
+    if (!is_null(_this->ops) && !is_null(_this->ops->copy_data)) {
         return _this->ops->copy_data(data, (list_data_t*)slot);
+    }
 
     switch (_this->step)
     {
@@ -475,12 +486,17 @@ void __i_dlist_slot_move(const i_list_t* _this, void* dest, const void* src)
 HEADER_STATIC_INLINE /* JDSC_LOGIC_FRAGMENT */ /* Because of `pos` */
 bool __i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
 {
+    list_data_t tdata = data;
+    ds_sso_t view;
+
     if (!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data))
         return false;
 
     if (_this->sso) {
         if (data == __ds_ops_char_addr_sso((list_data_t)pos->data))
             return true;
+
+        tdata = __i_dlist_make_sso_view(_this, data, &view);
     } else if ((_this->dtype & SEQ_CNTR_DTYPE_MASK_TOKEN_ADDR) && data == (list_data_t)pos->data) {
         return true;
     } else if (!is_null(_this->ops) && is_null(_this->ops->copy_data)
@@ -492,11 +508,11 @@ bool __i_dlist_replace(i_list_t* _this, list_node_t* pos, list_data_t data)
         if (!is_null(_this->ops) && !is_null(_this->ops->free_data))
             _this->ops->free_data((list_data_t*)pos->data);
 
-        __i_dlist_slot_write(_this, pos->data, data);
+        __i_dlist_slot_write(_this, pos->data, tdata);
         return true;
     }
 
-    if (!__i_dlist_slot_write(_this, _this->swap, data))
+    if (!__i_dlist_slot_write(_this, _this->swap, tdata))
         return false;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->free_data))

@@ -38,8 +38,16 @@ bool __i_deque_slot_write_n(const i_deque_t* _this, deque_iterator_t pos, deque_
     deque_size_t suc = 0;
 
     if (!is_null(_this->ops) && !is_null(_this->ops->copy_data)) {
+        deque_data_t tdata = data;
+        ds_sso_t view;
+
+        if (_this->sso) {
+            __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+            tdata = (deque_data_t)&view;
+        }
+
         while (n-- > 0) {
-            if (_this->ops->copy_data(data, (deque_data_t*)pos.cur))
+            if (_this->ops->copy_data(tdata, (deque_data_t*)pos.cur))
                 suc++;
             else
                 goto err;
@@ -667,12 +675,16 @@ deque_iterator_t i_deque_find(const i_deque_t* _this, deque_data_t data)
             }
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
             uint8_t* i = __i_deque_bkt_begin(_this, bkt);
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
             for (; i < l; i = __i_deque_ptr_add(i, 1, step)) {
-                if (__ds_ops_eq_diff_sso(data, (deque_data_t)i))
+                if (__ds_ops_eq_same_sso((ds_data_t)&view, (deque_data_t)i))
                     return __i_deque_make_iterator(_this, bkt, i);
             }
         }
@@ -717,12 +729,16 @@ deque_count_t i_deque_count(const i_deque_t* _this, deque_data_t data)
             }
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         for (bkt = _this->begin.bkt; bkt <= _this->end.bkt; ++bkt) {
             uint8_t* i = __i_deque_bkt_begin(_this, bkt);
             uint8_t* l = __i_deque_bkt_end(_this, bkt);
 
             for (; i < l; i = __i_deque_ptr_add(i, 1, step)) {
-                if (__ds_ops_eq_diff_sso(data, (deque_data_t)i))
+                if (__ds_ops_eq_same_sso((ds_data_t)&view, (deque_data_t)i))
                     ret++;
             }
         }
@@ -780,8 +796,12 @@ deque_size_t i_deque_remove(i_deque_t* _this, deque_data_t data)
             }
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         for (; end.cur != r.cur; r = __i_deque_next(r)) {
-            if (!__ds_ops_eq_diff_sso(data, (deque_data_t)r.cur)) {
+            if (!__ds_ops_eq_same_sso((ds_data_t)&view, (deque_data_t)r.cur)) {
                 if (l.cur != r.cur) {
                     memmove(l.cur, r.cur, sizeof(ds_sso_t));
                     __ds_ops_fix_sso((deque_data_t)l.cur); /* __i_deque_slot_move(_this, l.cur, r.cur); */

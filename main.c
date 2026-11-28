@@ -87,6 +87,15 @@
 #define TEST_PQUEUE 1
 #endif
 
+/*
+ *  Extra sequence-container scenarios (deque/vector/list) that are not
+ *  listed in the README performance tables. Set to 0 to run only the
+ *  README baseline: insert / find / remove / clear.
+ */
+#ifndef PERFORMANCE_SEQUENCE_EXTRA
+#define PERFORMANCE_SEQUENCE_EXTRA 1
+#endif /* PERFORMANCE_SEQUENCE_EXTRA */
+
 #ifndef TIMES_INSERT
 #define TIMES_INSERT   10000000
 #endif /* TIMES_INSERT */
@@ -108,6 +117,10 @@
 #ifndef SORT_SEED
 #define SORT_SEED 12345
 #endif /* SORT_SEED */
+
+#ifndef BENCH_SEED
+#define BENCH_SEED 54321
+#endif /* BENCH_SEED */
 
 #ifndef HASHMAP_CAPACITY_INIT
 #define HASHMAP_CAPACITY_INIT 2 * TIMES_INSERT
@@ -678,7 +691,7 @@ static void test_i_rand(void)
     priority_queue_t* ds_pqueue_i   = PQUEUE_TEST_NEW();
 #endif
 
-    srand(time(0));
+    srand(BENCH_SEED);
     printf("%s\n", __func__);
 
     if (1)
@@ -923,7 +936,7 @@ static void test_i_rand(void)
     }
 
 #ifdef TEST_DEQUE
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         /* count */
         {
@@ -1266,7 +1279,7 @@ static void test_i_rand(void)
 #endif
 
 #ifdef TEST_VECTOR
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
 
 #if 0
@@ -1635,7 +1648,7 @@ static void test_i_rand(void)
 #endif
 
 #ifdef TEST_LIST
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         /* count */
         {
@@ -2216,7 +2229,7 @@ static void test_s_rand(void)
     priority_queue_t* ds_pqueue_s   = PQUEUE_TEST_NEW_STRING();
 #endif
 
-    srand(time(0));
+    srand(BENCH_SEED);
     printf("%s\n", __func__);
     s_pool_init();
 
@@ -2474,7 +2487,7 @@ static void test_s_rand(void)
     }
 
 #ifdef TEST_DEQUE
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         char dst[S_STR_LEN_MAX + 1];
         char fixbuf[S_STR_LEN_MAX + 1];
@@ -2827,7 +2840,7 @@ static void test_s_rand(void)
 #endif
 
 #ifdef TEST_VECTOR
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         char dst[S_STR_LEN_MAX + 1];
         char fixbuf[S_STR_LEN_MAX + 1];
@@ -3203,7 +3216,7 @@ static void test_s_rand(void)
 #endif
 
 #ifdef TEST_LIST
-    if (1)
+    if (PERFORMANCE_SEQUENCE_EXTRA)
     {
         char dst[S_STR_LEN_MAX + 1];
         char fixbuf[S_STR_LEN_MAX + 1];

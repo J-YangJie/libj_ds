@@ -1,5 +1,5 @@
 
-DLIB_VERSION = 1.2.0
+DLIB_VERSION = 1.2.1
 DLIB_NAME := libj_ds.so
 SLIB_NAME := libj_ds.a
 
@@ -112,6 +112,7 @@ CFLAGS += -std=gnu99 -Wall -fmessage-length=0 -fPIC -fno-common
 CFLAGS += -O2
 # CFLAGS += -DJDSC_DEBUG
 # CFLAGS += -DJDSC_MEMPOOL
+# CFLAGS += -DPERFORMANCE_SEQUENCE_EXTRA=0
 # CFLAGS += -g3
 CFLAGS += -Werror
 ifeq ($(WITH_ALIGNMEM), y)
@@ -123,6 +124,7 @@ endif
 CXXFLAGS += -std=c++11
 CXXFLAGS += -Wall -fmessage-length=0 -fPIC -fno-common
 CXXFLAGS += -O2
+# CXXFLAGS += -DPERFORMANCE_SEQUENCE_EXTRA=0
 # CXXFLAGS += -g3
 CXXFLAGS += -Werror
 ifeq ($(WITH_ALIGNMEM), y)

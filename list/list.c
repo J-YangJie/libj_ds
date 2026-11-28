@@ -56,26 +56,6 @@ list_node_t* __i_dlist_make_list_node(const i_list_t* _this, list_data_t data)
 }
 
 static JDSC_INLINE
-list_node_t* __i_dlist_make_list_node_copy_sso(const i_list_t* _this, const list_node_t* src)
-{
-    list_pad_t pad = __i_dlist_node_pad(_this);
-    uint8_t* base = (uint8_t*)p_aligned_malloc(_this->align, pad + sizeof(list_node_t) + _this->step);
-    list_node_t* n;
-
-    if (is_null(base))
-        return NULL;
-
-    n = (list_node_t*)(base + pad);
-
-    if (!ds_ops_copy_data_same_sso((list_data_t)src->data, (list_data_t*)n->data)) {
-        p_aligned_free(base, _this->align);
-        return NULL;
-    }
-
-    return n;
-}
-
-static JDSC_INLINE
 void __i_dlist_destroy_list_node(const i_list_t* _this, list_node_t* node)
 {
     list_pad_t pad = __i_dlist_node_pad(_this);
@@ -104,11 +84,12 @@ static JDSC_INLINE
 list_node_t* __i_dlist_push_back(i_list_t* _this, list_data_t data)
 {
     list_node_t* n;
+    ds_sso_t view;
 
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return NULL;
 
-    n = __i_dlist_make_list_node(_this, data);
+    n = __i_dlist_make_list_node(_this, __i_dlist_make_sso_view(_this, data, &view));
     if (is_null(n))
         return NULL;
 
@@ -129,11 +110,12 @@ static JDSC_INLINE
 list_node_t* __i_dlist_push_front(i_list_t* _this, list_data_t data)
 {
     list_node_t* n;
+    ds_sso_t view;
 
     if (unlikely(!is_null(_this->ops) && !is_null(_this->ops->valid_data) && !_this->ops->valid_data(data)))
         return NULL;
 
-    n = __i_dlist_make_list_node(_this, data);
+    n = __i_dlist_make_list_node(_this, __i_dlist_make_sso_view(_this, data, &view));
     if (is_null(n))
         return NULL;
 
@@ -162,8 +144,9 @@ static JDSC_INLINE JDSC_LOGIC_FRAGMENT /* Because of `pos` and `data` */
 list_node_t* __i_dlist_insert_valid(i_list_t* _this, list_node_t* pos, list_data_t data)
 {
     list_node_t* n;
+    ds_sso_t view;
 
-    n = __i_dlist_make_list_node(_this, data);
+    n = __i_dlist_make_list_node(_this, __i_dlist_make_sso_view(_this, data, &view));
     if (is_null(n))
         return NULL;
 
@@ -214,12 +197,17 @@ list_node_t* __i_dlist_insert_n(i_list_t* _this, list_node_t* pos, list_size_t n
     if (is_null(first))
         return NULL;
 
-    for (i = 1; i < n; ++i) {
-        t = __i_dlist_make_list_node(_this, data);
-        if (is_null(t))
-            goto err;
+    {
+        ds_sso_t view;
+        list_data_t tdata = __i_dlist_make_sso_view(_this, data, &view);
 
-        ___i_dlist_insert(_this, pos, t);
+        for (i = 1; i < n; ++i) {
+            t = __i_dlist_make_list_node(_this, tdata);
+            if (is_null(t))
+                goto err;
+
+            ___i_dlist_insert(_this, pos, t);
+        }
     }
 
     return first;
@@ -251,7 +239,7 @@ list_node_t* __i_dlist_insert_range(i_list_t* _this, list_node_t* pos, list_node
 
     if (_this->sso) {
         for (it = begin; end != it; it = __i_dlist_next(it)) {
-            n = __i_dlist_make_list_node_copy_sso(_this, it);
+            n = __i_dlist_make_list_node(_this, (list_data_t)it->data);
             if (is_null(n))
                 goto err;
 
@@ -388,8 +376,12 @@ list_node_t* ___i_dlist_find(const i_list_t* _this, list_data_t data)
                 return n;
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         list_for_each_entry(n, &_this->head, node) {
-            if (__ds_ops_eq_diff_sso(data, (list_data_t)n->data))
+            if (__ds_ops_eq_same_sso((ds_data_t)&view, (list_data_t)n->data))
                 return n;
         }
     } else {
@@ -430,8 +422,12 @@ list_count_t ___i_dlist_count(const i_list_t* _this, list_data_t data)
                 ret++;
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         list_for_each_entry(n, &_this->head, node) {
-            if (__ds_ops_eq_diff_sso(data, (list_data_t)n->data))
+            if (__ds_ops_eq_same_sso((ds_data_t)&view, (list_data_t)n->data))
                 ret++;
         }
     } else {
@@ -480,8 +476,12 @@ list_size_t i_dlist_remove(i_list_t* _this, list_data_t data)
             ret++;
         }
     } else if (_this->sso) {
+        ds_sso_t view;
+
+        __ds_ops_sso_constructor(&view, (const char*)data); /* Never return false */
+
         list_for_each_entry_safe(n, t, &_this->head, node) {
-            if (!__ds_ops_eq_diff_sso(data, (list_data_t)n->data))
+            if (!__ds_ops_eq_same_sso((ds_data_t)&view, (list_data_t)n->data))
                 continue;
 
             ___i_dlist_erase(_this, n);

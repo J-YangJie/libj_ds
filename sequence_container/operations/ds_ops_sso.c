@@ -33,6 +33,26 @@ void ds_ops_free_data_default_sso(ds_data_t* data)
         p_free(s->p);
 }
 
+/*
+ * Different (removed)
+ *
+ * Replaced by __ds_ops_sso_constructor() + same-side callbacks.
+ * `l/left` was char*, `r/right` was ds_sso_t*.
+ */
+#if 0
+HEADER_STATIC_INLINE
+bool __ds_ops_eq_diff_sso(ds_data_t left, ds_data_t right)
+{
+    const char*     l = (const char*)left;
+    const ds_sso_t* r = (const ds_sso_t*)right;
+    size_t llen = strlen(l);
+    return llen == r->len && 0 == memcmp(l, r->p, llen);
+}
+
+bool ds_ops_copy_data_diff_sso(ds_data_t in, ds_data_t* out);
+#endif
+
+#if 0
 JDSC_INLINE
 bool ds_ops_copy_data_diff_sso(ds_data_t in, ds_data_t* out)
 {
@@ -56,6 +76,7 @@ bool ds_ops_copy_data_diff_sso(ds_data_t in, ds_data_t* out)
         return true;
     }
 }
+#endif
 
 JDSC_INLINE
 bool ds_ops_copy_data_same_sso(ds_data_t in, ds_data_t* out)
@@ -65,7 +86,7 @@ bool ds_ops_copy_data_same_sso(ds_data_t in, ds_data_t* out)
     size_t len = i->len;
 
     if (len <= __DS_SSO_LOCAL_CAP) {
-        memcpy(o->buf, i->buf, len + 1);
+        memcpy(o->buf, i->p, len + 1); /* p == buf for a real local SSO; also works for a view */
         o->p = o->buf;
         o->len = len;
         return true;
