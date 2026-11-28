@@ -18,6 +18,7 @@
 1. **Object Oriented**
 2. **Have the concept of iterator**
 3. **Be able to interface with the memory pool(malloc, calloc, realloc)**
+4. **Optional over-aligned memory support** (since `2.0.0`) for element types that need stricter alignment (`WITH_ALIGNMEM=y`)
 
 
 ## 3. How to use
@@ -34,7 +35,13 @@ WITH_PERFORMANCE=y
 WITH_DEMO=y
 ```
 
-3. **Select and compile**: Select the data structures you need in the `Makefile` and compile them.
+3. **Over-aligned memory** (since `2.0.0`): Enable option `WITH_ALIGNMEM` in the `Makefile` when the element type needs stricter alignment than the default allocator provides (default: `n`).
+
+```pip-requirements
+WITH_ALIGNMEM=y
+```
+
+4. **Select and compile**: Select the data structures you need in the `Makefile` and compile them.
 
 ```pip-requirements
 WITH_VECTOR=y
@@ -50,7 +57,7 @@ WITH_SET=y
 WITH_MULTISET=y
 ```
 
-4. **Code**: Write code by referring to the `demo`.
+5. **Code**: Write code by referring to the `demo`.
 
 ```pip-requirements
 demo/demo_hashmap.c

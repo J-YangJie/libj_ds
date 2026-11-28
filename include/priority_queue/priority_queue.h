@@ -72,6 +72,7 @@ void              __priority_queue_delete(priority_queue_t** _this);
 const class_priority_queue_t* class_priority_queue_ins(void);
 #define g_class_priority_queue()                           class_priority_queue_ins()
 #define cpriority_queue                                    g_class_priority_queue()
+#define cpqueue                                            g_class_priority_queue()
 #define PRIORITY_QUEUE_NEW_OPS_COMPLATE(_ops, _type_id, _type, _BASE_NAME, _capacity_init) \
         _PRIORITY_QUEUE_NEW_OPS_COMPLATE((_ops), (_type_id), _type, _BASE_NAME, (_capacity_init))
 #define PRIORITY_QUEUE_NEW_OPS_T(_ops, _type, _BASE_NAME)  _PRIORITY_QUEUE_NEW_OPS_T((_ops), _type, _BASE_NAME, 0)
